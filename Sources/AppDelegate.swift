@@ -3907,9 +3907,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         if previousSessionLaunchWasUnclean,
            let sanitizedStartupSnapshot,
            let checkpointStore = sessionScrollbackCheckpointStore() {
-            startupSessionSnapshot = checkpointStore.merging(into: sanitizedStartupSnapshot)
+            startupSessionSnapshot = SessionPersistencePolicy.snapshotForLiveRestore(sanitizedStartupSnapshot, recoveringScrollback: checkpointStore.merging(into:))
         } else {
-            startupSessionSnapshot = sanitizedStartupSnapshot
+            startupSessionSnapshot = sanitizedStartupSnapshot.flatMap(SessionPersistencePolicy.snapshotForLiveRestore)
         }
     }
 
@@ -4260,7 +4260,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         _ snapshot: AppSessionSnapshot,
         shouldActivate: Bool = true
     ) -> Bool {
-        guard let snapshot = SessionPersistencePolicy.pruningCmuxCrashDiagnosticWindows(from: snapshot).snapshot else {
+        guard let snapshot = SessionPersistencePolicy.snapshotForLiveRestore(snapshot) else {
             return false
         }
         let snapshotWindows = Array(
