@@ -287,29 +287,41 @@ struct ProBadgeView: View {
                 .hintableAccessibilityLabel(helpTitle)
                 .accessibilityIdentifier("ProBadgeButton")
 
-                // The X is always laid out; only its container width animates,
-                // so it's revealed by the widening capsule (clipped) rather
-                // than fading or sliding on its own.
+                // Only mount the dismiss glyph while hovered. A zero-width
+                // Image(systemName:) frame crashes AppKit restoration layout
+                // when CUINamedVectorGlyph requires targetSize > 0 (reproduced on
+                // macOS 27 beta). Keep the button itself mounted so VoiceOver
+                // can still dismiss the badge without a pointer hover.
                 Button {
                     actions.dismissed()
                     withAnimation(.easeOut(duration: 0.15)) {
                         ProBadgeStyleStore.shared.isDismissed = true
                     }
                 } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(foreground)
-                        .opacity(0.75)
-                        .padding(.leading, 4)
-                        .frame(width: isHovered ? 14 : 0, alignment: .leading)
-                        .clipped()
-                        .contentShape(Rectangle())
+                    Group {
+                        if isHovered {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundStyle(foreground)
+                                .opacity(0.75)
+                                .fixedSize()
+                                .padding(.leading, 4)
+                                .frame(width: 14, alignment: .leading)
+                        } else {
+                            Color.clear.frame(width: 14, height: 8)
+                        }
+                    }
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .allowsHitTesting(isHovered)
                 .safeHelp(dismissTitle)
                 .accessibilityLabel(dismissTitle)
                 .accessibilityIdentifier("ProBadgeDismissButton")
+                // Keep a positive accessibility target while the visual slot
+                // is collapsed. The hidden state is only one point wide; the
+                // glyph itself is not mounted until hover.
+                .frame(width: isHovered ? 14 : 1, alignment: .leading)
+                .clipped()
             }
             .modifier(ProBadgeCapsule(style: style, isHovered: isHovered))
             .frame(height: 22, alignment: .center)
