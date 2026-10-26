@@ -2,6 +2,11 @@ import CMUXAgentLaunch
 import CmuxControlSocket
 import Foundation
 
+private struct BoundedLayoutResult {
+    let layout: SessionWorkspaceLayoutSnapshot
+    let isEmpty: Bool
+}
+
 /// What `SessionSnapshotImportTrust` removed or held back from an imported
 /// session file.
 struct SessionSnapshotImportTrustReport: Equatable, Sendable {
@@ -17,6 +22,13 @@ struct SessionSnapshotImportTrustReport: Equatable, Sendable {
     var sanitizedBrowserPanelCount = 0
     /// Terminals whose scrollback had terminal control strings removed.
     var sanitizedScrollbackCount = 0
+    /// Terminals whose imported scrollback exceeded the replay budget and was
+    /// truncated to the newest bounded suffix.
+    var truncatedScrollbackCount = 0
+    /// Windows, workspaces, or panels removed by the structural import caps.
+    var droppedWindowCount = 0
+    var droppedWorkspaceCount = 0
+    var droppedPanelCount = 0
     /// Terminals whose text box draft attachments were dropped.
     var droppedDraftAttachmentCount = 0
 }
@@ -82,9 +94,316 @@ enum SessionSnapshotImportTrust {
         _ snapshot: AppSessionSnapshot,
         source: ControlSessionImportSource
     ) -> (snapshot: AppSessionSnapshot, report: SessionSnapshotImportTrustReport) {
-        source.isTrusted
-            ? (snapshot, SessionSnapshotImportTrustReport())
-            : sanitizingUntrustedImport(snapshot)
+        var report = SessionSnapshotImportTrustReport()
+        // Drop crash-diagnostic and phantom windows before spending the
+        // window cap, as startup restore does; otherwise twelve of them can
+        // use the whole cap and push the real windows out.
+        var pruned = snapshot
+        pruned.windows = SessionPersistencePolicy.pruningCmuxCrashDiagnosticWindows(from: snapshot)
+            .snapshot?.windows ?? []
+        let bounded = boundedSnapshotStructure(pruned, report: &report)
+        guard !source.isTrusted else {
+            return (bounded, report)
+        }
+        let (sanitized, importReport) = sanitizingUntrustedImport(bounded)
+        report.droppedWindowCount += importReport.droppedWindowCount
+        report.droppedWorkspaceCount += importReport.droppedWorkspaceCount
+        report.droppedPanelCount += importReport.droppedPanelCount
+        report.heldBackResumeCount += importReport.heldBackResumeCount
+        report.droppedRemoteWorkspaceCount += importReport.droppedRemoteWorkspaceCount
+        report.sanitizedBrowserPanelCount += importReport.sanitizedBrowserPanelCount
+        report.sanitizedScrollbackCount += importReport.sanitizedScrollbackCount
+        report.truncatedScrollbackCount += importReport.truncatedScrollbackCount
+        report.droppedDraftAttachmentCount += importReport.droppedDraftAttachmentCount
+        return (sanitized, report)
+    }
+
+    /// Bounds the object graph for every restore source, including the
+    /// trusted channel used by the app's own snapshot. Trust controls which
+    /// commands may run; it must never disable resource limits.
+    private static func boundedSnapshotStructure(
+        _ snapshot: AppSessionSnapshot,
+        report: inout SessionSnapshotImportTrustReport
+    ) -> AppSessionSnapshot {
+        var bounded = snapshot
+        var remainingPanelBudget = SessionPersistencePolicy.maxPanelsPerSnapshot
+        var remainingLayoutNodes = SessionPersistencePolicy.maxLayoutNodes
+        func reserveFallbackPanel() -> Bool {
+            guard remainingPanelBudget > 0 else { return false }
+            remainingPanelBudget -= 1
+            return true
+        }
+        let keptWindowCount = min(bounded.windows.count, SessionPersistencePolicy.maxWindowsPerSnapshot)
+        report.droppedWindowCount += bounded.windows.count - keptWindowCount
+        bounded.windows = Array(bounded.windows.prefix(keptWindowCount))
+        var boundedWindows: [SessionWindowSnapshot] = []
+        boundedWindows.reserveCapacity(bounded.windows.count)
+        for var window in bounded.windows {
+            let originalWorkspaceCount = window.tabManager.workspaces.count
+            window.tabManager.workspaces = Array(
+                window.tabManager.workspaces.prefix(SessionPersistencePolicy.maxWorkspacesPerWindow)
+            )
+            report.droppedWorkspaceCount += originalWorkspaceCount - window.tabManager.workspaces.count
+            for workspaceIndex in window.tabManager.workspaces.indices {
+                var workspace = window.tabManager.workspaces[workspaceIndex]
+                workspace.panels = boundedPanels(
+                    workspace.panels,
+                    remainingBudget: &remainingPanelBudget,
+                    report: &report
+                )
+                workspace.layout = boundedLayout(
+                    workspace.layout,
+                    panelIDs: workspace.panels.map(\.id),
+                    remainingNodes: &remainingLayoutNodes,
+                    report: &report
+                )
+                let needsWorkspaceFallback = workspace.panels.isEmpty &&
+                    workspace.dock?.panels.isEmpty == false
+                let hasWorkspaceFallbackBudget = !needsWorkspaceFallback || reserveFallbackPanel()
+                if var dock = workspace.dock {
+                    dock.panels = boundedPanels(
+                        dock.panels,
+                        remainingBudget: &remainingPanelBudget,
+                        report: &report
+                    )
+                    dock.layout = boundedLayout(
+                        dock.layout,
+                        panelIDs: dock.panels.map(\.id),
+                        remainingNodes: &remainingLayoutNodes,
+                        report: &report
+                    )
+                    workspace.dock = dock.panels.isEmpty ? nil : dock
+                }
+                if !hasWorkspaceFallbackBudget {
+                    workspace.dock = nil
+                }
+                window.tabManager.workspaces[workspaceIndex] = workspace
+            }
+            let selectedWorkspaceIndex = window.tabManager.selectedWorkspaceIndex
+            let originalWorkspaces = window.tabManager.workspaces
+            var keptWorkspaces: [SessionWorkspaceSnapshot] = []
+            keptWorkspaces.reserveCapacity(window.tabManager.workspaces.count)
+            var remappedSelectedWorkspaceIndex: Int?
+            for (workspaceIndex, workspace) in window.tabManager.workspaces.enumerated() {
+                guard !workspace.panels.isEmpty || workspace.dock != nil else {
+                    report.droppedWorkspaceCount += 1
+                    continue
+                }
+                if selectedWorkspaceIndex == workspaceIndex {
+                    remappedSelectedWorkspaceIndex = keptWorkspaces.count
+                }
+                keptWorkspaces.append(workspace)
+            }
+            if remappedSelectedWorkspaceIndex == nil,
+               let selectedWorkspaceIndex,
+               !keptWorkspaces.isEmpty {
+                remappedSelectedWorkspaceIndex = min(selectedWorkspaceIndex, keptWorkspaces.count - 1)
+            }
+            if let groups = window.tabManager.workspaceGroups {
+                let originalMembersByGroup = Dictionary(grouping: originalWorkspaces, by: \.groupId)
+                let keptMembersByGroup = Dictionary(grouping: keptWorkspaces, by: \.groupId)
+                let keptGroups = groups.compactMap { group -> SessionWorkspaceGroupSnapshot? in
+                    let originalMembers = originalMembersByGroup[Optional(group.id)] ?? []
+                    let keptMembers = keptMembersByGroup[Optional(group.id)] ?? []
+                    let keepsEmptyPinnedGroup = group.isPinned == true && group.anchorIsEmpty == true
+                    guard !keptMembers.isEmpty || keepsEmptyPinnedGroup else { return nil }
+                    guard !keptMembers.isEmpty else { return group }
+                    var copy = group
+                    let originalAnchorID = group.anchorWorkspaceId ?? group.anchorMemberIndex.flatMap {
+                        originalMembers.indices.contains($0) ? originalMembers[$0].workspaceId : nil
+                    }
+                    let newAnchorIndex = originalAnchorID.flatMap { anchorID in
+                        keptMembers.firstIndex { $0.workspaceId == anchorID }
+                    } ?? 0
+                    copy.anchorMemberIndex = newAnchorIndex
+                    copy.anchorWorkspaceId = keptMembers[newAnchorIndex].workspaceId
+                    copy.anchorIsEmpty = nil
+                    return copy
+                }
+                window.tabManager.workspaceGroups = keptGroups.isEmpty ? nil : keptGroups
+            }
+            window.tabManager.workspaces = keptWorkspaces
+            window.tabManager.selectedWorkspaceIndex = remappedSelectedWorkspaceIndex
+            let hasEmptyPinnedGroup = window.tabManager.workspaceGroups?.contains {
+                $0.isPinned == true && $0.anchorIsEmpty == true
+            } == true
+            let needsWindowFallback = window.tabManager.workspaces.isEmpty &&
+                (window.dock?.panels.isEmpty == false || hasEmptyPinnedGroup)
+            let hasWindowFallbackBudget = !needsWindowFallback || reserveFallbackPanel()
+            if var dock = window.dock {
+                dock.panels = boundedPanels(
+                    dock.panels,
+                    remainingBudget: &remainingPanelBudget,
+                    report: &report
+                )
+                dock.layout = boundedLayout(
+                    dock.layout,
+                    panelIDs: dock.panels.map(\.id),
+                    remainingNodes: &remainingLayoutNodes,
+                    report: &report
+                )
+                window.dock = dock.panels.isEmpty ? nil : dock
+            }
+            if !hasWindowFallbackBudget {
+                window.dock = nil
+            }
+            guard !window.tabManager.workspaces.isEmpty || window.dock != nil || hasEmptyPinnedGroup,
+                  hasWindowFallbackBudget else {
+                report.droppedWindowCount += 1
+                continue
+            }
+            boundedWindows.append(window)
+        }
+        bounded.windows = boundedWindows
+        return bounded
+    }
+
+    private static func boundedPanels(
+        _ panels: [SessionPanelSnapshot],
+        remainingBudget: inout Int,
+        report: inout SessionSnapshotImportTrustReport
+    ) -> [SessionPanelSnapshot] {
+        // Count every panel that won't restore, whether the per-workspace cap
+        // or the global budget cut it, so a trimmed restore always leaves a
+        // `session.restore.bounded` breadcrumb.
+        let locallyEligible = Array(panels.prefix(SessionPersistencePolicy.maxPanelsPerWorkspace))
+        let keptCount = min(locallyEligible.count, remainingBudget)
+        report.droppedPanelCount += panels.count - keptCount
+        remainingBudget -= keptCount
+        return Array(locallyEligible.prefix(keptCount))
+    }
+
+    private static func boundedLayout(
+        _ layout: SessionWorkspaceLayoutSnapshot,
+        panelIDs: [UUID],
+        remainingNodes: inout Int,
+        report: inout SessionSnapshotImportTrustReport
+    ) -> SessionWorkspaceLayoutSnapshot {
+        let allowed = Set(panelIDs)
+        var usedPanelIDs = Set<UUID>()
+        var hitCap = false
+        let bounded = boundedLayout(
+            layout,
+            allowedPanelIDs: allowed,
+            fallbackPanelIDs: panelIDs,
+            depth: 0,
+            remainingNodes: &remainingNodes,
+            usedPanelIDs: &usedPanelIDs,
+            hitCap: &hitCap
+        )
+        // Restore only builds panels that a layout leaf references. When a
+        // node or depth cap cut a subtree, the panels it held are gone too;
+        // count them rather than losing them silently.
+        if hitCap {
+            report.droppedPanelCount += allowed.subtracting(usedPanelIDs).count
+        }
+        return bounded.layout
+    }
+
+    private static func boundedLayout(
+        _ layout: SessionWorkspaceLayoutSnapshot,
+        allowedPanelIDs: Set<UUID>,
+        fallbackPanelIDs: [UUID],
+        depth: Int,
+        remainingNodes: inout Int,
+        usedPanelIDs: inout Set<UUID>,
+        hitCap: inout Bool
+    ) -> BoundedLayoutResult {
+        func unusedFallbackPanelIDs() -> [UUID] {
+            var result: [UUID] = []
+            result.reserveCapacity(fallbackPanelIDs.count)
+            for panelID in fallbackPanelIDs where allowedPanelIDs.contains(panelID) {
+                guard usedPanelIDs.insert(panelID).inserted else { continue }
+                result.append(panelID)
+            }
+            return result
+        }
+        func fallbackLayout() -> BoundedLayoutResult {
+            BoundedLayoutResult(
+                layout: .pane(SessionPaneLayoutSnapshot(
+                    panelIds: [],
+                    selectedPanelId: nil
+                )),
+                isEmpty: true
+            )
+        }
+
+        // Walk the input graph with an explicit work stack. A depth check in
+        // recursive code is insufficient: a hostile or corrupt snapshot can
+        // consume the native stack before reaching that check.
+        enum WorkItem {
+            case visit(SessionWorkspaceLayoutSnapshot, depth: Int)
+            case assemble(SessionSplitLayoutSnapshot)
+        }
+        var work: [WorkItem] = [.visit(layout, depth: depth)]
+        var results: [BoundedLayoutResult] = []
+        results.reserveCapacity(min(remainingNodes, SessionPersistencePolicy.maxLayoutDepth) + 1)
+
+        while let item = work.popLast() {
+            switch item {
+            case let .visit(node, nodeDepth):
+                guard remainingNodes > 0,
+                      nodeDepth < SessionPersistencePolicy.maxLayoutDepth else {
+                    hitCap = true
+                    results.append(fallbackLayout())
+                    continue
+                }
+                remainingNodes -= 1
+                switch node {
+                case .pane(let pane):
+                    let panelIDs = pane.panelIds.filter {
+                        allowedPanelIDs.contains($0) && usedPanelIDs.insert($0).inserted
+                    }
+                    let selected = pane.selectedPanelId.flatMap {
+                        panelIDs.contains($0) ? $0 : nil
+                    } ?? panelIDs.first
+                    results.append(BoundedLayoutResult(
+                        layout: .pane(SessionPaneLayoutSnapshot(
+                            panelIds: panelIDs,
+                            selectedPanelId: selected,
+                            isFullWidthTabMode: pane.isFullWidthTabMode
+                        )),
+                        isEmpty: panelIDs.isEmpty
+                    ))
+                case .split(let split):
+                    work.append(.assemble(split))
+                    work.append(.visit(split.second, depth: nodeDepth + 1))
+                    work.append(.visit(split.first, depth: nodeDepth + 1))
+                }
+            case let .assemble(split):
+                guard results.count >= 2 else {
+                    results.append(fallbackLayout())
+                    continue
+                }
+                let second = results.removeLast()
+                let first = results.removeLast()
+                switch (first.isEmpty, second.isEmpty) {
+                case (true, true): results.append(fallbackLayout())
+                case (true, false): results.append(second)
+                case (false, true): results.append(first)
+                case (false, false):
+                    results.append(BoundedLayoutResult(
+                        layout: .split(SessionSplitLayoutSnapshot(
+                            orientation: split.orientation,
+                            dividerPosition: split.dividerPosition,
+                            first: first.layout,
+                            second: second.layout
+                        )),
+                        isEmpty: false
+                    ))
+                }
+            }
+        }
+        let result = results.last ?? fallbackLayout()
+        guard result.isEmpty else { return result.layout }
+        let fallback = unusedFallbackPanelIDs()
+        return BoundedLayoutResult(
+            layout: .pane(SessionPaneLayoutSnapshot(
+                panelIds: fallback,
+                selectedPanelId: fallback.first
+            )),
+            isEmpty: fallback.isEmpty
+        )
     }
 
     static func sanitizingUntrustedImport(
@@ -94,6 +413,8 @@ enum SessionSnapshotImportTrust {
         var report = SessionSnapshotImportTrustReport()
         var sanitized = snapshot
         let builtIns = builtInRegistrationsByID
+        // Structure is already bounded by `snapshotForRestore`; this pass only
+        // removes what an untrusted file must not run or reach.
         func sanitize(_ panels: [SessionPanelSnapshot]) -> [SessionPanelSnapshot] {
             panels.map {
                 sanitizedPanel($0, builtIns: builtIns, isExistingDirectory: isExistingDirectory, report: &report)
@@ -195,11 +516,17 @@ enum SessionSnapshotImportTrust {
         }
 
         if let scrollback = terminal.scrollback {
-            let stripped = strippingTerminalControlStrings(scrollback)
-            if stripped != scrollback {
+            // Truncate first: stripping copies the whole string into a scalar
+            // array, and an imported string is bounded only by the file size.
+            let bounded = SessionPersistencePolicy.truncatedScrollback(scrollback)
+            if let bounded, bounded != scrollback {
+                report.truncatedScrollbackCount += 1
+            }
+            let stripped = bounded.map(strippingTerminalControlStrings)
+            if let stripped, stripped != bounded {
                 report.sanitizedScrollbackCount += 1
             }
-            terminal.scrollback = stripped
+            terminal.scrollback = stripped.flatMap { $0.isEmpty ? nil : $0 }
         }
 
         if let draft = terminal.textBoxDraft {
