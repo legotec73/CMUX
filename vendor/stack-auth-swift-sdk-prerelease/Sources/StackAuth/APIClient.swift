@@ -148,11 +148,14 @@ actor APIClient {
     /// chosen once, so many clients that signed in together do not refresh
     /// in the same second.
     let refreshLeadMillis: Int
-    /// Monotonic time (``refreshClock``) before which a rate-limited refresh
-    /// exchange must not be retried.
+    /// Monotonic time (``refreshClock``) before which a rate-limited or
+    /// rejected refresh exchange must not be retried.
     private var refreshRateLimitedUntil: UInt64?
     /// Consecutive rate-limited refresh exchanges, for exponential backoff.
     private var refreshRateLimitStreak = 0
+    /// Consecutive refresh exchanges refused for a reason other than the
+    /// refresh token; drives the same cooldown as a 429.
+    private var refreshRejectedStreak = 0
     
     private static let sdkVersion = "1.0.0"
     
@@ -381,8 +384,10 @@ actor APIClient {
     enum RefreshOutcome {
         /// The server minted a new access token.
         case success(accessToken: String)
-        /// The server rejected the refresh token (HTTP 400/401, e.g. `invalid_grant`).
-        /// The refresh token will never work again; clearing is correct.
+        /// The server rejected the refresh token itself (HTTP 400/401 naming the
+        /// token, e.g. `REFRESH_TOKEN_NOT_FOUND_OR_EXPIRED` or `invalid_grant`;
+        /// see ``RefreshRejection``). The refresh token will never work again;
+        /// clearing is correct.
         case definitivelyRejected
         /// The refresh could not be completed for a reason that is not the token's
         /// fault (network/server). Tokens must be preserved and the caller retried.
@@ -390,6 +395,12 @@ actor APIClient {
         /// The server answered 429. Tokens are preserved like a transient
         /// failure, and no new exchange starts until the backoff passes.
         case rateLimited(retryAfterSeconds: TimeInterval?, bodyKind: StackAuthRateLimitObservation.BodyKind)
+        /// The server answered 400/401 for a reason other than the refresh token
+        /// (a rejected publishable key or OAuth client, a malformed request, or
+        /// a non-Stack page; see ``RefreshRejection``). Tokens are preserved,
+        /// and no new exchange starts until a backoff passes, because the same
+        /// request would be refused again.
+        case requestRejected(code: String?)
     }
 
     /// Performs the actual token refresh request, classifying the result so the
@@ -432,12 +443,17 @@ actor APIClient {
                 return .success(accessToken: newAccessToken)
             }
 
-            // The OAuth token endpoint returns 400 (e.g. `invalid_grant`) or 401
-            // when the refresh token itself is no longer valid. Those are the only
-            // codes that mean "this token will never work again". Everything else
-            // (5xx, 429, redirects, unexpected) is treated as transient.
-            if httpResponse.statusCode == 400 || httpResponse.statusCode == 401 {
-                return .definitivelyRejected
+            // The token endpoint answers 400/401 both for a dead refresh token and
+            // for a rejected client (publishable key, project, request shape).
+            // Only the first means "this token will never work again".
+            switch RefreshRejection.classify(
+                statusCode: httpResponse.statusCode,
+                knownErrorCode: httpResponse.hexclaveHeader("known-error"),
+                body: data
+            ) {
+            case .sessionEnded: return .definitivelyRejected
+            case .requestRejected(let code): return .requestRejected(code: code)
+            case nil: break
             }
             if httpResponse.statusCode == 429 {
                 return .rateLimited(
@@ -456,10 +472,11 @@ actor APIClient {
         }
     }
     
-    /// Runs one refresh exchange unless a recent 429 is still cooling down.
+    /// Runs one refresh exchange unless a recent 429 or rejected request is
+    /// still cooling down.
     ///
-    /// A rate-limited exchange is reported as transient, so stored tokens
-    /// survive and a still-valid access token stays usable. The cooldown
+    /// A rate-limited or rejected exchange is reported as transient, so stored
+    /// tokens survive and a still-valid access token stays usable. The cooldown
     /// honors `Retry-After` (capped at 10 minutes); without it the delay is
     /// exponential from 5 seconds to 5 minutes, with jitter.
     private func refreshRespectingRateLimit(refreshToken: String) async -> RefreshOutcome {
@@ -483,11 +500,17 @@ actor APIClient {
                 refreshAttempt: refreshRateLimitStreak
             ))
             return .transientFailure
+        case .requestRejected:
+            refreshRejectedStreak += 1
+            let delaySeconds = Self.rateLimitDelaySeconds(retryAfterSeconds: nil, streak: refreshRejectedStreak)
+            refreshRateLimitedUntil = refreshClock.now() &+ UInt64(delaySeconds * 1_000_000_000)
+            return outcome
         case .success, .definitivelyRejected:
             if case .success = outcome, refreshRateLimitStreak > 0 {
                 StackAuthRateLimitReporting.observer?.stackAuthTokenRefreshDidRecover()
             }
             refreshRateLimitStreak = 0
+            refreshRejectedStreak = 0
             refreshRateLimitedUntil = nil
             return outcome
         case .transientFailure:
