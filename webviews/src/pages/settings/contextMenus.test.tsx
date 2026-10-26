@@ -1,0 +1,187 @@
+// Settings > Menus (ContextMenusCard): the person arranges each right-click menu. Customize
+// Menu… opens the page on its menu; rows move out of More to the top level, into More, hide and
+// show again where the app puts them; separators add and go; Reset saves no layout; rows reorder
+// by drag. Every change saves the whole layout through cmux.settings.context_menus.set.
+import { afterAll, expect, test } from "bun:test";
+import { installDom } from "./testDom";
+
+const restore = installDom();
+afterAll(() => restore());
+const { renderPage, settle, click, ops } = await import("./testing");
+const { act } = await import("react");
+
+type Layout = { top: string[]; more: string[]; hidden: string[] };
+const SET = "cmux.settings.context_menus.set";
+
+const editor = (container: HTMLElement) => container.querySelector<HTMLElement>('[data-card="context-menus"]')!;
+const topKeys = (container: HTMLElement) =>
+  [...editor(container).querySelectorAll<HTMLElement>(".menu-preview > .menu-row")].map((row) =>
+    row.classList.contains("menu-separator") ? "-" : row.dataset.key!,
+  );
+const row = (container: HTMLElement, key: string) =>
+  editor(container).querySelector<HTMLElement>(`.menu-row[data-key="${key}"]`)!;
+const button = (element: HTMLElement, label: string) =>
+  [...element.querySelectorAll<HTMLButtonElement>("button")].find((item) => item.getAttribute("aria-label")?.startsWith(label))!;
+const lastSaved = (provider: Parameters<typeof ops>[0]) => (ops(provider, SET).at(-1) as { menu: string; layout: Layout | null });
+
+test("Customize Menu… opens Settings > Menus on its menu", async () => {
+  const page = await renderPage({ path: "/settings/menus?focus=tab" });
+  await settle();
+  expect(editor(page.container).dataset.menu).toBe("tab");
+  expect(editor(page.container).querySelector(".menus-detail-title")?.textContent).toBe("Tab");
+  // Another menu from the list.
+  await click(editor(page.container).querySelector<HTMLElement>('.menus-list-item[data-menu="terminalSelection"]')!);
+  expect(editor(page.container).dataset.menu).toBe("terminalSelection");
+  page.unmount();
+});
+
+test("a row in More moves to the top level, just above More, and saves the menu", async () => {
+  const page = await renderPage({ path: "/settings/menus?focus=workspaceRow" });
+  await settle();
+  // More is open: its rows show beneath it.
+  expect(row(page.container, "workspace.copyPath").closest('[data-folder="folder:more"]')).not.toBeNull();
+  await click(button(row(page.container, "workspace.copyPath"), "Move to Top Level"));
+  const saved = lastSaved(page.provider);
+  expect(saved.menu).toBe("workspaceRow");
+  expect(saved.layout?.top.indexOf("workspace.copyPath")).toBe(saved.layout!.top.indexOf("folder:more") - 1);
+  expect(topKeys(page.container)).toContain("workspace.copyPath");
+  // Marked as edited in the list.
+  expect(editor(page.container).querySelector('.menus-list-item[data-menu="workspaceRow"] .menus-edited')).not.toBeNull();
+  page.unmount();
+});
+
+test("a row moves into More and a row in a folder moves out of it", async () => {
+  const page = await renderPage({ path: "/settings/menus?focus=workspaceRow" });
+  await settle();
+  await click(button(row(page.container, "renameWorkspace"), "Move to More"));
+  expect(lastSaved(page.provider).layout?.more).toEqual(["renameWorkspace"]);
+  expect(topKeys(page.container)).not.toContain("renameWorkspace");
+  // Move ▸ opens to show its rows; Move to Top lands above it.
+  await click(row(page.container, "folder:move").querySelector<HTMLElement>(".menu-disclosure")!);
+  await click(button(row(page.container, "palette.moveWorkspaceToTop"), "Move to Top Level"));
+  const top = lastSaved(page.provider).layout!.top;
+  expect(top.indexOf("palette.moveWorkspaceToTop")).toBe(top.indexOf("folder:move") - 1);
+  page.unmount();
+});
+
+test("a hidden row leaves the menu and Show puts it back where the app puts it", async () => {
+  const page = await renderPage({ path: "/settings/menus?focus=workspaceRow" });
+  await settle();
+  await click(button(row(page.container, "workspace.duplicate"), "Hide"));
+  expect(lastSaved(page.provider).layout?.hidden).toEqual(["workspace.duplicate"]);
+  expect(topKeys(page.container)).not.toContain("workspace.duplicate");
+  const hidden = editor(page.container).querySelector<HTMLElement>("[data-hidden]")!;
+  await click(button(hidden, "Show"));
+  // Back after New Workspace Below, as generated: the menu is the app's again, so no layout.
+  expect(lastSaved(page.provider).layout).toBeNull();
+  const keys = topKeys(page.container);
+  expect(keys.indexOf("workspace.duplicate")).toBe(keys.indexOf("workspace.newBelow") + 1);
+  page.unmount();
+});
+
+test("separators add and go, and Reset brings back the app's menu", async () => {
+  const page = await renderPage({ path: "/settings/menus?focus=terminalSelection" });
+  await settle();
+  const reset = () => editor(page.container).querySelector<HTMLButtonElement>('[data-action="reset"]')!;
+  expect(reset().disabled).toBe(true);
+  // A menu without More offers no Move to More (the row would leave the editor).
+  expect(button(row(page.container, "copy"), "Move to More")).toBeUndefined();
+  await click(editor(page.container).querySelector<HTMLElement>('[data-action="add-separator"]')!);
+  expect(lastSaved(page.provider).layout?.top.at(-1)).toBe("-");
+  expect(reset().disabled).toBe(false);
+  const separators = editor(page.container).querySelectorAll<HTMLElement>(".menu-separator");
+  await click(button(separators[0]!, "Remove Separator"));
+  expect(lastSaved(page.provider).layout?.top).toEqual(["copy", "paste", "splitRight", "splitDown", "-", "clearTerminal", "-"]);
+  await click(reset());
+  expect(lastSaved(page.provider).layout).toBeNull();
+  expect(topKeys(page.container)).toEqual(["copy", "paste", "-", "splitRight", "splitDown", "-", "clearTerminal"]);
+  page.unmount();
+});
+
+/** Lays the top-level rows out 24 px apart from y = 100, as the page draws them (jsdom has no layout). */
+function layOut(container: HTMLElement) {
+  const list = editor(container).querySelector<HTMLElement>(".menu-preview")!;
+  const box = (top: number) => () => ({ top, bottom: top + 24, left: 0, right: 400, width: 400, height: 24, x: 0, y: top, toJSON: () => ({}) }) as DOMRect;
+  list.getBoundingClientRect = box(100);
+  list.querySelectorAll<HTMLElement>(":scope > [data-top-index]").forEach((element, position) => {
+    element.getBoundingClientRect = box(100 + position * 24);
+  });
+}
+const rowY = (container: HTMLElement, key: string) =>
+  [...editor(container).querySelectorAll<HTMLElement>(".menu-preview > [data-top-index]")].findIndex((element) => element.dataset.key === key) * 24 + 100;
+
+/** Presses `key`'s grip, moves the pointer to `y`, then releases: the person's drag. */
+async function dragRow(container: HTMLElement, key: string, y: number, check?: () => void) {
+  layOut(container);
+  const grip = row(container, key).querySelector<HTMLElement>(".menu-row-grip")!;
+  const pointer = (type: string, clientY: number) =>
+    act(async () => {
+      grip.dispatchEvent(new window.MouseEvent(type, { bubbles: true, cancelable: true, button: 0, clientY }));
+    });
+  const start = rowY(container, key) + 12;
+  await pointer("pointerdown", start);
+  await pointer("pointermove", start + (y > start ? 6 : -6));
+  await pointer("pointermove", y);
+  check?.();
+  await pointer("pointerup", y);
+  await settle();
+}
+
+test("dragging a row's grip moves it where the line shows, with no HTML5 drag", async () => {
+  const page = await renderPage({ path: "/settings/menus?focus=terminalSelection" });
+  await settle();
+  expect(row(page.container, "copy").getAttribute("draggable")).toBeNull();
+  // Clear Terminal (the last row) dragged above Copy: one drop line, above Copy, while dragging.
+  await dragRow(page.container, "clearTerminal", 102, () => {
+    const lines = editor(page.container).querySelectorAll<HTMLElement>("[data-drop-line]");
+    expect(lines.length).toBe(1);
+    expect(lines[0]!.style.transform).toBe("translateY(0px)");
+    expect(row(page.container, "clearTerminal").hasAttribute("data-dragging")).toBe(true);
+  });
+  expect(lastSaved(page.provider).layout?.top.slice(0, 2)).toEqual(["clearTerminal", "copy"]);
+  expect(editor(page.container).querySelector("[data-drop-line]")).toBeNull();
+  // A row dropped back where it started saves nothing.
+  const before = ops(page.provider, SET).length;
+  await dragRow(page.container, "paste", rowY(page.container, "paste") + 12);
+  expect(ops(page.provider, SET).length).toBe(before);
+  page.unmount();
+});
+
+test("dragging a row onto the middle of More moves it into More", async () => {
+  const page = await renderPage({ path: "/settings/menus?focus=workspaceRow" });
+  await settle();
+  const more = rowY(page.container, "folder:more") + 12;
+  await dragRow(page.container, "renameWorkspace", more, () => {
+    expect(row(page.container, "folder:more").hasAttribute("data-drop-into")).toBe(true);
+  });
+  expect(lastSaved(page.provider).layout?.more).toEqual(["renameWorkspace"]);
+  page.unmount();
+});
+
+test("a row of More dragged to the top level lands where it is dropped", async () => {
+  const page = await renderPage({ path: "/settings/menus?focus=workspaceRow" });
+  await settle();
+  await dragRow(page.container, "workspace.copyPath", 102);
+  expect(lastSaved(page.provider).layout?.top[0]).toBe("workspace.copyPath");
+  page.unmount();
+});
+
+test("a row button's tooltip names only its action", async () => {
+  const page = await renderPage({ path: "/settings/menus?focus=workspaceRow" });
+  await settle();
+  const moveToMore = button(row(page.container, "renameWorkspace"), "Move to More");
+  expect(moveToMore.title).toBe("Move to More");
+  expect(moveToMore.getAttribute("aria-label")).toBe("Move to More: Rename Workspace…");
+  page.unmount();
+});
+
+test("the Customize Menu… switch turns the row off in every menu", async () => {
+  const page = await renderPage({ path: "/settings/menus" });
+  await settle();
+  const toggle = page.container.querySelector<HTMLElement>('[data-card="context-menus-options"] [role="switch"]')!;
+  expect(toggle.getAttribute("aria-checked")).toBe("true");
+  await click(toggle);
+  expect(ops(page.provider, "cmux.settings.context_menus.show_item")).toEqual([{ show: false }]);
+  expect(toggle.getAttribute("aria-checked")).toBe("false");
+  page.unmount();
+});

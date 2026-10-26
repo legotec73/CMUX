@@ -2,6 +2,7 @@ import AppKit
 import CmuxNextActions
 import CmuxNextDesign
 import CmuxNextImportCards
+import CmuxNextPages
 import CmuxNextSettings
 import CmuxNextServer
 import CmuxNextSettingsWindow
@@ -57,10 +58,20 @@ extension SettingsWindowService {
             "web_updates": WebUpdates.shared.pageJSON,
             // Chief > Voice input: home.voiceInput, null where the tunable does not exist (Release).
             "voice_input": ChiefVoiceInputPageRoute().hostJSON,
+            // Settings > Menus: every right-click menu's rows and the person's arrangement of it.
+            "context_menus": contextMenusRoute.hostJSON,
             "settings_file": services.settings.map { .string($0.file.url.path(percentEncoded: false)) } ?? .null,
             "backdrops": backdropCatalog.catalog.pageRows,
             "derived": .object(pageDerivedNumbers()),
         ]
+    }
+
+    /// Settings > Menus' reads and writes (ContextMenusSettingsPage).
+    var contextMenusRoute: ContextMenusPageProvider {
+        ContextMenusPageProvider { [weak services] in
+            guard let services, let settings = services.settings else { return nil }
+            return ContextMenusSettingsPage(registry: services.registry, settings: settings)
+        }
     }
 
     /// Where unset number rows' sliders sit, by schema key: the window opacity the theme resolved.
