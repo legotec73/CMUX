@@ -20,6 +20,7 @@ import { useUpdateOffer } from "./HarnessHealthNotice";
 import { CHAT_COLUMN, MODEL_PICKER_MIN_HEIGHT, pickerHeightBounds, type ModelPickerProps } from "./modelPickerLayout";
 import { curatedSections, modelSections } from "./modelSections";
 import { effortWords, fitsQuery, modelEffort, parseQuery, type ParsedQuery } from "./modelQuery";
+import { groupVariants } from "./modelVariants";
 import { registerPicker } from "./pickerOpeners";
 import { OnNewTab } from "./newTabComposer";
 import { QuickModelMenu, type QuickAccount, type QuickFamily, type QuickModel } from "./QuickModelMenu";
@@ -72,6 +73,18 @@ type ModelChoice = {
   fast?: boolean;
   /** The catalog release an alias row stands for, which the curated list names. */
   release?: string;
+  /** The compact menu's one row for a model several providers serve: each provider's row. */
+  offers?: (ModelChoice & { provider: string })[];
+  /** The provider the row lands ("OpenRouter"), for a harness that routes to several. */
+  provider?: string;
+  /** Raw catalog rows represented by this grouped model, for search-height reservation. */
+  searchRows?: number;
+  /** Every original catalog ID, including deduplicated aliases, for favorite membership. */
+  ids?: string[];
+  /** Whether any original row was curated as a latest model. */
+  curated?: boolean;
+  /** A bracketed note the model's name carried ("New"). */
+  tag?: string;
 };
 
 /// The compact model menu keeps the top picks and the running model readable; everything else is
@@ -81,16 +94,54 @@ const QUICK_ROWS = 4;
 
 const isVariant = (model: ModelChoice) => model.id.includes("[") || model.name.includes(" · ");
 
+/// A model several providers serve is one row (modelVariants.ts): it lands the running provider's,
+/// else the first listed, and `offers` holds every provider's.
 function quickSections(
   entry: HarnessChoice | undefined,
   model: string | undefined,
   usable: (choice: ModelChoice) => boolean = () => true,
+  preferred?: ReadonlySet<string>,
 ): { shown: ModelChoice[]; more: ModelChoice[] } {
-  const { latest, older } = sectionsFor(entry);
-  const all = [...latest, ...older].filter(usable);
-  const top = latest.filter(usable);
+  const { latest, older } = sectionsFor(entry, true);
+  const latestIds = new Set(latest.map((choice) => choice.id));
+  const mapped = groupVariants([...latest, ...older], model, preferred).flatMap((group) => {
+    const { model: choice, name, tag, offers, count, ids } = group;
+    // Establish owner identities from the complete catalog before hiding unavailable offers. This
+    // keeps an available bare owner row from joining a different model when its peer is offline.
+    const visible = offers.filter((offer) => usable(offer.model));
+    if (visible.length === 0) return [];
+    // Keep the running provider when present; otherwise land the first available provider.
+    const landing = (
+      visible.find((offer) => offer.model.id === model && !offer.model.unavailable) ??
+      visible.find((offer) => offer.model.id === choice.id && !offer.model.unavailable) ??
+      visible.find((offer) => !offer.model.unavailable) ??
+      visible.find((offer) => offer.model.id === choice.id) ??
+      visible[0]!
+    ).model;
+    const provider = visible.find((offer) => offer.model === landing)?.provider;
+    const mappedChoice: ModelChoice = {
+      ...landing,
+      name,
+      ids,
+      ...(tag ? { tag } : {}),
+      ...(provider ? { provider } : {}),
+      ...(count > offers.length ? { searchRows: count } : {}),
+      ...(ids.some((id) => latestIds.has(id)) ? { curated: true } : {}),
+      ...(visible.length > 1 ? { offers: visible.map((offer) => ({ ...offer.model, provider: offer.provider })) } : {}),
+    };
+    return [{ choice: mappedChoice, group }];
+  });
+  const all = mapped.map(({ choice }) => choice);
+  // A model is a top one when any provider's row of it is.
+  const top = all.filter(
+    (choice) => choice.curated || (choice.offers ?? [choice]).some((offer) => latestIds.has(offer.id)),
+  );
   const picks = [...top.filter((choice) => !isVariant(choice)), ...top.filter(isVariant)].slice(0, QUICK_ROWS);
-  const runs = all.find((choice) => choice.id === model);
+  // The landing row may be an available sibling when the running provider is unavailable;
+  // keep that logical group in the compact picks by matching the complete offer list.
+  const runs = mapped.find(
+    ({ group }) => group.model.id === model || group.offers.some((offer) => offer.model.id === model),
+  )?.choice;
   const chosen = new Set(runs && !picks.includes(runs) ? [...picks.slice(0, QUICK_ROWS - 1), runs] : picks);
   return { shown: all.filter((choice) => chosen.has(choice)), more: all.filter((choice) => !chosen.has(choice)) };
 }
@@ -101,15 +152,17 @@ function quickSections(
 /// itself by its short name under its harness ("Opus 5.5"). Choices are memoized per harness
 /// entry, so the owner map keys stay the same objects between renders.
 const choiceCache = new WeakMap<HarnessChoice, { latest: ModelChoice[]; older: ModelChoice[] }>();
-function sectionsFor(entry: HarnessChoice | undefined): { latest: ModelChoice[]; older: ModelChoice[] } {
+function sectionsFor(
+  entry: HarnessChoice | undefined,
+  preserveDuplicates = false,
+): { latest: ModelChoice[]; older: ModelChoice[] } {
   if (!entry) return { latest: [], older: [] };
-  const cached = choiceCache.get(entry);
-  if (cached) return cached;
-  const seen = new Set<string>();
+  if (!preserveDuplicates) {
+    const cached = choiceCache.get(entry);
+    if (cached) return cached;
+  }
   const choices = entry.models.flatMap((model): ModelChoice[] => {
     if (isDefaultChoice(model)) return [];
-    if (seen.has(model.id)) return [];
-    seen.add(model.id);
     return [
       {
         id: model.id,
@@ -122,8 +175,10 @@ function sectionsFor(entry: HarnessChoice | undefined): { latest: ModelChoice[];
       },
     ];
   });
-  const sections = curatedSections(modelSections(choices, entry.name), entry.top);
-  choiceCache.set(entry, sections);
+  // Compact provider grouping keeps duplicate rows so groupVariants can choose an available/current
+  // offer. The full picker retains the historical one-row-per-id sections.
+  const sections = curatedSections(modelSections(choices, entry.name, preserveDuplicates ? false : true), entry.top);
+  if (!preserveDuplicates) choiceCache.set(entry, sections);
   return sections;
 }
 
@@ -157,12 +212,28 @@ export function pickerFaceHarness(catalog: ModelPickerProps["catalog"]): string 
 function searchModels(
   entries: readonly HarnessChoice[],
   query: ParsedQuery,
+  current?: string,
 ): { model: ModelChoice; entry: HarnessChoice }[] {
-  return entries.flatMap((entry) =>
-    choicesFor(entry)
-      .filter((model) => fitsQuery(model, entry.name, query))
-      .map((model) => ({ model, entry })),
-  );
+  return entries.flatMap((entry) => {
+    const { latest, older } = sectionsFor(entry, true);
+    return groupVariants([...latest, ...older], current).flatMap((group) => {
+      const matching = group.offers.filter((offer) => fitsQuery(offer.model, entry.name, query));
+      if (matching.length === 0) return [];
+      const landing =
+        matching.find((offer) => offer.model.id === current && !offer.model.unavailable) ??
+        matching.find((offer) => !offer.model.unavailable) ??
+        matching[0]!;
+      const model: ModelChoice = {
+        ...landing.model,
+        name: group.name,
+        ...(landing.provider ? { provider: landing.provider } : {}),
+        ...(matching.length > 1
+          ? { offers: matching.map((offer) => ({ ...offer.model, provider: offer.provider })) }
+          : {}),
+      };
+      return [{ model, entry }];
+    });
+  });
 }
 
 function uniqueHarnesses(catalog: ModelPickerProps["catalog"]): HarnessChoice[] {
@@ -221,6 +292,27 @@ function uniqueHarnesses(catalog: ModelPickerProps["catalog"]): HarnessChoice[] 
     existing.top ??= entry.top;
   }
   return [...result, ...profiles];
+}
+
+/// A model as a row of the compact menu's tab `family`, with its providers' rows when it has several.
+function quickRow(family: string, model: ModelChoice): QuickModel {
+  return {
+    id: model.id,
+    name: model.name,
+    family,
+    ...(model.unavailable ? { disabled: true } : {}),
+    ...(model.tag ? { tag: model.tag } : {}),
+    ...(model.provider ? { provider: model.provider } : {}),
+    ...(model.searchRows ? { searchRows: model.searchRows } : {}),
+    ...(model.offers
+      ? {
+          offers: model.offers.map((offer) => ({
+            ...quickRow(family, offer),
+            provider: offer.provider,
+          })),
+        }
+      : {}),
+  };
 }
 
 /// The rail's Starred tab (never a harness id).
@@ -421,7 +513,7 @@ export function ModelPicker(props: ModelPickerProps) {
       const searchable = harnesses.filter(
         (entry) => entry.pickable && !blockedProfile(entry) && loginFor(entry) === undefined,
       );
-      for (const { model, entry } of searchModels(searchable, parsed)) owner.set(model, entry);
+      for (const { model, entry } of searchModels(searchable, parsed, props.model)) owner.set(model, entry);
     } else if (starredView) {
       for (const entry of harnesses)
         if (!entry.folder && loginFor(entry) === undefined)
@@ -432,7 +524,7 @@ export function ModelPicker(props: ModelPickerProps) {
       for (const model of olderOpen ? [...latest, ...older] : latest) owner.set(model, selected);
     }
     return owner;
-  }, [favorites, harnesses, olderOpen, parsed, searching, selected, starredView, runsHere, loginFor]);
+  }, [favorites, harnesses, olderOpen, parsed, searching, selected, starredView, runsHere, loginFor, props.model]);
   const visible = useMemo(() => [...owners.keys()], [owners]);
   // Add harness… is the list's last row, after the models: arrows reach it like a model row.
   const addRow = onAddAgent ? visible.length : -1;
@@ -656,16 +748,33 @@ export function ModelPicker(props: ModelPickerProps) {
         entry.folder?.state !== "needs-enable" &&
         loginFor(entry) === undefined,
     );
-    return searchModels(searchable, typed).map(({ model, entry }) => {
+    return searchModels(searchable, typed, props.model).map(({ model, entry }) => {
       const effort = modelEffort(model, typed.effort);
       const hint = [!harnessFixed ? entry.name : undefined, effort, typed.fast ? fastText : undefined]
         .filter(Boolean)
         .join(" · ");
+      const quick = quickRow(entry.id, model);
+      // Each eligible effort gets a probe: text length does not determine rendered width.
+      const searchHints = (choice: ModelChoice) =>
+        (choice.efforts?.length ? choice.efforts : [...vocabulary]).map((effort) =>
+          [!harnessFixed ? entry.name : undefined, effort, choice.fast !== false ? fastText : undefined]
+            .filter(Boolean)
+            .join(" · "),
+        );
+      const offers = model.offers?.map((offer) => {
+        const ownEffort = modelEffort(offer, typed.effort);
+        return {
+          ...quickRow(entry.id, offer),
+          provider: offer.provider,
+          searchHints: searchHints(offer),
+          ...(ownEffort ? { effort: ownEffort } : {}),
+          ...(typed.fast ? { fast: true } : {}),
+        };
+      });
       return {
-        id: model.id,
-        name: model.name,
-        family: entry.id,
-        ...(model.unavailable ? { disabled: true } : {}),
+        ...quick,
+        searchHints: searchHints(model),
+        ...(offers ? { offers } : {}),
         ...(hint ? { hint } : {}),
         ...(effort ? { effort } : {}),
         ...(typed.fast ? { fast: true } : {}),
@@ -680,20 +789,25 @@ export function ModelPicker(props: ModelPickerProps) {
     // A folder profile is a machine choice, so its current models stay in the plain compact list
     // while the harness-only rail remains absent.
     if (!quick || (harnessFixed && !fork) || current?.folder) return undefined;
-    const row = (entry: HarnessChoice, model: ModelChoice): QuickModel => ({
-      id: model.id,
-      name: model.name,
-      family: entry.id,
-      ...(model.unavailable ? { disabled: true } : {}),
-    });
+    const row = (entry: HarnessChoice, model: ModelChoice): QuickModel => quickRow(entry.id, model);
     // A started chat that forks lists every harness, as a New Tab does; its own stays the chat's.
     const startable = (fork ? allHarnesses : harnesses).filter(
       (entry) => !entry.folder && entry.pickable && !blockedProfile(entry),
     );
     const list: QuickFamily[] = [];
-    const starred = startable
-      .filter((entry) => loginFor(entry) === undefined)
-      .flatMap((entry) => choicesFor(entry).flatMap((model) => (favorites.has(model.id) ? [row(entry, model)] : [])));
+    const starred = startable.flatMap((entry) => {
+      if (loginFor(entry) !== undefined) return [];
+      const { shown, more } = quickSections(entry, undefined, undefined, favorites);
+      return [...shown, ...more]
+        .filter((model) => (model.ids ?? [model.id]).some((id) => favorites.has(id)))
+        .map((model) => {
+          // Preserve a favorite provider as the landing offer while retaining every provider row.
+          const favorite =
+            model.offers?.find((offer) => favorites.has(offer.id) && !offer.unavailable) ??
+            model.offers?.find((offer) => favorites.has(offer.id));
+          return row(entry, favorite ? { ...model, ...favorite, name: model.name, offers: model.offers } : model);
+        });
+    });
     if (starred.length) list.push({ id: STARRED, name: starredText, starred: true, models: starred, more: [] });
     for (const entry of startable) {
       const signedOutHere = loginFor(entry) !== undefined;
@@ -1018,7 +1132,9 @@ export function ModelPicker(props: ModelPickerProps) {
               // This harness's top models, the running one among them; a signed-out harness lists none.
               models:
                 current && loginFor(current) === undefined
-                  ? quickSections(current, props.model, (model) => !model.unavailable).shown
+                  ? quickSections(current, props.model, (model) => !model.unavailable).shown.map((model) =>
+                      quickRow("", model),
+                    )
                   : [],
               current: props.model,
               onModel: (id) => {
