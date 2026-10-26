@@ -247,15 +247,23 @@ export function useAttachmentIntake(options: AttachmentIntakeOptions) {
     }
   });
   /// A pending chip's ×: it goes, and whatever its read makes later is dropped.
-  const [cancel] = useState(() => (id: string) => {
+  /// Takes a tile off the strip; whatever its read makes later is dropped.
+  const [forget] = useState(() => (id: string) => {
     sources.current.delete(id);
     setPending((chips) => chips.filter((chip) => chip.id !== id));
+  });
+  /// The person's cancels (a tile's × or Backspace), counted: a prompt held for the tiles
+  /// (useSendWhenAttached) is an edit away from what was sent, so it stays in the field.
+  const [cancels, setCancels] = useState(0);
+  const [cancel] = useState(() => (id: string) => {
+    forget(id);
+    setCancels((count) => count + 1);
   });
   /// A failed chip's Retry: its file is read again (and uploaded again when it was).
   const [retry] = useState(() => (id: string) => {
     const source = sources.current.get(id);
     if (!source) return;
-    cancel(id);
+    forget(id);
     // Without the paste's kind: the host's record of where its files are was for that gesture only.
     void attach([source.file], source.uploads);
   });
@@ -301,6 +309,7 @@ export function useAttachmentIntake(options: AttachmentIntakeOptions) {
     pending: shown,
     loading,
     cancel,
+    cancels,
     retry,
     attachError,
     setAttachError,
@@ -316,13 +325,16 @@ export function useAttachmentIntake(options: AttachmentIntakeOptions) {
 /// pending files (true; a later hold replaces it) and does nothing otherwise (false). `send` runs
 /// after the render that has the chips, so it must read the composer's state then (a ref). A new
 /// `scope` (the composer moved to another chat) drops a held prompt: it never goes to another chat.
-export function useSendWhenAttached(pending: number, scope?: string): (send: () => void) => boolean {
+/// So does the person cancelling a tile (`cancels`, the intake's count): the prompt was waiting for
+/// that file, so it stays in the field to edit or send again instead of going out without it.
+/// Before the `pending` effect, so a cancel that takes the last tile releases nothing.
+export function useSendWhenAttached(pending: number, scope?: string, cancels = 0): (send: () => void) => boolean {
   const held = useRef<(() => void) | undefined>(undefined);
   const count = useRef(pending);
   count.current = pending;
   useEffect(() => {
     held.current = undefined;
-  }, [scope]);
+  }, [scope, cancels]);
   useEffect(() => {
     const send = held.current;
     if (pending > 0 || !send) return;
@@ -351,17 +363,23 @@ function pasteTextInto(event: ClipboardEvent, text: string) {
 }
 
 /// Backspace with the caret at the prompt's start (`atStart`: nothing for the key to delete or
-/// lift there) takes back the last staged chip, as a chat composer's Backspace does, so a pasted
-/// image goes without reaching for its ×. A held key's repeat does not: holding Backspace to
-/// clear the prompt stops at its start.
-export function backspacedAttachment(
+/// lift there) takes back the last chip the strip shows, as a chat composer's Backspace does, so a
+/// pasted image goes without reaching for its ×. The strip draws the files still loading (or that
+/// failed) after the staged chips, so a screenshot still loading goes first, at once: nothing waits
+/// for it to load (Austin, 2026-10-25). `pending` names a tile to cancel, `staged` a chip to remove.
+/// A held key's repeat does not: holding Backspace to clear the prompt stops at its start.
+export function backspacedChip(
   event: { key: string; repeat: boolean; shiftKey: boolean; altKey: boolean; metaKey: boolean; ctrlKey: boolean },
   atStart: boolean,
   attachments: readonly ComposerAttachment[],
-): ComposerAttachment | undefined {
+  pending: readonly PendingAttachment[] = [],
+): { pending: string } | { staged: string } | undefined {
   if (event.key !== "Backspace" || event.repeat || !atStart) return undefined;
   if (event.shiftKey || event.altKey || event.metaKey || event.ctrlKey) return undefined;
-  return attachments[attachments.length - 1];
+  const tile = pending[pending.length - 1];
+  if (tile) return { pending: tile.id };
+  const chip = attachments[attachments.length - 1];
+  return chip && { staged: chip.id };
 }
 
 /// The staged attachments' chips over the prompt, with a refusal's note.

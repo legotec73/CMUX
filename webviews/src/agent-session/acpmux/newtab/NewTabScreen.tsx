@@ -18,7 +18,7 @@ import type { ComposerAttachment, DroppedKind, LinkItem } from "../attachments";
 import type { UploadResult } from "../cloudUploads";
 import {
   AttachmentStrip,
-  backspacedAttachment,
+  backspacedChip,
   useAttachmentIntake,
   useSendWhenAttached,
 } from "../composer/attachmentIntake";
@@ -350,6 +350,7 @@ export function NewTabScreen(props: Props) {
     pending: reading,
     loading,
     cancel,
+    cancels,
     retry,
     attachError,
     drop,
@@ -363,7 +364,7 @@ export function NewTabScreen(props: Props) {
     ...(props.upload ? { upload: props.upload } : {}),
     ...(props.localPaths ? { localPaths: props.localPaths } : {}),
   });
-  const holdForAttachments = useSendWhenAttached(loading);
+  const holdForAttachments = useSendWhenAttached(loading, undefined, cancels);
   // WEB-SWAP: a web update's reload would lose what this page holds only in its state: a typed
   // query (the location comes back with the page) and staged attachments (pages/shared/webSwap.ts).
   useWebSwapHold(
@@ -896,10 +897,17 @@ export function NewTabScreen(props: Props) {
       }
       return;
     }
-    const backspaced = backspacedAttachment(event, input.selectionStart === 0 && input.selectionEnd === 0, attachments);
+    // Backspace at the field's start takes back the last chip, a loading one too (backspacedChip).
+    const backspaced = backspacedChip(
+      event,
+      input.selectionStart === 0 && input.selectionEnd === 0,
+      attachments,
+      reading,
+    );
     if (backspaced) {
       event.preventDefault();
-      setAttachments((current) => current.filter((item) => item.id !== backspaced.id));
+      if ("pending" in backspaced) cancel(backspaced.pending);
+      else setAttachments((current) => current.filter((item) => item.id !== backspaced.staged));
       return;
     }
     wholeSelection.current =

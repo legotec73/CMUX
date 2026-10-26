@@ -43,12 +43,7 @@ import { useNoEntryMotion } from "./newtab/noEntryMotion";
 import { usePasteAnywhere } from "./composer/pasteAnywhere";
 import { newTabStart, useNewTabChipModel } from "./newtab/chipDefaults";
 import type { ComposerAttachment } from "./attachments";
-import {
-  AttachmentStrip,
-  backspacedAttachment,
-  useAttachmentIntake,
-  useSendWhenAttached,
-} from "./composer/attachmentIntake";
+import { AttachmentStrip, backspacedChip, useAttachmentIntake, useSendWhenAttached } from "./composer/attachmentIntake";
 import { reordered } from "./composer/stripReorder";
 import { DropOverlay } from "./composer/DropOverlay";
 import { useHarnessesListed } from "./catalog";
@@ -414,14 +409,14 @@ export function NewTabPage({
   // The kind a prefix switched from, so Backspace in the empty field switches back.
   const [beforePrefix, setBeforePrefix] = useState<TabKind>();
   const field = useRef<HTMLInputElement>(null);
-  const { attachments, setAttachments, pending, loading, cancel, retry, attachError, drop, dropLanded } =
+  const { attachments, setAttachments, pending, loading, cancel, cancels, retry, attachError, drop, dropLanded } =
     useAttachmentIntake({
       allowImages: snapshot.summary?.promptCapabilities?.image !== false,
       pasteTarget: (target) => (kind === "agent" && field.current?.contains(target) ? { uploads: false } : undefined),
       dropZone: () => field.current?.closest(".acpmux-newtab") ?? null,
     });
   attachmentRef.current = attachments;
-  const holdForAttachments = useSendWhenAttached(loading);
+  const holdForAttachments = useSendWhenAttached(loading, undefined, cancels);
   // WEB-SWAP: a web update's reload would lose what this page holds only in its state: a typed
   // query (the location comes back with the page), staged attachments, and a kind or folder picked
   // (pages/shared/webSwap.ts).
@@ -596,15 +591,17 @@ export function NewTabPage({
       changeKind(beforePrefix);
       setBeforePrefix(undefined);
     } else {
-      // Backspace at the field's start takes back the last chip (backspacedAttachment).
-      const backspaced = backspacedAttachment(
+      // Backspace at the field's start takes back the last chip, a loading one too (backspacedChip).
+      const backspaced = backspacedChip(
         event,
         input.selectionStart === 0 && input.selectionEnd === 0,
         attachments,
+        pending,
       );
       if (!backspaced) return;
       event.preventDefault();
-      setAttachments((current) => current.filter((item) => item.id !== backspaced.id));
+      if ("pending" in backspaced) cancel(backspaced.pending);
+      else setAttachments((current) => current.filter((item) => item.id !== backspaced.staged));
     }
   };
   const edit = (next: string) => {
