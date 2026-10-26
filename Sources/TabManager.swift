@@ -6714,6 +6714,10 @@ class TabManager: ObservableObject {
 }
 
 extension TabManager {
+    private var restorableSessionWorkspaces: [Workspace] {
+        tabs.filter(\.isRestorableInSessionSnapshot)
+    }
+
     func sessionAutosaveFingerprint(
         restorableAgentIndex: RestorableAgentSessionIndex = .empty,
         surfaceResumeBindingIndex: SurfaceResumeBindingIndex = .empty
@@ -6739,7 +6743,7 @@ extension TabManager {
             hasher.combine(group.externalID ?? "")
             hasher.combine(group.anchorWorkspaceProvenance.rawValue)
         }
-        for workspace in tabs.prefix(SessionPersistencePolicy.maxWorkspacesPerWindow) {
+        for workspace in restorableSessionWorkspaces {
             hasher.combine(workspace.id)
             hasher.combine(workspace.groupId)
             hasher.combine(workspace.focusedPanelId)
@@ -7013,9 +7017,7 @@ extension TabManager {
         downgradeStoredProcessDetectedResumeBindingsWhenDetectionUnavailable: Bool = false
     ) -> SessionTabManagerSnapshot {
         panelTitleUpdateCoalescer.flushNow()
-        let restorableTabs = tabs
-            .filter(\.isRestorableInSessionSnapshot)
-            .prefix(SessionPersistencePolicy.maxWorkspacesPerWindow)
+        let restorableTabs = restorableSessionWorkspaces
         let workspaceSnapshots = restorableTabs
             .map {
                 $0.sessionSnapshot(
@@ -7076,12 +7078,7 @@ extension TabManager {
     }
 
     func sessionSnapshotWorkspaceIds() -> [UUID] {
-        Array(
-            tabs
-                .filter(\.isRestorableInSessionSnapshot)
-                .prefix(SessionPersistencePolicy.maxWorkspacesPerWindow)
-                .map(\.id)
-        )
+        restorableSessionWorkspaces.map(\.id)
     }
 
     private func releaseRestoredAwayWorkspace(_ workspace: Workspace, clearNotifications: Bool = true) {
@@ -7185,12 +7182,11 @@ extension TabManager {
         var newTabs: [Workspace] = []
         var restoredPanelIdsByWorkspaceIndex: [[UUID: UUID]] = []
         let (normalizedWorkspaceSnapshots, selectedWorkspaceIndex) = Self.normalizedCloudVMSessionRestoreWorkspaces(
-            snapshot.workspaces.prefix(SessionPersistencePolicy.maxWorkspacesPerWindow),
+            snapshot.workspaces,
             selectedWorkspaceIndex: snapshot.selectedWorkspaceIndex,
             cloudDisabledByPolicy: managedDevicePolicy.isEnforced(.disableCloud)
         )
         let workspaceSnapshots = normalizedWorkspaceSnapshots
-            .prefix(SessionPersistencePolicy.maxWorkspacesPerWindow)
         prepareLegacyWorkspaceCustomizationMigration(
             afterRestoring: Array(workspaceSnapshots)
         )
