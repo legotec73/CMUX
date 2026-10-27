@@ -1,3 +1,5 @@
+import { SubagentListPanel, useSubagentList } from "./subagents/SubagentListPanel";
+import { openChildSession, type SubagentClick } from "./subagents/subagentNavigation";
 import React, {
   lazy,
   memo,
@@ -1328,7 +1330,8 @@ const EditedFilesRow = memo(
 );
 
 /// Opens a chat started from an offer (`chat.offer.open`): beside this one, else here.
-const openOfferChat = (sessionId: string) => void callNative("chat.offer.open", { sessionId }).catch(() => undefined);
+const openOfferChat = (sessionId: string, event?: SubagentClick) =>
+  void openChildSession(callNative, sessionId, event).catch(() => undefined);
 /// Opens the chat that sent this one a message, from its received line's chip: any chat the daemon
 /// lists, this Mac's or a peer's, beside this one or in the tab that shows it (`sender`).
 const openSenderChat = (sessionId: string) =>
@@ -4604,8 +4607,10 @@ function AcpmuxPane() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   /// The subagent whose own view the transcript shows (its line in a group opens it), or none.
   const [subagentView, setSubagentView] = useState<string>();
+  const allSubagents = useSubagentList(callNative);
+  const hideAllSubagents = allSubagents.hide;
   /// The subagent this pane was opened on (a `subagent:` reveal, subagents/subagentPanes.ts), shown
-  /// once its chat is; such a pane shows the chat's other subagents in place, never in more panes.
+  /// once its chat is. Further row clicks still go through native tab tracking.
   const [requestedSubagent, setRequestedSubagent] = useState<string>();
   const subagentPane = useRef(false);
   /// This pane was opened on a subagent (a `subagent:` reveal): while it shows a subagent, it shows
@@ -4616,6 +4621,10 @@ function AcpmuxPane() {
   /// where the chat's rows are.
   const showMessage = useRef<(messageId: string) => string | undefined>(() => undefined);
   const reveal = (value: string) => {
+    if (allSubagents.reveal(value)) {
+      subagentPane.current = true;
+      return;
+    }
     // A `message=<id>` link (schemas/deeplinks/agent-link.json): bring that message's row in
     // once the transcript has it, and leave the view alone when this session never saw it.
     const message = revealedMessage(value);
@@ -5953,14 +5962,16 @@ function AcpmuxPane() {
     [canBackground, snapshot.isWorking, snapshot.rows],
   );
   const backgroundHint = !quick && canBackground && snapshot.isWorking ? runInBackground : undefined;
-  /// Shows subagent `id`: in a pane of its own right of the chat (focused with `focus`), or in
-  /// this pane when this is a subagent's pane or the host opens none.
-  const showSubagent = useCallback((id: string, focus = true) => {
-    if (subagentPane.current) return setSubagentView(id);
-    void openSubagentPane(callNative, id, focus).then((opened) => {
-      if (!opened && focus) setSubagentView(id);
+  /// Native placement owns subagent identity and tab reuse, including nested row clicks.
+  const showSubagent = useCallback((id: string, intent: boolean | SubagentClick = true) => {
+    const focus = typeof intent === "boolean" ? intent : !intent.metaKey;
+    void openSubagentPane(callNative, id, focus).then((result) => {
+      if (result === "refused" && focus) {
+        hideAllSubagents();
+        setSubagentView(id);
+      }
     });
-  }, []);
+  }, [hideAllSubagents]);
   const [autoOpenSubagents, setAutoOpenSubagents] = useAutoOpenSubagents();
   useOpenNewSubagents(
     quick || subagentPane.current ? undefined : shownSessionId,
@@ -6433,6 +6444,7 @@ function AcpmuxPane() {
               backgroundTaskOutput !== undefined
             }
             onOpenSession={openOfferChat}
+            onShowAll={allSubagents.show}
             stop={stopSubagent}
             stopProcess={stopProcess}
             placement={trayPlacement}
@@ -7684,12 +7696,19 @@ function AcpmuxPane() {
           },
           // Open a started offer or a sub-session: the app shows its tab or opens it beside this
           // chat (AgentPaneOfferOpen); a host without that opens it as a side chat; else here.
-          "chat.offer.open": async ({ sessionId, sender }) => {
+          "chat.offer.open": async ({ sessionId, sender, workspace, focus }) => {
             const id = String(sessionId);
             try {
               // `sender`: a message's sender, any listed chat (AgentPaneOfferOpen).
-              await postNative("chat.offer.open", { sessionId: id, ...(sender === true && { sender: true }) });
+              await postNative("chat.offer.open", {
+                sessionId: id,
+                ...(sender === true && { sender: true }),
+                ...(workspace === true && { workspace: true }),
+                ...(focus === false && { focus: false }),
+              });
             } catch (error) {
+              // Background opens must never fall back to selecting this source transcript.
+              if (focus === false) return;
               // The app refused a session outside this chat's family: nothing opens, not even here.
               if (error instanceof NativeError && error.code === "chat.offer.refused") return;
               try {
@@ -9660,6 +9679,19 @@ function AcpmuxPane() {
         aria-busy="true"
         style={inTabRow ? tabRowStyle(tabRow) : undefined}
       />
+    </ShortcutsContext.Provider>
+  ) : allSubagents.shown ? (
+    <ShortcutsContext.Provider value={shortcuts}>
+      <section ref={setShell} className="acpmux-shell">
+        <SubagentListPanel
+          agents={chatAgents}
+          waiting={waitingAgents}
+          onOpen={showSubagent}
+          onOpenSession={openOfferChat}
+          sessions={childSessions}
+          subsessions={chatSubsessions.rows}
+        />
+      </section>
     </ShortcutsContext.Provider>
   ) : (
     <ShortcutsContext.Provider value={shortcuts}>

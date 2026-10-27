@@ -205,6 +205,7 @@ extension AgentTabStore {
             views[real] = view
         }
         if let value = sessions.removeValue(forKey: key) { sessions[real] = value }
+        if let value = subagentSources.removeValue(forKey: key) { subagentSources[real] = value }
         unsentDrafts.move(key, to: real)
         if let value = newTabPages.removeValue(forKey: key) { newTabPages[real] = value }
         if let value = seeds.removeValue(forKey: key) { seeds[real] = value }
@@ -317,6 +318,7 @@ extension AgentTabStore {
         }
         notices[key] = nil
         sessions[key] = nil
+        subagentSources[key] = nil
         newTabPages[key] = nil
         seeds[key] = nil
         remoteSeeds[key] = nil

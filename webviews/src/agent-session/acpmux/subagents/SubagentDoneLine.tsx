@@ -1,3 +1,4 @@
+import { subagentName } from "./subagentNavigation";
 // What a subagent leaves in the transcript once it ends (runningTray.ts `withSubagentLines`): one
 // quiet line where it ended, "Subagent finished: Explore the daemon · 1m 20s". It is drawn as a
 // tool row, in their font, height and rhythm, as a background shell's end is
@@ -32,7 +33,7 @@ export function SubagentDoneLine({ row }: { row: AcpmuxRow }) {
   const open = pane ?? nav;
   const agent = row.subagents?.[0];
   if (!agent) return null;
-  const label = t(DONE_LABEL[agent.state] ?? DONE_LABEL.completed!, { name: agent.name });
+  const label = t(DONE_LABEL[agent.state] ?? DONE_LABEL.completed!, { name: subagentName(agent) });
   const reasonKey = agent.state === "cancelled" && agent.stopReason ? STOP_REASON_LABEL[agent.stopReason] : undefined;
   const time = formatDuration(elapsed(agent, agent.endedAt ?? row.at));
   const restart = restartSubagent && canRestart(agent) ? restartSubagent : undefined;
@@ -44,7 +45,7 @@ export function SubagentDoneLine({ row }: { row: AcpmuxRow }) {
         data-state={agent.state}
         {...(agent.stopReason && { "data-reason": agent.stopReason })}
         disabled={!open}
-        onClick={() => open?.(agent.id)}
+        onClick={(event) => open?.(agent.id, event)}
       >
         <span className="cv-tool__icon">
           <Icon name="agent.session" size={16} />

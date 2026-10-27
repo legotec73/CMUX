@@ -225,7 +225,12 @@ const scrollPanel = async (ctx: PlayContext) => {
   const more = () => ctx.document.querySelector<HTMLElement>(".acpmux-running-tray__finished");
   if (more() && more()!.getAttribute("aria-expanded") !== "true") {
     await ctx.click({ selector: ".acpmux-running-tray__finished" });
-    await ctx.waitFor(() => more()?.getAttribute("aria-expanded") === "true");
+    await ctx.waitFor(() =>
+      Boolean(ctx.document.querySelector("aside.acpmux-artifact .acpmux-summary-agent")) ||
+      (ctx.document.defaultView as unknown as { cmuxGalleryLog?: { method: string }[] }).cmuxGalleryLog?.some(
+        (call) => call.method === "chat.subagentList",
+      ) === true,
+    );
   }
   await ctx.scroll({ selector: ".acpmux-running-tray__list" }, "bottom");
   headInView(ctx);
@@ -282,6 +287,29 @@ export default agentPaneEntry({
   // The panel's looks (trayPanel.experiment.ts), on the two- and 118-agent panels.
   experiment: { definition: trayPanelLook, script: panelScript },
   variants: {
+    "readable-task": {
+      note: "A transport id stays in hover and VoiceOver; the task title labels the row. A click requests the right pane.",
+      native: { "chat.subagentPane": { opened: true } },
+      snapshot: chat(
+        [
+          user("Review the pane routing", 2),
+          group(
+            [
+              agent("01a15779/toolu_example", 1.8, "running", {
+                id: "01a15779/toolu_example",
+                task: "Review pane placement",
+              }),
+            ],
+            1.8,
+          ),
+        ],
+        { isWorking: true },
+      ),
+      play: async (ctx) => {
+        await trayLines(1)(ctx);
+        await ctx.click({ selector: ".acpmux-running-tray .acpmux-agent-line__button" });
+      },
+    },
     "panel-two": {
       note: 'Leo\'s panel with two chats running and three ended (2026-10-25: "this section, the whatever background tasks ... it\'s kind of wack"): the header pinned on top, running first, then the latest that ended; a chat\'s raw shell doing line reads "Running sed -i …", never "cd /Users/… && sed -i …".',
       play: async (ctx) => {
@@ -304,7 +332,11 @@ export default agentPaneEntry({
       snapshot: panel(3, 1),
     },
     "panel-118": {
-      note: 'The same panel with 118 agents, every ended one opened and the list scrolled to its end (Leo: the collapse at the top "disappears for some reason ... sometimes"): the header stays pinned on top and View all at the foot; only the list scrolls.',
+      checks: {
+        anchorMovePx: { value: 560, reason: "View all opens the preview pane and intentionally narrows the chat." },
+        layoutShiftMax: { value: 0.2, reason: "The full list takes the existing preview column beside the chat." },
+      },
+      note: "The same panel with 118 agents: View all opens the full list beside the transcript while the tray stays bounded.",
       play: scrollPanel,
       snapshot: panel(116),
     },

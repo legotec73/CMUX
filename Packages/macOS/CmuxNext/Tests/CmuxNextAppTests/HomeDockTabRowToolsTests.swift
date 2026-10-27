@@ -1,6 +1,7 @@
 import AppKit
 import CmuxNextActions
 import CmuxNextAgentActivity
+import CmuxNextApps
 @testable import CmuxNextAgentLanes
 @testable import CmuxNextApp
 import CmuxNextDesign
@@ -115,6 +116,30 @@ import Testing
         #expect(runs.compactMap { $0.target.map { SidebarTransientItem.chiefSubagentSession(LayoutItemID($0.id)) } }
             == ["id-optchat-sub-6b68ac4a-a2", "id-optchat-sub-6b68ac4a-a3"])
         #expect(runs.allSatisfy { $0.arguments.isEmpty })
+        let rowTools = HomeDockSwitchView.makeRowTools, sidebarItems = SettingsAppFeatures.sidebarItems
+        defer { HomeDockSwitchView.makeRowTools = rowTools; SettingsAppFeatures.sidebarItems = sidebarItems }
+        var beside: [String] = [], workspaces: [String] = []
+        chief.bind(into: registry, host: .init(conversation: { "chief" }, chiefHost: { "chief-host" },
+            tab: { _, _ in "tab-in-another-workspace" }, reveal: { _ in Issue.record("must not reveal another workspace"); return true },
+            openWorkspace: { session, _ in workspaces.append(session); throw CancellationError() },
+            openBeside: { session, host in #expect(host == "chief-host"); beside.append(session); return true }))
+        for run in runs { #expect(registry.perform(run.id, invocation: .init(target: run.target, origin: .user))) }
+        #expect(beside == ["id-optchat-sub-6b68ac4a-a2", "id-optchat-sub-6b68ac4a-a3"])
+        #expect(workspaces.isEmpty)
+    }
+
+    /// Home is an internal page, not an agent-session tab. Its children taking focus must
+    /// not move the rail's source to the right pane or change where later children open.
+    @Test(arguments: [InternalPageID.homeDock, .homeTab])
+    func railKeepsHomeAsAnchorAfterChildrenTakeFocus(page: InternalPageID) {
+        let tabs: [(id: String, page: InternalPageID?, isChief: Bool)] = [
+            ("child-a", nil, false), ("home", page, false), ("child-b", nil, false),
+        ]
+        for focused in ["home", "child-a", "child-b"] {
+            #expect(SidebarSectionHandlers.chiefSubagentAnchor(tabs: tabs, focused: focused) == "home")
+        }
+        #expect(SidebarSectionHandlers.chiefSubagentAnchor(tabs: [("child-a", nil, false)], focused: "child-a") == "child-a")
+        #expect(SidebarSectionHandlers.chiefSubagentAnchor(tabs: [], focused: nil) == nil)
     }
 
     /// Open Chief Subagent run with no subagent row (its shortcut, `cmux action run` without

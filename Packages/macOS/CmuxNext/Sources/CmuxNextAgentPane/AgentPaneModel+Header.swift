@@ -15,12 +15,14 @@ public struct AgentPaneHeaderHooks {
     /// `/btw` side session): a tab in the chat's side pane when one is open, else a new split
     /// (``AgentSidePanes``).
     public var openSide: @MainActor (_ chat: String, _ fork: String) -> Void
+    public var openSideBackground: (@MainActor (_ chat: String, _ fork: String) -> Void)?
     /// Opens acpmux session `id` (a fork, a started Continue In…) at a ``AgentForkDestination``: a
     /// new tab beside the chat's, a split beside it, a new workspace or a new window, so the chat
     /// keeps its own tab and session; false when nothing opened.
     public var openTab: @MainActor (String, AgentForkDestination) -> Bool
     /// Shows subagent `agent` of session `session` in an agent pane right of the chat
     /// (``AgentSubagentPanes``), focused with `focus`; false when no pane opened.
+    public var openSubagentList: (@MainActor (String) -> Bool)?
     public var openSubagent: @MainActor (_ session: String, _ agent: String, _ focus: Bool) -> Bool
     /// Opens `viewer` (a background process's read-only terminal) in a tab beside the chat; false
     /// when no tab opened.
@@ -44,6 +46,7 @@ public struct AgentPaneHeaderHooks {
     /// Shows and focuses the tab that shows acpmux session `id` already, so a chat never streams in
     /// two tabs (``AgentPaneOfferOpen``); false when no tab shows it.
     public var showSession: @MainActor (String) -> Bool
+    public var showSessionBackground: (@MainActor (String) -> Bool)?
     /// Whether acpmux session `session` is of chat `chat`'s family: a sub-session it started at any
     /// depth, or the session that started it (acpmux `startedBy`, mirrored by the app's turn-state
     /// watch). ``AgentPaneOfferOpen`` opens only those, or the pane's own sessions; none by default.
@@ -71,6 +74,7 @@ public struct AgentPaneHeaderHooks {
         self.toggle = toggle ?? run
         self.tabState = tabState
         self.openSide = openSide
+        self.openSideBackground = nil
         self.openTab = openTab
         self.openSubagent = openSubagent
         self.openProcess = openProcess
@@ -81,6 +85,7 @@ public struct AgentPaneHeaderHooks {
         self.moveToFloatingChat = moveToFloatingChat
         self.refreshPullRequest = refreshPullRequest
         self.showSession = showSession
+        self.showSessionBackground = nil
         self.isFamily = isFamily
     }
 
@@ -170,9 +175,14 @@ extension AgentPaneModel {
             return AgentPaneReply.success(state)
         case .sideChat(let fork):
             return await AgentPaneSideChat.open(fork, in: self)
+        case .subagentList:
+            guard let sessionId, newTab == nil, let header else {
+                return AgentPaneReply.failure(code: "unsupported", message: "Unsupported agent pane request: chat.subagentList")
+            }
+            return AgentPaneReply.success(["opened": header.openSubagentList?(sessionId) ?? false])
         case .subagentPane(let agent, let focus):
             // The chat's own subagent, in a pane of its own; not from a New Tab page. A refusal
-            // answers `opened: false`, and the page shows the subagent in this pane instead.
+            // answers `opened: false`, leaving the source transcript unchanged.
             guard let sessionId, newTab == nil, let header else {
                 return AgentPaneReply.failure(code: "unsupported", message: "Unsupported agent pane request: chat.subagentPane")
             }
@@ -188,8 +198,8 @@ extension AgentPaneModel {
                 return AgentPaneReply.failure(code: "unsupported", message: "Unsupported agent pane request: chat.openTab")
             }
             return AgentPaneReply.success()
-        case .offerOpen(let session, let sender):
-            return AgentPaneOfferOpen.respond(session, sender: sender, in: self)
+        case .offerOpen(let session, let sender, let workspace, let focus):
+            return AgentPaneOfferOpen.respond(session, sender: sender, workspace: workspace, focus: focus, in: self)
         case .asksOpen(let session):
             return AgentPaneAskOpen.respond(session, in: self)
         case .asksAnswer(let ask):

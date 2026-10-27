@@ -1,5 +1,6 @@
 @testable import CmuxNextApp
 import CmuxNextDaemonService
+import CmuxNextDaemon
 import Testing
 
 /// 2026-10-20 (cosmic-gray nightly): `app_agent_open` with `host: "cmux16"` failed with "the agent
@@ -29,4 +30,6 @@ import Testing
         #expect(AgentTabStore.hostRefusal(local, localHost: local, chiefHost: chief, daemonIsLocal: false)
             == RefusalStrings.agentTabMachineMismatch)
     }
+
+
 }

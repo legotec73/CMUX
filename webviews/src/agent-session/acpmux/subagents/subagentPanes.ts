@@ -1,8 +1,8 @@
 // Subagents in agent panes of their own, right of the chat (cx-1933q). The app opens them
 // (`chat.subagentPane {subagent, focus}`, AgentSubagentPanes.swift): a tab on the chat's own
-// session, in a new split right of the chat or below the newest subagent pane, that opens on the
-// subagent's view (a `revealTurn` of `subagent:<id>`). A host that opens none (the gallery, the
-// floating chat, an older app) shows the subagent in this pane instead.
+// session, in the chat's right pane, that opens on the
+// subagent's view (a `revealTurn` of `subagent:<id>`). A refused request leaves the source
+// transcript unchanged, so native tab identity and the displayed subagent stay consistent.
 //
 // A chat pane opens a pane by itself for each subagent its chat starts while the pane shows it,
 // only once the user turned that on (the summary card's switch, kept in localStorage). It is off
@@ -57,14 +57,16 @@ export function useAutoOpenSubagents(): [boolean, (on: boolean) => void] {
 }
 
 type Call = (method: string, params: Record<string, unknown>) => Promise<unknown>;
+export type SubagentPaneResult = "opened" | "refused" | "error";
 
-/// Asks the app for subagent `id`'s pane; false when it opened none.
-export async function openSubagentPane(call: Call, id: string, focus: boolean): Promise<boolean> {
+/// Asks the app for subagent `id`'s pane. A native refusal is distinct from a lost transport reply:
+/// only the former permits the in-place fallback.
+export async function openSubagentPane(call: Call, id: string, focus: boolean): Promise<SubagentPaneResult> {
   try {
     const reply = await call("chat.subagentPane", { subagent: id, focus });
-    return (reply as { opened?: unknown } | null)?.opened === true;
+    return (reply as { opened?: unknown } | null)?.opened === true ? "opened" : "refused";
   } catch {
-    return false;
+    return "error";
   }
 }
 

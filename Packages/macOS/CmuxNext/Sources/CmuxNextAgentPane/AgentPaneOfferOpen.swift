@@ -12,7 +12,7 @@
 /// `chat.offer.refused`, which the page takes as final.
 /// Nothing opens unless the person clicks. Kept off ``AgentPaneModel``, whose type is at its size limit.
 enum AgentPaneOfferOpen {
-    @MainActor static func respond(_ session: String, sender: Bool = false, in model: AgentPaneModel) -> [String: Any] {
+    @MainActor static func respond(_ session: String, sender: Bool = false, workspace: Bool = false, focus: Bool = true, in model: AgentPaneModel) -> [String: Any] {
         guard let chat = model.sessionId, model.newTab == nil, let header = model.header else {
             return AgentPaneReply.failure(code: "unsupported", message: "Unsupported agent pane request: chat.offer.open")
         }
@@ -21,7 +21,14 @@ enum AgentPaneOfferOpen {
         guard session != chat, sender || AgentPaneSideChat.holds(session, chat: chat, in: model) || remoteParent || header.isFamily(session, chat) else {
             return AgentPaneReply.failure(code: "chat.offer.refused", message: "chat.offer.refused")
         }
-        if !header.showSession(session) { header.openSide(chat, session) }
+        if workspace {
+            return AgentPaneReply.success(["opened": header.openTab(session, .workspace)])
+        }
+        let shown = focus ? header.showSession(session) : (header.showSessionBackground?(session) ?? false)
+        if !shown {
+            if focus { header.openSide(chat, session) }
+            else { header.openSideBackground?(chat, session) }
+        }
         return AgentPaneReply.success()
     }
 }

@@ -13,6 +13,13 @@ import CmuxNextSidebar
 /// names it (`sidebar-section:sec_…`, `sidebar-item:itm_…` or a built-in
 /// name such as `sidebar-item:home`).
 enum SidebarSectionHandlers {
+    /// A rail click stays anchored to Home after its first child takes focus in the side pane.
+    static func chiefSubagentAnchor(tabs: [(id: String, page: InternalPageID?, isChief: Bool)], focused: String?) -> String? {
+        tabs.first(where: \.isChief)?.id
+            ?? tabs.first(where: { $0.page == .homeDock || $0.page == .homeTab })?.id
+            ?? focused
+    }
+
     /// App Store Features' Sidebar cards (edit mode's Add Items): the built-in items beside the
     /// Chief's own card. Get is Add to Sidebar, Remove takes every such item out.
     static func storeItems(chief: SettingsAppFeatures.SidebarItems?, document: @escaping @MainActor () -> SidebarLayoutDocument,
@@ -37,7 +44,18 @@ enum SidebarSectionHandlers {
         let services = context.services
         ChiefSidebar.shared.bind(into: registry, host: .init(conversation: { TopHomePageView.chief(services.home) }, chiefHost: { services.agentTabs.chiefHost },
             tab: { services.agentTabs.tab(showing: $0, host: $1) }, reveal: { services.revealTab($0) },
-            openWorkspace: { try AgentSessionWorkspace.open(session: $0, name: nil, cwd: nil, host: $1, services: services) }))
+            openWorkspace: { try AgentSessionWorkspace.open(session: $0, name: nil, cwd: nil, host: $1, services: services) }, openBeside: { session, host in
+                guard let content = context.focusedContent else { return false }
+                let chief = TopHomePageView.chief(services.home)
+                let tabs: [(id: String, page: InternalPageID?, isChief: Bool)] = content.modelPanes.flatMap { pane in
+                    pane.tabs.map { tab in
+                        (id: tab.id, page: tab.page.map(InternalPageID.init(rawValue:)) ?? services.pages.page(ofTab: tab.id),
+                         isChief: tab.agentSession?.host == host && services.agentTabs.session(of: tab.id) == chief)
+                    } + services.pages.tabIDs(in: pane.id).map { (id: $0, page: services.pages.page(ofTab: $0), isChief: false) }
+                }
+                guard let chat = chiefSubagentAnchor(tabs: tabs, focused: content.focusedPane?.selectedTab?.id) else { return false }
+                return services.agentTabs.openChildBeside(session, beside: chat, host: host)
+            }))
         // Agent chats on other machines are not sidebar rows (the top band holds what the person put there,
         // Lawrence 2026-10-26): `RemoteMachinesSidebar` is not bound, so it reads no peers and follows no lanes.
         SettingsAppFeatures.sidebarItems = storeItems(chief: SettingsAppFeatures.sidebarItems, document: { layout.document }, registry: registry)

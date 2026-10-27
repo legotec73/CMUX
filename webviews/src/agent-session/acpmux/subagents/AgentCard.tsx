@@ -1,7 +1,7 @@
 // A sub-session as the transcript's cards draw it (conversation/SubsessionCallCard.tsx): its
 // harness's mark, name, model, state (the working spinner, never a dot), what its turn does now, and
 // "Open chat". The caller reads its state live (subsessions.ts) and adds a prompt or a reply below.
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { AgentMark, knownMark } from "../../shared/AgentMark";
 import { useAgentAvatar } from "../agentAvatar";
 import { Spinner } from "../conversation/icons";
@@ -29,7 +29,7 @@ export type AgentCardProps = {
   time?: string;
   /// Its state's word when the state's own is not it (a run that was stopped).
   stateLabel?: string;
-  onOpen?: () => void;
+  onOpen?: (event: MouseEvent<HTMLButtonElement>) => void;
   /// The open button's word: "Open chat" when absent.
   openLabel?: string;
   children?: ReactNode;

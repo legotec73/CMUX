@@ -67,7 +67,34 @@ await requireBrowserLane("subagent-pane-own-state.test.ts", async () => {
       "subagent_spawned",
       update(
         { sessionUpdate: "subagent_spawned" },
-        { subagents: [{ id: "a1", parent: null, name: "Reviewer", state: "running", startedAt: START + 4000 }] },
+        {
+          subagents: [
+            {
+              id: "a1",
+              parent: null,
+              name: "Reviewer",
+              task: "Review release implementation",
+              state: "running",
+              startedAt: START + 4000,
+            },
+            {
+              id: "a2",
+              parent: "a1",
+              name: "Nested reviewer",
+              task: "Check nested coverage",
+              state: "running",
+              startedAt: START + 4000,
+            },
+            ...Array.from({ length: 7 }, (_, i) => ({
+              id: `done-${i}`,
+              parent: null,
+              name: `Finished reviewer ${i}`,
+              state: "completed",
+              startedAt: START + 1000,
+              endedAt: START + 4000,
+            })),
+          ],
+        },
       ),
     ],
     [
@@ -194,6 +221,102 @@ await requireBrowserLane("subagent-pane-own-state.test.ts", async () => {
     expect(chat.composer).toBe(1);
     expect(chat.prDock).toBe(1);
     expect(chat.readOnly).toBe("");
+    // Reusing this native tab sends its reveal again, restoring the tracked subagent.
+    await reveal(page, "subagent:a1");
+    await page.locator(".cv-subagent-of__task").filter({ hasText: "Review release implementation" }).waitFor();
+    expect((await bottom(page)).composer).toBe(0);
     await page.close();
   });
+
+  test("nested clicks request native tabs without replacing the tracked subagent", async () => {
+    const page = await open();
+    await captureNativeRequests(page);
+    await reveal(page, "subagent:a1");
+    await page.locator(".cv-subagent-of").waitFor();
+    await page.getByRole("button", { name: "Chat summary", exact: true }).click();
+    const nested = page.getByRole("button", { name: /Nested reviewer/ }).first();
+    await nested.click();
+    expect(await nativeRequests(page)).toEqual([
+      { method: "chat.subagentPane", params: { subagent: "a2", focus: true } },
+    ]);
+    await nested.click({ modifiers: ["Meta"] });
+    expect(await nativeRequests(page)).toEqual([
+      { method: "chat.subagentPane", params: { subagent: "a2", focus: true } },
+      { method: "chat.subagentPane", params: { subagent: "a2", focus: false } },
+    ]);
+    expect(await page.locator(".cv-subagent-of__parent").textContent()).toBe("Release review");
+    await page.close();
+  });
+
+  for (const back of ["transcript", "Session Info"] as const) {
+    test(`${back} Back navigation is restored by the reused tab's native reveal`, async () => {
+      const page = await open();
+      if (back === "Session Info")
+        await page.evaluate(() => {
+          (
+            window as unknown as { cmuxAcpmuxBridge: { applyHeaderState(state: unknown): void } }
+          ).cmuxAcpmuxBridge.applyHeaderState({ inspector: true });
+        });
+      await reveal(page, "subagent:a2");
+      await page.locator(".cv-subagent-of__task").filter({ hasText: "Check nested coverage" }).waitFor();
+      if (back === "Session Info") await page.getByRole("button", { name: "Back to Reviewer", exact: true }).click();
+      else await page.locator(".cv-subagent-of__pill").click();
+      await page.locator(".cv-subagent-of__task").filter({ hasText: "Review release implementation" }).waitFor();
+      await reveal(page, "subagent:a2");
+      await page.locator(".cv-subagent-of__task").filter({ hasText: "Check nested coverage" }).waitFor();
+      expect(await page.locator(".cv-subagent-of__parent").textContent()).toBe("Reviewer");
+      if (back === "Session Info")
+        expect(await page.locator(".acpmux-chat-inspector-scope__agent").textContent()).toBe("Nested reviewer");
+      expect((await bottom(page)).composer).toBe(0);
+      await page.close();
+    });
+  }
+
+  test("View all requests native placement and its reveal renders the destination list", async () => {
+    const page = await open();
+    await captureNativeRequests(page);
+    await page.locator(".acpmux-running-tray__finished").click();
+    expect(await nativeRequests(page)).toEqual([{ method: "chat.subagentList", params: {} }]);
+    expect(await page.locator("aside.acpmux-artifact").count()).toBe(0);
+    expect((await bottom(page)).composer).toBe(1);
+    await reveal(page, "subagents:list");
+    await page
+      .locator('.acpmux-main[aria-label="Subagents"]')
+      .getByRole("button", { name: /Finished reviewer 6/ })
+      .waitFor();
+    expect((await bottom(page)).composer).toBe(0);
+    await page.close();
+  });
+
+  async function captureNativeRequests(page: Page) {
+    await page.evaluate(() => {
+      const scope = window as unknown as {
+        requests: unknown[];
+        webkit: { messageHandlers: Record<string, { postMessage: (request: Record<string, unknown>) => unknown }> };
+      };
+      scope.requests = [];
+      for (const name of ["agentSession", "cmuxPage"]) {
+        const handler = scope.webkit.messageHandlers[name];
+        if (!handler) continue;
+        const original = handler.postMessage.bind(handler);
+        handler.postMessage = (request) => {
+          const method = String(request.method ?? request.op).replace(/^cmux\.agent\./, "");
+          if (method !== "chat.subagentPane" && method !== "chat.subagentList") return original(request);
+          scope.requests.push({ method, params: request.params });
+          return Promise.resolve(
+            name === "cmuxPage"
+              ? { t: "ok", id: request.id, value: { opened: true } }
+              : { ok: true, value: { opened: true } },
+          );
+        };
+      }
+    });
+  }
+  const nativeRequests = (page: Page) => page.evaluate(() => (window as unknown as { requests: unknown[] }).requests);
+  const reveal = (page: Page, value: string) =>
+    page.evaluate((value) => {
+      (window as unknown as { cmuxAcpmuxBridge: { revealTurn(value: string): void } }).cmuxAcpmuxBridge.revealTurn(
+        value,
+      );
+    }, value);
 });

@@ -1,9 +1,10 @@
 import CmuxNextAgentPane
+import CmuxNextBridge
 import CmuxNextCompat
 import CmuxNextDaemon
 import CmuxNextFloating
 import CmuxNextHomeEngine
-import struct CmuxNextLayout.MainPaneLayout
+import CmuxNextLayout
 import Foundation
 
 /// Agent chat tabs on the workspace store (cmux-tui/spec/commands.md, new-conversation-tab): the store
@@ -170,12 +171,22 @@ extension AgentTabStore {
             return (record: record, store: services.machines.daemon(forTab: tab).store)
         }
         tabs.locate = { [weak services] key in
-            guard let services, let (tab, pane) = services.locateTab(key) else { return nil }
-            return (pane: pane.handle, daemon: services.machines.daemon(forTab: tab))
+            guard let services else { return nil }
+            if let (tab, pane) = services.locateTab(key) { return (pane: pane.handle, daemon: services.machines.daemon(forTab: tab)) }
+            guard let controller = services.paneController(showingTab: key) else { return nil }
+            return (pane: controller.pane.handle, daemon: services.machines.daemon(forPane: controller.pane))
+        }
+        tabs.subagentTabsBeside = { [weak services] chat in
+            services?.subagentSidePane(of: chat)?.pane.tabs.compactMap { tab in tab.agentSession.map { (tab.id, $0) } } ?? []
+        }
+        tabs.isBeside = { [weak services] chat, key in
+            guard let services, let (_, target) = services.locateTab(key) else { return false }
+            return services.subagentSidePane(of: chat)?.pane === target
         }
         tabs.openInMainPane = { [weak services] chat, focus, open, created, finished in
-            guard let services, let (_, pane) = services.locateTab(chat), let controller = services.paneController(for: pane),
-                  let side = MainPaneLayout.side(from: controller, services: services) else { return nil }
+            guard let services, let controller = services.subagentSourcePane(of: chat) else { return nil }
+            let existing = services.subagentSidePane(of: chat)?.pane
+            guard let side = existing.map({ ChatColumnPlacement.tab(in: LayoutPaneID($0.id)) }) ?? MainPaneLayout.side(from: controller, services: services) else { return nil }
             return MainPaneLayout.openAgentTab(from: controller, side: side, focus: focus, services: services, open: open,
                                          created: created, finished: finished)
         }
