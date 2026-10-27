@@ -781,6 +781,9 @@ impl Hub {
                 self.save_meta(session);
             }
         }
+        // What the turn added to Claude's transcript is the chat's too, past
+        // Claude's retention (claude_keep.rs), however the turn ended.
+        self.keep_claude_transcript(session);
         // Quit Everything already recorded this turn as cancelled. It ends the lane's parent too and
         // no agent starts after it, so the lane reports nothing (`lane_reports.rs`).
         if self.settled_by_shutdown.lock().unwrap().contains(turn_id) {
