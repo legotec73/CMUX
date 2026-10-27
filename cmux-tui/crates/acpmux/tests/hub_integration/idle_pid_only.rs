@@ -66,7 +66,7 @@ async fn idle_pid_only_preserves_same_group_and_escaped_children_then_wakes() {
     idle(&hub, &session).await;
     // Cover the existing reader's 500ms leader check too, not only the TERM path.
     tokio::time::sleep(Duration::from_millis(700)).await;
-    for pid in pids {
+    for &pid in &pids {
         assert_eq!(unsafe { libc::kill(pid, libc::SIGUSR1) }, 0);
         let mut reply = [0; 32];
         let n = tokio::time::timeout(Duration::from_secs(3), probe.recv(&mut reply))
@@ -83,6 +83,13 @@ async fn idle_pid_only_preserves_same_group_and_escaped_children_then_wakes() {
     .unwrap();
     assert_eq!(session.meta().agent_session_id, agent);
     assert!(hub.events(id, 0, 1000).unwrap().iter().any(|e| e.kind == "resumed"));
+    // An explicit stop ends what the retirement spared, as Stop's group and tree cleanup does.
+    hub.kill(&session, false).await.unwrap();
+    let deadline = std::time::Instant::now() + Duration::from_secs(10);
+    while pids.iter().any(|&pid| unsafe { libc::kill(pid, 0) } == 0) {
+        assert!(std::time::Instant::now() < deadline, "a stop left spared children running");
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
     hub.shutdown_all().await;
     drop(children);
     let _ = std::fs::remove_dir_all(root);
