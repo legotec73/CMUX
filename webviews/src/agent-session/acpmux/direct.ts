@@ -1290,6 +1290,14 @@ export class AcpmuxDirectClient {
   private turnOpener?: EventRecord;
   private lastSeq = 0;
   private turnOpen = false;
+  /// The current turn's own start. A resumed session can have an older prompt as its opener.
+  private turnStartedAtMs?: number;
+  /// Highest live start observed in this selection generation. Summary updates can race records;
+  /// keeping it prevents an older summary from rewinding the clock before the next event arrives.
+  private observedTurnStartedAtMs?: number;
+  private observedTurnId?: string;
+  /// A terminal event outranks a session summary read before it, until that summary names a newer turn.
+  private turnEndedAtMs?: number;
   /// The open turn's agent has said nothing since its prompt, past acpmux's `silentTurnMs`
   /// (`turn_silent`, hub/silent_turn.rs): the line says the model has not answered. acpmux hearing
   /// the model (`turn_heard`), or the turn's end, clears it; the agent's own bookkeeping does not.
@@ -1850,6 +1858,10 @@ export class AcpmuxDirectClient {
     this.firstSeq = undefined;
     this.lastSeq = 0;
     this.clockOffset = undefined;
+    this.turnStartedAtMs = undefined;
+    this.observedTurnStartedAtMs = undefined;
+    this.observedTurnId = undefined;
+    this.turnEndedAtMs = undefined;
     this.summary = undefined;
     this.configSeq = 0;
     this.limitsSeq = 0;
@@ -3235,12 +3247,34 @@ export class AcpmuxDirectClient {
     this.emit("commands");
   }
 
-  /// A summary of a paused queue that says "running" from before its turn failed: it names no
-  /// running turn, or one this page saw end. A turn sent now while prompts stay held runs.
+  /// A summary that still says "running" from before its terminal event. A newer turn, identified
+  /// by its start, may run before its live record arrives. Paused queues also require a named turn.
   private staleRun(summary: Record<string, any>): boolean {
-    if (summary.queuePaused !== true) return false;
     const turnId = summary.turn?.turnId;
-    return typeof turnId !== "string" || this.endedTurns.has(turnId);
+    if (typeof turnId === "string" && this.endedTurns.has(turnId)) return true;
+    const startedAt = summary.turn?.startedAt;
+    if (
+      this.turnEndedAtMs !== undefined &&
+      ((typeof startedAt === "number" && startedAt <= this.turnEndedAtMs) ||
+        (typeof turnId !== "string" && typeof startedAt !== "number"))
+    )
+      return true;
+    return summary.queuePaused === true && typeof turnId !== "string";
+  }
+
+  /// One predicate for controls and the snapshot: a stale running summary never counts as live.
+  private liveRunning(summary: Record<string, any> | undefined = this.summary): boolean {
+    return this.turnOpen || (summary?.status === "running" && !this.staleRun(summary));
+  }
+
+  /// A terminal event from an older replay must not clear a newer turn whose summary arrived
+  /// before its opening event. Events without a turn id are matched by time, which is how older
+  /// acpmux versions identify turn_result.
+  private endsObservedTurn(event: EventRecord, msg: Record<string, any>): boolean {
+    if (this.observedTurnStartedAtMs === undefined) return true;
+    const turnId = typeof msg.turnId === "string" ? msg.turnId : undefined;
+    if (turnId !== undefined && this.observedTurnId !== undefined) return turnId === this.observedTurnId;
+    return event.at >= this.observedTurnStartedAtMs;
   }
 
   private sessionChanged(params: SessionChanged): void {
@@ -3486,6 +3520,10 @@ export class AcpmuxDirectClient {
     this.firstSeq = undefined;
     this.lastSeq = 0;
     this.turnOpen = false;
+    this.turnStartedAtMs = undefined;
+    this.observedTurnStartedAtMs = undefined;
+    this.observedTurnId = undefined;
+    this.turnEndedAtMs = undefined;
     this.silentTurn = false;
     this.turnTokens = undefined;
     this.streamingAssistant = undefined;
@@ -3531,8 +3569,14 @@ export class AcpmuxDirectClient {
     const permission = this.pendingPermission;
     const waiting = this.waitingPermissions;
     const secret = this.pendingSecret;
+    const observedTurnStartedAtMs = this.observedTurnStartedAtMs;
+    const observedTurnId = this.observedTurnId;
+    const turnEndedAtMs = this.turnEndedAtMs;
     this.rebuild();
     this.summary = summary;
+    this.observedTurnStartedAtMs = observedTurnStartedAtMs;
+    this.observedTurnId = observedTurnId;
+    this.turnEndedAtMs = turnEndedAtMs;
     this.limitsSeq = limitsSeq;
     this.limitsVersion = limitsVersion;
     this.queue = queue;
@@ -4127,6 +4171,11 @@ export class AcpmuxDirectClient {
         this.silentTurn = false;
       } else if (event.kind === "turn_started") {
         this.turnOpen = true;
+        if (this.observedTurnStartedAtMs === undefined || event.at >= this.observedTurnStartedAtMs) {
+          this.observedTurnStartedAtMs = event.at;
+          this.observedTurnId = typeof msg.turnId === "string" ? msg.turnId : undefined;
+        }
+        this.turnStartedAtMs = this.observedTurnStartedAtMs;
         this.silentTurn = false;
         this.turnTokens = event.seq >= this.usageFromSeq ? 0 : undefined;
         this.subagents.startTurn();
@@ -4154,33 +4203,44 @@ export class AcpmuxDirectClient {
           this.waitingSteers = this.waitingSteers.filter((waiting) => waiting.rowId !== rowId);
         }
       } else if (event.kind === "turn_end" || event.kind === "turn_result") {
-        this.turnOpen = false;
-        this.silentTurn = false;
-        this.turnTokens = undefined;
-        this.settleCompactions(event.seq, event.kind === "turn_result" && msg.cancelForced === true);
-        this.landSteer();
-        // Stop was answered: its grace must not judge the next turn.
-        this.stopAnswered(event);
-        this.pendingPermission = undefined;
-        this.waitingPermissions.clear();
-        this.groupedPermissions.clear();
-        this.openQuestions.clear();
-        this.heldEdits.clear();
-        // A new row, never an in-place change: emitted snapshots share row objects, and the
-        // transcript's memo compares the drawn row's version with the next one.
-        this.endAssistantSegment();
-        this.rows.delete("typing");
+        const endsCurrentTurn = this.endsObservedTurn(event, msg);
+        if (endsCurrentTurn) {
+          this.turnOpen = false;
+          this.turnStartedAtMs = undefined;
+          this.observedTurnStartedAtMs = undefined;
+          this.observedTurnId = undefined;
+          this.turnEndedAtMs = event.at;
+        }
+        if (endsCurrentTurn) {
+          this.silentTurn = false;
+          this.turnTokens = undefined;
+          this.settleCompactions(event.seq, event.kind === "turn_result" && msg.cancelForced === true);
+          this.landSteer();
+          // Stop was answered: its grace must not judge the next turn.
+          this.stopAnswered(event);
+          this.pendingPermission = undefined;
+          this.waitingPermissions.clear();
+          this.groupedPermissions.clear();
+          this.openQuestions.clear();
+          this.heldEdits.clear();
+          // A new row, never an in-place change: emitted snapshots share row objects, and the
+          // transcript's memo compares the drawn row's version with the next one.
+          this.endAssistantSegment();
+          this.rows.delete("typing");
+        }
         const checkpoint = event.kind === "turn_result" ? readSummaryCheckpoint(msg) : undefined;
         const status = String(msg.status ?? "completed");
         // A turn a prompt sent now cancelled goes on under that prompt; one that ended first did not.
         // Whatever ended it (acpmux's cancel, or the agent's end_turn), but not a failure, which shows.
-        const continued = event.kind === "turn_result" && status !== "failed" && this.interrupting !== undefined;
+        const continued =
+          endsCurrentTurn && event.kind === "turn_result" && status !== "failed" && this.interrupting !== undefined;
         if (continued) {
           this.continuations.set(this.interrupting!, `summary-${event.seq}`);
           this.awaiting = this.interrupting;
         }
-        if (event.kind === "turn_result") this.interrupting = undefined;
-        if (event.kind === "turn_result" && typeof msg.turnId === "string") this.endedTurns.add(msg.turnId);
+        if (endsCurrentTurn && event.kind === "turn_result") this.interrupting = undefined;
+        if ((event.kind === "turn_end" || event.kind === "turn_result") && typeof msg.turnId === "string")
+          this.endedTurns.add(msg.turnId);
         if (event.kind === "turn_result")
           this.rows.set(`summary-${event.seq}`, {
             id: `summary-${event.seq}`,
@@ -4206,9 +4266,11 @@ export class AcpmuxDirectClient {
             kind: "notice",
             text: translate("stop.forced"),
           });
-        this.streamingAssistant = undefined;
-        this.streamingAssistantMessageId = undefined;
-        this.streamingActivity = undefined;
+        if (endsCurrentTurn) {
+          this.streamingAssistant = undefined;
+          this.streamingAssistantMessageId = undefined;
+          this.streamingActivity = undefined;
+        }
       } else if (!reduceAgentPair(this.rows, event)) this.reduceLiveState(event);
       return;
     }
@@ -4571,6 +4633,26 @@ export class AcpmuxDirectClient {
       this.asks.sessions(this.sessions);
     }
     const summary = this.summary;
+    // An attach can begin mid-turn before its `turn_started` record is in the page. The session
+    // summary carries the same live start, while a terminal event makes an old summary stale.
+    const summaryTurnStartedAtMs =
+      summary?.status === "running" &&
+      !this.staleRun(summary) &&
+      summary.turn &&
+      typeof summary.turn.startedAt === "number"
+        ? summary.turn.startedAt
+        : undefined;
+    // Session summaries and live records can arrive in either order. Keep the newer start so
+    // an older held record cannot time the next turn, nor can a late summary rewind its clock.
+    if (
+      summaryTurnStartedAtMs !== undefined &&
+      (this.observedTurnStartedAtMs === undefined || summaryTurnStartedAtMs > this.observedTurnStartedAtMs)
+    ) {
+      this.observedTurnStartedAtMs = summaryTurnStartedAtMs;
+      this.observedTurnId = typeof summary?.turn?.turnId === "string" ? summary.turn.turnId : undefined;
+    }
+    const turnStartedAtMs =
+      this.observedTurnStartedAtMs === undefined ? summaryTurnStartedAtMs : this.observedTurnStartedAtMs;
     const limits = subsessionLimits(summary?.subsessionLimits);
     const effort = (summary?.configOptions ?? []).find(
       (option: any) => option.category === "thought_level" || option.id === "reasoning_effort",
@@ -4664,9 +4746,15 @@ export class AcpmuxDirectClient {
         this.replayThrough === undefined &&
         !this.stopGaveUp &&
         // acpmux may still list a paused queue's session as running from before its turn failed.
-        (this.turnOpen || (summary?.status === "running" && !this.staleRun(summary))),
+        this.liveRunning(summary),
       ...(this.replayThrough === undefined && this.turnTokens ? { turnTokens: this.turnTokens } : {}),
       ...(this.replayThrough === undefined && this.turnOpen && this.silentTurn ? { silentTurn: true as const } : {}),
+      ...(this.replayThrough === undefined &&
+      !this.stopGaveUp &&
+      turnStartedAtMs !== undefined &&
+      (this.liveRunning(summary) || summaryTurnStartedAtMs !== undefined)
+        ? { turnStartedAtMs }
+        : {}),
       // Only a peer runs on another clock; this computer's own sessions need no correction.
       ...(summary?.peer && this.clockOffset !== undefined ? { clockOffsetMs: this.clockOffset } : {}),
       canFork: this.canFork,
@@ -4877,7 +4965,7 @@ export class AcpmuxDirectClient {
     }
     // A prompt behind the shown chat's running turn waits in the queue: it shows there from the
     // send on, never first as a transcript bubble that acpmux's `queued` record then moves.
-    const waits = !steer && shown === sessionId && this.turnOpen;
+    const waits = !steer && shown === sessionId && this.liveRunning();
     const generation = this.selectionGeneration;
     // The prompt's way to acpmux and the agent, drawn on its row (composer-delivery-DESIGN.md).
     const before = this.deliveries.get(promptId);
@@ -5329,7 +5417,7 @@ export class AcpmuxDirectClient {
     }
   }
   async continueIn(harness: string): Promise<string | undefined> {
-    if (!this.handoffSupported || this.turnOpen || this.summary?.status === "running" || this.queue.length > 0) return;
+    if (!this.handoffSupported || this.liveRunning() || this.queue.length > 0) return;
     const generation = this.selectionGeneration;
     const record = await this.handoff.prepare(harness);
     if (!record || generation !== this.selectionGeneration) return;
@@ -5369,7 +5457,7 @@ export class AcpmuxDirectClient {
     this.stopAfterSeq = this.lastSeq;
     this.stopTimer = setTimeout(() => {
       if (this.closed || generation !== this.selectionGeneration || this.actingSessionId !== sessionId) return;
-      if (!this.turnOpen && this.summary?.status !== "running") return;
+      if (!this.liveRunning()) return;
       this.stopGaveUp = true;
       this.notice(translate("stop.forced"));
     }, STOP_GRACE_MS);
@@ -5957,7 +6045,7 @@ export class AcpmuxDirectClient {
       sessionId,
       harness: typeof summary?.harness === "string" ? summary.harness : undefined,
       ...(typeof summary?.model === "string" && summary.model ? { model: summary.model } : {}),
-      empty: this.rows.size === 0 && this.queue.length === 0 && turns === 0 && !this.turnOpen,
+      empty: this.rows.size === 0 && this.queue.length === 0 && turns === 0 && !this.liveRunning(summary),
       ...(local && typeof summary?.cwd === "string" && summary.cwd ? { cwd: summary.cwd } : {}),
       ...(Array.isArray(summary?.configOptions) ? { configOptions: summary.configOptions } : {}),
     };
@@ -5971,7 +6059,7 @@ export class AcpmuxDirectClient {
   }
   /// A turn is running in the shown session.
   turnRunning(): boolean {
-    return this.turnOpen || this.summary?.status === "running";
+    return this.liveRunning();
   }
   /// Stops showing the selected session: a harness switch draws its new chat meanwhile. The
   /// session keeps running in acpmux; only this client's attach ends.
@@ -6558,6 +6646,10 @@ export class AcpmuxDirectClient {
   private foldOlder(older: EventRecord[]): void {
     const live = {
       turnOpen: this.turnOpen,
+      turnStartedAtMs: this.turnStartedAtMs,
+      observedTurnStartedAtMs: this.observedTurnStartedAtMs,
+      observedTurnId: this.observedTurnId,
+      turnEndedAtMs: this.turnEndedAtMs,
       silentTurn: this.silentTurn,
       turnTokens: this.turnTokens,
       streamingAssistant: this.streamingAssistant,
@@ -6588,6 +6680,10 @@ export class AcpmuxDirectClient {
     };
     const held = new Map(this.rows);
     this.turnOpen = false;
+    this.turnStartedAtMs = undefined;
+    this.observedTurnStartedAtMs = undefined;
+    this.observedTurnId = undefined;
+    this.turnEndedAtMs = undefined;
     this.silentTurn = false;
     this.turnTokens = undefined;
     this.streamingAssistant = undefined;
