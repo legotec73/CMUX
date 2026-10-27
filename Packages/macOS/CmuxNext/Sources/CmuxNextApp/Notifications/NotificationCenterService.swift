@@ -207,8 +207,12 @@ final class NotificationCenterService {
     func noteTyping(in window: NSWindow?) {
         guard let tab = focusedTab(in: window) else { return }
         lastKeystroke[tab] = .now
-        if isTerminalFocused(in: window) { clearUnreadMark(ofTab: tab) }
-        interacted(.keystroke, tabID: tab)
+        // Workspace Mark as Unread belongs to this Mac; typing in another machine's terminal
+        // must not clear a local mark whose tab id happens to be the same.
+        if isTerminalFocused(in: window), content(of: window)?.daemon.isLocal != false {
+            clearUnreadMark(ofTab: tab)
+        }
+        interacted(.keystroke, tabID: tab, in: window)
     }
 
     /// A mouse-down landed in `window` at `location` (window coordinates,
@@ -228,10 +232,10 @@ final class NotificationCenterService {
         endViewHolds()
         guard let press = clickedTab(in: window, at: location) else { return }
         if left, press.onStrip, let window {
-            beginStripPress(tab: press.tab, at: screen ?? window.convertPoint(toScreen: location), synthetic: synthetic)
+            beginStripPress(tab: press.tab, target: interactionTarget(tabID: press.tab, in: window), at: screen ?? window.convertPoint(toScreen: location), synthetic: synthetic)
             return
         }
-        interacted(.click, tabID: press.tab)
+        interacted(.click, tabID: press.tab, in: window)
     }
 
     /// The selected tab of the pane under `location` in `window`. A child
@@ -308,12 +312,64 @@ final class NotificationCenterService {
 
     /// Opening from a verb (jump to unread): reads it unless the policy is `never`.
     func opened(_ tab: TabModel) {
-        interacted(.open, tabID: tab.id)
+        guard let services else { return }
+        interacted(.open, tab: tab, local: services.machines.daemon(forTab: tab).isLocal)
     }
 
     func interacted(_ trigger: NotificationTrigger, tabID: String) {
         guard let services, let tab = Self.tab(id: tabID, in: services.daemon.store) else { return }
         interacted(trigger, tab: tab)
+    }
+
+    /// A click or key in `window` went into a tab in the workspace shown there. Resolve the tab
+    /// on that workspace's owning machine so identical ids on different machines cannot cross-clear.
+    struct TabInteractionTarget {
+        let tab: TabModel
+        let store: DaemonStore
+        let local: Bool
+    }
+
+    func interactionTarget(tabID: String, in window: NSWindow?) -> TabInteractionTarget? {
+        guard let services else { return nil }
+        let content = content(of: window)
+        let daemon = content?.daemon ?? services.daemon
+        guard let tab = daemon.store.tab(idOrResource: tabID),
+              content.map({ $0.workspace.screens.flatMap(\.panes).flatMap(\.tabs).contains { $0 === tab } }) ?? true else { return nil }
+        return TabInteractionTarget(tab: tab, store: daemon.store, local: daemon.isLocal)
+    }
+
+    func interacted(_ trigger: NotificationTrigger, target: TabInteractionTarget) {
+        // A closed tab or replaced store is no longer the object pressed, even if its id is reused.
+        guard target.store.tab(idOrResource: target.tab.id) === target.tab else { return }
+        interacted(trigger, tab: target.tab, local: target.local)
+    }
+
+    func interacted(_ trigger: NotificationTrigger, tabID: String, in window: NSWindow?) {
+        guard let target = interactionTarget(tabID: tabID, in: window) else { return }
+        interacted(trigger, target: target)
+    }
+
+    /// The workspace content `window` shows (a Chromium page window resolves to its cmux window);
+    /// nil for a window that shows none.
+    private func content(of window: NSWindow?) -> WorkspaceContentController? {
+        guard let host = window.map({ CmuxApplication.accessibilityWindow(for: $0) ?? $0 }) else { return nil }
+        return services?.windows.controllers.first(where: { $0.window === host })?.content
+    }
+
+    /// Resolve `tabID` within the shown workspace. Return false when that workspace has no tab by
+    /// that id so callers can apply the local fallback only on a local workspace.
+    @discardableResult
+    func interacted(_ trigger: NotificationTrigger, tabID: String, in workspace: WorkspaceModel, local: Bool) -> Bool {
+        let tabs = workspace.screens.lazy.flatMap(\.panes).flatMap(\.tabs)
+        guard let tab = tabs.first(where: { $0.id == tabID }) else { return false }
+        interacted(trigger, tab: tab, local: local)
+        return true
+    }
+
+    /// A tab on this machine follows the normal notification policy. A remote tab only hides its
+    /// attention ring, which is local view state on the owning model.
+    private func interacted(_ trigger: NotificationTrigger, tab: TabModel, local: Bool) {
+        if local { interacted(trigger, tab: tab) } else { dismissAttention(trigger, tab: tab) }
     }
 
     func interacted(_ trigger: NotificationTrigger, tab: TabModel) {
@@ -336,10 +392,18 @@ final class NotificationCenterService {
         acknowledge(tab)
     }
 
+    /// The person went into a tab an agent marked (a click or a key): its ring has done its job,
+    /// the mark stays until the agent clears it or the page changes.
+    func dismissAttention(_ trigger: NotificationTrigger, tab: TabModel) {
+        guard let attention = tab.attention, trigger == .click || trigger == .keystroke else { return }
+        tab.attentionRingHiddenThrough = attention.atMs
+    }
+
     /// Going into a pane (a click or a key) reads its tab's Mark as Unread, as it reads an unread
     /// notification: the ring both draw goes with it. Focus alone keeps the mark (a tab marked
     /// while viewed stays marked until it is viewed again, ``clearTabMarks(entering:)``).
     private func readMark(_ trigger: NotificationTrigger, tab: TabModel) {
+        dismissAttention(trigger, tab: tab)
         guard tab.markedUnread, trigger == .click || trigger == .keystroke, let services else { return }
         note("\(trigger.rawValue) read mark \(tab.id)")
         if DesignSettings.shared.attention.flashesOnEntry(trigger) { entryReads.insert(tab.id) }

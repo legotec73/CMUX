@@ -4,12 +4,16 @@ import CmuxNextAgentPane
 // Launch work no first frame needs: AppDelegate starts it once the first window's
 // frame is committed (FirstFrameGate), so it never delays that frame (perf-launch-memory).
 extension AppServices {
-    /// The free-tier attest, SSH, server reach and the updater (Sparkle).
+    /// The free-tier attest, SSH, server reach, the updater (Sparkle) and the marked-tab watch.
     func startNonPaintServices() {
         FreeTierAttestStarter(build: environment.build, bundle: .main, apiBaseURL: feed.apiBaseURL, settings: settings, signedIn: { [weak self] in self.map { $0.cloud.isSignedIn || $0.cloud.auth.isRestoring } ?? true }).start()
         ssh.start()
         serverReach.start()
         updater.start()
+        // Needs you's marked tabs (tab-attention-v1) for every agent page and the palette.
+        attentionTabsWatch = AttentionTabsWatch(
+            workspaces: { [weak self] in self?.machines.allWorkspaces.map { ($0.0, machine: $0.1.machineID) } ?? [] },
+            publish: { [weak attentionTabs] in attentionTabs?.items = $0 })
         DebugTimings.markLaunch("launch.non_paint_services")
     }
 
