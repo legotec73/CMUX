@@ -1,4 +1,5 @@
 import AppKit
+import CmuxNextDesign
 
 /// The Home split's chat column: the page's chat (`content`, filling the column) with the chat's
 /// compose button over its top-left at every list width, as in Messages (hidden only while the
@@ -38,7 +39,34 @@ final class HomeChatColumnView: NSView {
 
     override func layout() {
         super.layout()
+        compose.frame = composeFrame
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        WindowControlsAvoiders.join(self)
+    }
+
+    /// At the column's top-left, or past the window's traffic lights where they lie over it: with
+    /// the list folded and the sidebar hidden, this column is at the window's top-left (cmux#25593).
+    private var composeFrame: NSRect {
         let side = HomeChatComposeButton.side
-        compose.frame = NSRect(x: Self.composeInset, y: bounds.height - Self.composeCenterY - side / 2, width: side, height: side)
+        let row = NSRect(x: 0, y: bounds.height - Self.composeCenterY - side / 2, width: bounds.width, height: side)
+        let clearance = WindowTitlebar.windowControlsClearance(ofRow: row, in: self)
+        return NSRect(x: max(Self.composeInset, clearance), y: row.minY, width: side, height: side)
+    }
+
+    /// Shown again (its workspace): the window's re-checks skipped it while hidden.
+    override func viewDidUnhide() {
+        super.viewDidUnhide()
+        updateWindowControlsAvoidance()
+    }
+}
+
+// The window re-checks the compose button when the column moves in it with no resize.
+extension HomeChatColumnView: WindowControlsAvoiding {
+    func updateWindowControlsAvoidance() {
+        guard !compose.isHidden, composeFrame != compose.frame else { return }
+        needsLayout = true
     }
 }
