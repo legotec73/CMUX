@@ -84,6 +84,8 @@ final class WorkspaceRowView: SidebarRowView {
     /// Archived in the sidebar document: the row draws dimmed (`SidebarStyle.archivedAlpha`).
     var isArchived = false
     var iconKind: WorkspaceIcon?
+    /// The workspace color as a leading rail or a full fill (`WorkspaceRowView+Color`).
+    var rowColor: (color: GroupColor, style: WorkspaceColorIndicatorStyle)?, colorRail = NSView()
     /// Selected but not active (the active row paints the selection fill).
     var isSecondarySelected = false {
         didSet {
@@ -251,6 +253,7 @@ final class WorkspaceRowView: SidebarRowView {
         let badgesLead = content.rowBadge != .trailing && !isShowingPlaceholder
         icon.configure(icon: shown.icon)
         iconKind = shown.icon
+        configureColor(shown)
         let priorTitle = lastTitle
         if titleArrivalPending || titleArrivalScheduled || titleArrivalActive {
             titleArrivalGeneration &+= 1

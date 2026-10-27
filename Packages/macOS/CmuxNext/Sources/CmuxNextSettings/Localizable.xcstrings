@@ -19223,138 +19223,6 @@
         }
       }
     },
-    "settings.default.neverDiscard": {
-      "comment": "Settings > Browser > Memory > Hibernate Hidden Tabs: the value with nothing in cmux.json: hidden tabs only freeze and are never discarded (reloaded) on their own.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Never Discard"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "破棄しない"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "عدم التجاهل أبدًا"
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Nikad ne odbacuj"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Kassér aldrig"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Nie verwerfen"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "No descartar nunca"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Ne jamais décharger"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Non scartare mai"
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "កុំបោះចោលឡើយ"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "삭제 안 함"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Forkast aldri"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Nigdy nie odrzucaj"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Nunca descartar"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Не выгружать"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "ไม่ทิ้งเลย"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Asla atma"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Не вивантажувати"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Không bao giờ loại bỏ"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "从不丢弃"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "永不捨棄"
-          }
-        }
-      }
-    },
     "settings.default.onePixel": {
       "extractionState": "manual",
       "localizations": {
@@ -84805,268 +84673,6 @@
         }
       }
     },
-    "settings.agentPane.scrollToBottomOnSend": {
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "التمرير إلى الأسفل عند الإرسال"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Beim Senden nach unten scrollen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Scroll to Bottom When I Send"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Desplazarse al final al enviar"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Faire défiler jusqu’en bas lors de l’envoi"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "送信時に最下部へスクロール"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "보낼 때 맨 아래로 스크롤"
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Pomjeri na dno pri slanju"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Rul til bunden ved afsendelse"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Scorri in fondo quando invio"
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "រំកិលទៅបាតពេលខ្ញុំផ្ញើ"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Rull til bunnen når jeg sender"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Przewiń na dół podczas wysyłania"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Rolar para o fim ao enviar"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Прокручивать вниз при отправке"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "เลื่อนไปด้านล่างเมื่อส่ง"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Gönderdiğimde alta kaydır"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Прокручувати донизу під час надсилання"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Cuộn xuống cuối khi tôi gửi"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "发送时滚动到底部"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "傳送時捲動到底部"
-          }
-        }
-      }
-    },
-    "settings.agentPane.scrollToBottomOnSend.help": {
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "عند إيقافه، يحافظ الإرسال على موضعك أثناء القراءة إلى الأعلى ويعرض الرسائل الجديدة أدناه."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Wenn deaktiviert, bleibt beim Senden beim Lesen weiter oben deine Position erhalten und neue Nachrichten erscheinen darunter."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "When off, sending while you are reading up keeps your place and shows new messages below."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Desactivado, al enviar se conserva tu posición mientras lees más arriba y se muestran debajo los mensajes nuevos."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Désactivé, l’envoi conserve votre position quand vous lisez plus haut et affiche les nouveaux messages en dessous."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "オフにすると、上を読んでいる間に送信しても位置を維持し、新しいメッセージを下に表示します。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "끄면 위쪽을 읽는 동안 메시지를 보내도 현재 위치가 유지되고 새 메시지가 아래에 표시됩니다."
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Kada je isključeno, slanje dok čitate iznad zadržava vaš položaj i prikazuje nove poruke ispod."
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Når den er slået fra, bevarer afsendelse din placering, mens du læser oppe, og viser nye beskeder nedenunder."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Se disattivato, l'invio mentre leggi più in alto mantiene la tua posizione e mostra i nuovi messaggi sotto."
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "នៅពេលបិទ ការផ្ញើពេលអ្នកកំពុងអានខាងលើនឹងរក្សាទីតាំងរបស់អ្នក ហើយបង្ហាញសារថ្មីខាងក្រោម។"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Når den er av, beholder sending plasseringen mens du leser oppover, og nye meldinger vises nedenfor."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Po wyłączeniu wysłanie wiadomości podczas czytania wyżej zachowuje pozycję i pokazuje nowe wiadomości poniżej."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Quando desativado, enviar enquanto você lê acima mantém sua posição e mostra novas mensagens abaixo."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Если выключено, отправка во время чтения выше сохраняет позицию и показывает новые сообщения ниже."
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "เมื่อปิด การส่งข้อความขณะอ่านด้านบนจะรักษาตำแหน่งของคุณและแสดงข้อความใหม่ด้านล่าง"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Kapalıyken, yukarıda okurken gönderim konumunuzu korur ve yeni mesajları aşağıda gösterir."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Якщо вимкнено, надсилання під час читання вище зберігає позицію та показує нові повідомлення нижче."
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Khi tắt, gửi tin nhắn khi đang đọc ở trên sẽ giữ nguyên vị trí và hiển thị tin nhắn mới bên dưới."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "关闭时，在向上阅读时发送消息会保留当前位置，并在下方显示新消息。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "關閉時，在向上閱讀期間傳送訊息會保留目前位置，並在下方顯示新訊息。"
-          }
-        }
-      }
-    },
     "settings.agentPane.showContextUsage": {
       "extractionState": "manual",
       "localizations": {
@@ -119318,268 +118924,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "一個工作階段可同時開啟的子工作階段數量上限。關閉一個子工作階段會空出它的位置。"
-          }
-        }
-      }
-    },
-    "settings.agents.subsessions.maxRunning": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Running Sub-sessions per Session"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "الجلسات الفرعية العاملة لكل جلسة"
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pokrenute podsesije po sesiji"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kørende undersessioner pr. session"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Laufende Untersitzungen pro Sitzung"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Subsesiones en ejecución por sesión"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sous-sessions en cours par session"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sottosessioni in esecuzione per sessione"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "セッションごとの実行中のサブセッション"
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "វគ្គរងដែលកំពុងដំណើរការក្នុងមួយវគ្គ"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "세션당 실행 중인 하위 세션"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kjørende underøkter per økt"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Działające podsesje na sesję"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Subsessões em execução por sessão"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Работающих вложенных сеансов на сеанс"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "เซสชันย่อยที่ทำงานอยู่ต่อเซสชัน"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Oturum başına çalışan alt oturum"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Запущених вкладених сеансів на сеанс"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Số phiên con chạy cùng lúc mỗi phiên"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "每个会话同时运行的子会话"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "每個工作階段同時執行的子工作階段"
-          }
-        }
-      }
-    },
-    "settings.agents.subsessions.maxRunning.help": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The most sub-sessions one session runs at the same time. More wait their turn and start as running ones finish. Running ones are never stopped when you lower it."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "أقصى عدد من الجلسات الفرعية التي تشغّلها جلسة واحدة في الوقت نفسه. تنتظر الجلسات الأخرى دورها وتبدأ عندما تنتهي الجلسات العاملة. لا تتوقف الجلسات العاملة أبدًا عند خفض هذا العدد."
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Najveći broj podsesija koje jedna sesija pokreće u isto vrijeme. Ostale čekaju na red i pokreću se kad pokrenute završe. Pokrenute se nikad ne zaustavljaju kad smanjite broj."
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Det største antal undersessioner, én session kører på samme tid. Flere venter på tur og starter, når kørende afslutter. Kørende stoppes aldrig, når du sænker tallet."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die höchste Zahl an Untersitzungen, die eine Sitzung gleichzeitig ausführt. Weitere warten und starten, sobald laufende fertig sind. Laufende werden nie gestoppt, wenn du den Wert senkst."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El número máximo de subsesiones que una sesión ejecuta a la vez. Las demás esperan su turno y empiezan cuando terminan las que están en ejecución. Al bajarlo, las que están en ejecución nunca se detienen."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Le nombre maximal de sous-sessions qu’une session exécute en même temps. Les autres attendent leur tour et démarrent quand celles en cours se terminent. Baisser ce nombre n’arrête jamais celles en cours."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Il numero massimo di sottosessioni che una sessione esegue contemporaneamente. Le altre aspettano il loro turno e partono quando quelle in esecuzione finiscono. Abbassarlo non ferma mai quelle in esecuzione."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1 つのセッションが同時に実行するサブセッションの最大数です。それ以上は順番を待ち、実行中のものが終わると開始します。値を下げても実行中のものは停止しません。"
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ចំនួនវគ្គរងច្រើនបំផុតដែលវគ្គមួយដំណើរការក្នុងពេលតែមួយ។ វគ្គផ្សេងទៀតរង់ចាំវេន ហើយចាប់ផ្ដើមនៅពេលវគ្គដែលកំពុងដំណើរការបញ្ចប់។ វគ្គដែលកំពុងដំណើរការមិនដែលត្រូវបានបញ្ឈប់ទេ នៅពេលអ្នកបន្ថយវា។"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "한 세션이 동시에 실행하는 하위 세션의 최대 개수입니다. 나머지는 차례를 기다렸다가 실행 중인 세션이 끝나면 시작됩니다. 값을 낮춰도 실행 중인 세션은 멈추지 않습니다."
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Det største antallet underøkter én økt kjører samtidig. Flere venter på tur og starter når kjørende blir ferdige. Kjørende stoppes aldri når du senker tallet."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Największa liczba podsesji, które jedna sesja uruchamia jednocześnie. Kolejne czekają na swoją kolej i startują, gdy działające się skończą. Zmniejszenie wartości nigdy nie zatrzymuje działających."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "O número máximo de subsessões que uma sessão executa ao mesmo tempo. As demais aguardam a vez e começam quando as em execução terminam. Reduzir o valor nunca interrompe as que estão em execução."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Наибольшее число вложенных сеансов, которые один сеанс выполняет одновременно. Остальные ждут своей очереди и запускаются, когда работающие завершатся. При уменьшении значения работающие сеансы не останавливаются."
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "จำนวนเซสชันย่อยสูงสุดที่เซสชันหนึ่งทำงานพร้อมกัน ส่วนที่เกินจะรอคิวและเริ่มเมื่อเซสชันที่ทำงานอยู่เสร็จ การลดค่านี้จะไม่หยุดเซสชันที่ทำงานอยู่"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bir oturumun aynı anda çalıştırdığı en fazla alt oturum sayısı. Fazlası sırasını bekler ve çalışanlar bittikçe başlar. Değeri düşürdüğünüzde çalışanlar asla durdurulmaz."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Найбільша кількість вкладених сеансів, які один сеанс виконує одночасно. Решта чекають своєї черги й запускаються, коли запущені завершаться. Якщо зменшити значення, запущені сеанси не зупиняються."
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Số phiên con tối đa mà một phiên chạy cùng lúc. Các phiên khác chờ đến lượt và bắt đầu khi phiên đang chạy kết thúc. Giảm giá trị này không bao giờ dừng các phiên đang chạy."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "一个会话同时运行的子会话数量上限。超出的子会话排队等待，在运行中的子会话结束后开始。调低此值不会停止正在运行的子会话。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "一個工作階段同時執行的子工作階段數量上限。超出的子工作階段排隊等候，在執行中的子工作階段結束後開始。調低此值不會停止正在執行的子工作階段。"
           }
         }
       }
@@ -175273,6 +174617,1190 @@
         }
       }
     },
+    "settings.workspaceColors.indicatorStyle": {
+      "comment": "Settings > Appearance > Sidebar: how a workspace's color shows on its row",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نمط لون مساحة العمل"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stil boje radnog prostora"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stil for arbejdsområdefarve"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stil der Workspace-Farbe"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace Color Style"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estilo del color del espacio de trabajo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Style de couleur de l’espace de travail"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stile colore dell’area di lavoro"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ワークスペースの色の表示方法"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "រចនាប័ទ្មពណ៌កន្លែងធ្វើការ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "워크스페이스 색상 스타일"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stil for arbeidsområdefarge"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Styl koloru obszaru roboczego"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estilo da cor do espaço de trabalho"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стиль цвета рабочего пространства"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "รูปแบบสีของพื้นที่ทำงาน"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çalışma alanı rengi stili"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стиль кольору робочого простору"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kiểu màu không gian làm việc"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作区颜色样式"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作區顏色樣式"
+          }
+        }
+      }
+    },
+    "settings.workspaceColors.indicatorStyle.help": {
+      "comment": "Settings > Appearance > Sidebar: help for the workspace color style choice",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كيف يظهر لون مساحة العمل في الشريط الجانبي: نقطة قبل اسمها، أو شريط على حافة الصف، أو الصف كله مملوء باللون."
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kako se boja radnog prostora prikazuje na bočnoj traci: tačka ispred imena, traka uz rub reda ili cijeli red ispunjen bojom."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sådan vises et arbejdsområdes farve i sidepanelet: en prik før navnet, en streg langs rækkens kant eller hele rækken fyldt med farven."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie die Farbe eines Workspace in der Seitenleiste erscheint: ein Punkt vor dem Namen, ein Balken am Rand der Zeile oder die ganze Zeile in der Farbe gefüllt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How a workspace's color shows in the sidebar: a dot before its name, a bar down the row's edge, or the whole row filled with the color."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo se muestra el color de un espacio de trabajo en la barra lateral: un punto antes del nombre, una barra en el borde de la fila o toda la fila rellena con el color."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comment la couleur d’un espace de travail apparaît dans la barre latérale : un point devant son nom, une barre le long du bord de la ligne ou toute la ligne remplie de la couleur."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Come appare il colore di un’area di lavoro nella barra laterale: un punto prima del nome, una barra lungo il bordo della riga o l’intera riga riempita con il colore."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サイドバーでのワークスペースの色の表示方法：名前の前の点、行の端に沿ったバー、または行全体をその色で塗りつぶします。"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "របៀបដែលពណ៌កន្លែងធ្វើការបង្ហាញនៅក្នុងរបារចំហៀង៖ ចំណុចមួយនៅមុខឈ្មោះ របារមួយតាមគែមជួរ ឬជួរទាំងមូលបំពេញដោយពណ៌។"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "사이드바에서 워크스페이스 색상을 표시하는 방식: 이름 앞의 점, 행 가장자리의 막대, 또는 행 전체를 색상으로 채우기."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slik vises fargen til et arbeidsområde i sidefeltet: en prikk foran navnet, en strek langs radens kant eller hele raden fylt med fargen."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jak kolor obszaru roboczego wyświetla się na pasku bocznym: kropka przed nazwą, pasek wzdłuż krawędzi wiersza lub cały wiersz wypełniony kolorem."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Como a cor de um espaço de trabalho aparece na barra lateral: um ponto antes do nome, uma barra na borda da linha ou a linha inteira preenchida com a cor."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Как цвет рабочего пространства показан на боковой панели: точка перед названием, полоса по краю строки или вся строка, залитая цветом."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "วิธีแสดงสีของพื้นที่ทำงานในแถบด้านข้าง: จุดหน้าชื่อ แถบตามขอบแถว หรือเติมสีทั้งแถว"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir çalışma alanının renginin kenar çubuğunda nasıl görüneceği: adının önünde bir nokta, satırın kenarında bir çubuk veya renkle doldurulmuş satırın tamamı."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Як колір робочого простору показано на бічній панелі: крапка перед назвою, смуга вздовж краю рядка або весь рядок, залитий кольором."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cách màu của không gian làm việc hiển thị ở thanh bên: một chấm trước tên, một thanh dọc mép hàng, hoặc tô màu cả hàng."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作区颜色在边栏中的显示方式：名称前的圆点、沿行边缘的竖条，或用该颜色填充整行。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作區顏色在側邊欄中的顯示方式：名稱前的圓點、沿列邊緣的直條，或以該顏色填滿整列。"
+          }
+        }
+      }
+    },
+    "settings.choice.workspaceColorDot": {
+      "comment": "Workspace Color Style choice: a colored dot before the workspace name",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نقطة"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tačka"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prik"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Punkt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dot"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Punto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Point"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Punto"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ចំណុច"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "점"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prikk"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kropka"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponto"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Точка"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "จุด"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nokta"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Крапка"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chấm"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "圆点"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "圓點"
+          }
+        }
+      }
+    },
+    "settings.choice.workspaceColorLeftRail": {
+      "comment": "Workspace Color Style choice: a colored bar down the row's leading edge",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "شريط جانبي"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lijeva traka"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venstre streg"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linker Balken"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Left Rail"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barra izquierda"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barre à gauche"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barra sinistra"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "左端のバー"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "របារខាងឆ្វេង"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "왼쪽 막대"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venstre strek"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lewy pasek"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barra à esquerda"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Полоса слева"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "แถบด้านซ้าย"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sol çubuk"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Смуга ліворуч"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thanh bên trái"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "左侧竖条"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "左側直條"
+          }
+        }
+      }
+    },
+    "settings.choice.workspaceColorFill": {
+      "comment": "Workspace Color Style choice: the whole sidebar row filled with the workspace color",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعبئة الصف"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ispuni red"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyld rækken"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeile füllen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fill Row"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rellenar fila"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remplir la ligne"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riempi riga"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行を塗りつぶす"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "បំពេញជួរ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "행 채우기"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll raden"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wypełnij wiersz"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preencher linha"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заливка строки"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "เติมทั้งแถว"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Satırı doldur"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заливка рядка"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tô cả hàng"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "填充整行"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "填滿整列"
+          }
+        }
+      }
+    },
+    "settings.agentPane.scrollToBottomOnSend": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "التمرير إلى الأسفل عند الإرسال"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Beim Senden nach unten scrollen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Scroll to Bottom When I Send"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Desplazarse al final al enviar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Faire défiler jusqu’en bas lors de l’envoi"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "送信時に最下部へスクロール"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "보낼 때 맨 아래로 스크롤"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pomjeri na dno pri slanju"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rul til bunden ved afsendelse"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Scorri in fondo quando invio"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "រំកិលទៅបាតពេលខ្ញុំផ្ញើ"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rull til bunnen når jeg sender"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Przewiń na dół podczas wysyłania"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rolar para o fim ao enviar"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Прокручивать вниз при отправке"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "เลื่อนไปด้านล่างเมื่อส่ง"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gönderdiğimde alta kaydır"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Прокручувати донизу під час надсилання"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cuộn xuống cuối khi tôi gửi"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "发送时滚动到底部"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "傳送時捲動到底部"
+          }
+        }
+      }
+    },
+    "settings.agentPane.scrollToBottomOnSend.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "عند إيقافه، يحافظ الإرسال على موضعك أثناء القراءة إلى الأعلى ويعرض الرسائل الجديدة أدناه."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wenn deaktiviert, bleibt beim Senden beim Lesen weiter oben deine Position erhalten und neue Nachrichten erscheinen darunter."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "When off, sending while you are reading up keeps your place and shows new messages below."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Desactivado, al enviar se conserva tu posición mientras lees más arriba y se muestran debajo los mensajes nuevos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Désactivé, l’envoi conserve votre position quand vous lisez plus haut et affiche les nouveaux messages en dessous."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "オフにすると、上を読んでいる間に送信しても位置を維持し、新しいメッセージを下に表示します。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "끄면 위쪽을 읽는 동안 메시지를 보내도 현재 위치가 유지되고 새 메시지가 아래에 표시됩니다."
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kada je isključeno, slanje dok čitate iznad zadržava vaš položaj i prikazuje nove poruke ispod."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Når den er slået fra, bevarer afsendelse din placering, mens du læser oppe, og viser nye beskeder nedenunder."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Se disattivato, l'invio mentre leggi più in alto mantiene la tua posizione e mostra i nuovi messaggi sotto."
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "នៅពេលបិទ ការផ្ញើពេលអ្នកកំពុងអានខាងលើនឹងរក្សាទីតាំងរបស់អ្នក ហើយបង្ហាញសារថ្មីខាងក្រោម។"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Når den er av, beholder sending plasseringen mens du leser oppover, og nye meldinger vises nedenfor."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Po wyłączeniu wysłanie wiadomości podczas czytania wyżej zachowuje pozycję i pokazuje nowe wiadomości poniżej."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quando desativado, enviar enquanto você lê acima mantém sua posição e mostra novas mensagens abaixo."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Если выключено, отправка во время чтения выше сохраняет позицию и показывает новые сообщения ниже."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "เมื่อปิด การส่งข้อความขณะอ่านด้านบนจะรักษาตำแหน่งของคุณและแสดงข้อความใหม่ด้านล่าง"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kapalıyken, yukarıda okurken gönderim konumunuzu korur ve yeni mesajları aşağıda gösterir."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Якщо вимкнено, надсилання під час читання вище зберігає позицію та показує нові повідомлення нижче."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Khi tắt, gửi tin nhắn khi đang đọc ở trên sẽ giữ nguyên vị trí và hiển thị tin nhắn mới bên dưới."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "关闭时，在向上阅读时发送消息会保留当前位置，并在下方显示新消息。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "關閉時，在向上閱讀期間傳送訊息會保留目前位置，並在下方顯示新訊息。"
+          }
+        }
+      }
+    },
+    "settings.agents.subsessions.maxRunning": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running Sub-sessions per Session"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الجلسات الفرعية العاملة لكل جلسة"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokrenute podsesije po sesiji"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kørende undersessioner pr. session"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laufende Untersitzungen pro Sitzung"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subsesiones en ejecución por sesión"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sous-sessions en cours par session"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sottosessioni in esecuzione per sessione"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "セッションごとの実行中のサブセッション"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "វគ្គរងដែលកំពុងដំណើរការក្នុងមួយវគ្គ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "세션당 실행 중인 하위 세션"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kjørende underøkter per økt"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Działające podsesje na sesję"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subsessões em execução por sessão"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Работающих вложенных сеансов на сеанс"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "เซสชันย่อยที่ทำงานอยู่ต่อเซสชัน"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oturum başına çalışan alt oturum"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запущених вкладених сеансів на сеанс"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Số phiên con chạy cùng lúc mỗi phiên"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每个会话同时运行的子会话"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每個工作階段同時執行的子工作階段"
+          }
+        }
+      }
+    },
+    "settings.agents.subsessions.maxRunning.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The most sub-sessions one session runs at the same time. More wait their turn and start as running ones finish. Running ones are never stopped when you lower it."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أقصى عدد من الجلسات الفرعية التي تشغّلها جلسة واحدة في الوقت نفسه. تنتظر الجلسات الأخرى دورها وتبدأ عندما تنتهي الجلسات العاملة. لا تتوقف الجلسات العاملة أبدًا عند خفض هذا العدد."
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najveći broj podsesija koje jedna sesija pokreće u isto vrijeme. Ostale čekaju na red i pokreću se kad pokrenute završe. Pokrenute se nikad ne zaustavljaju kad smanjite broj."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det største antal undersessioner, én session kører på samme tid. Flere venter på tur og starter, når kørende afslutter. Kørende stoppes aldrig, når du sænker tallet."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die höchste Zahl an Untersitzungen, die eine Sitzung gleichzeitig ausführt. Weitere warten und starten, sobald laufende fertig sind. Laufende werden nie gestoppt, wenn du den Wert senkst."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El número máximo de subsesiones que una sesión ejecuta a la vez. Las demás esperan su turno y empiezan cuando terminan las que están en ejecución. Al bajarlo, las que están en ejecución nunca se detienen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le nombre maximal de sous-sessions qu’une session exécute en même temps. Les autres attendent leur tour et démarrent quand celles en cours se terminent. Baisser ce nombre n’arrête jamais celles en cours."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il numero massimo di sottosessioni che una sessione esegue contemporaneamente. Le altre aspettano il loro turno e partono quando quelle in esecuzione finiscono. Abbassarlo non ferma mai quelle in esecuzione."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 つのセッションが同時に実行するサブセッションの最大数です。それ以上は順番を待ち、実行中のものが終わると開始します。値を下げても実行中のものは停止しません。"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ចំនួនវគ្គរងច្រើនបំផុតដែលវគ្គមួយដំណើរការក្នុងពេលតែមួយ។ វគ្គផ្សេងទៀតរង់ចាំវេន ហើយចាប់ផ្ដើមនៅពេលវគ្គដែលកំពុងដំណើរការបញ្ចប់។ វគ្គដែលកំពុងដំណើរការមិនដែលត្រូវបានបញ្ឈប់ទេ នៅពេលអ្នកបន្ថយវា។"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "한 세션이 동시에 실행하는 하위 세션의 최대 개수입니다. 나머지는 차례를 기다렸다가 실행 중인 세션이 끝나면 시작됩니다. 값을 낮춰도 실행 중인 세션은 멈추지 않습니다."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det største antallet underøkter én økt kjører samtidig. Flere venter på tur og starter når kjørende blir ferdige. Kjørende stoppes aldri når du senker tallet."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Największa liczba podsesji, które jedna sesja uruchamia jednocześnie. Kolejne czekają na swoją kolej i startują, gdy działające się skończą. Zmniejszenie wartości nigdy nie zatrzymuje działających."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O número máximo de subsessões que uma sessão executa ao mesmo tempo. As demais aguardam a vez e começam quando as em execução terminam. Reduzir o valor nunca interrompe as que estão em execução."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Наибольшее число вложенных сеансов, которые один сеанс выполняет одновременно. Остальные ждут своей очереди и запускаются, когда работающие завершатся. При уменьшении значения работающие сеансы не останавливаются."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "จำนวนเซสชันย่อยสูงสุดที่เซสชันหนึ่งทำงานพร้อมกัน ส่วนที่เกินจะรอคิวและเริ่มเมื่อเซสชันที่ทำงานอยู่เสร็จ การลดค่านี้จะไม่หยุดเซสชันที่ทำงานอยู่"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir oturumun aynı anda çalıştırdığı en fazla alt oturum sayısı. Fazlası sırasını bekler ve çalışanlar bittikçe başlar. Değeri düşürdüğünüzde çalışanlar asla durdurulmaz."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Найбільша кількість вкладених сеансів, які один сеанс виконує одночасно. Решта чекають своєї черги й запускаються, коли запущені завершаться. Якщо зменшити значення, запущені сеанси не зупиняються."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Số phiên con tối đa mà một phiên chạy cùng lúc. Các phiên khác chờ đến lượt và bắt đầu khi phiên đang chạy kết thúc. Giảm giá trị này không bao giờ dừng các phiên đang chạy."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一个会话同时运行的子会话数量上限。超出的子会话排队等待，在运行中的子会话结束后开始。调低此值不会停止正在运行的子会话。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一個工作階段同時執行的子工作階段數量上限。超出的子工作階段排隊等候，在執行中的子工作階段結束後開始。調低此值不會停止正在執行的子工作階段。"
+          }
+        }
+      }
+    },
     "settings.group.sounds": {
       "comment": "Settings > Notifications: the group of notification sound rows",
       "extractionState": "manual",
@@ -179151,6 +179679,138 @@
         "vi": {"stringUnit": {"state": "needs_review", "value": "Mép thanh bên không còn mờ dần và toàn bộ danh sách hiển thị. Thanh hồ sơ và tìm kiếm ở dưới cũng bị ẩn. Tắt: mép mờ dần và thanh hiển thị."}},
         "zh-Hans": {"stringUnit": {"state": "needs_review", "value": "侧边栏边缘不再渐隐，整个列表全部显示。同时隐藏底部的个人资料和搜索栏。关闭时边缘渐隐，并显示该栏。"}},
         "zh-Hant": {"stringUnit": {"state": "needs_review", "value": "側邊欄邊緣不再漸隱，整個列表全部顯示。同時隱藏底部的個人資料和搜尋列。關閉時邊緣漸隱，並顯示該列。"}}
+      }
+    },
+    "settings.default.neverDiscard": {
+      "comment": "Settings > Browser > Memory > Hibernate Hidden Tabs: the value with nothing in cmux.json: hidden tabs only freeze and are never discarded (reloaded) on their own.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Never Discard"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "破棄しない"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "عدم التجاهل أبدًا"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nikad ne odbacuj"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kassér aldrig"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nie verwerfen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No descartar nunca"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ne jamais décharger"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Non scartare mai"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "កុំបោះចោលឡើយ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "삭제 안 함"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Forkast aldri"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nigdy nie odrzucaj"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nunca descartar"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Не выгружать"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ไม่ทิ้งเลย"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Asla atma"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Не вивантажувати"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Không bao giờ loại bỏ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "从不丢弃"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "永不捨棄"
+          }
+        }
       }
     }
   },
