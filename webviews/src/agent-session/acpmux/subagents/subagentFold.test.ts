@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { SUBAGENTS, SubagentFold, stopReasonOf, subagentStops } from "./subagentFold";
+import { sessionSummary } from "../summary/sessionSummary";
+import { transcriptPullRequestKey, transcriptSummaryVersion } from "../summary/transcriptPullRequests";
 
 // session/update records as acpmux sends them: a subagent's own updates carry its id in
 // `_meta.acpmux.subagent`, spawns and state changes in `_meta.acpmux.subagents`.
@@ -48,6 +50,73 @@ test("a subagent's own updates draw as its view, with the subagents it spawned a
   const after = fold.views().a!;
   expect(after).not.toBe(before);
   expect(after[2]!.subagents?.map((agent) => agent.state)).toEqual(["completed", "failed"]);
+});
+
+test("live child replies stay unsettled and keep the producer revision stable", () => {
+  const fold = new SubagentFold();
+  feed(fold, { sessionUpdate: "subagent_spawned" }, { subagents: [{ id: "a", parent: null, name: "Audit" }] });
+  feed(fold, say("acme/app#7"), { subagent: "a" });
+  const live = fold.views().a!;
+  const liveKey = transcriptPullRequestKey(live, true);
+  expect(live[0]?.streaming).toBe(true);
+  expect(sessionSummary(live, "acme/app").sources).toEqual([]);
+
+  feed(fold, say(" and acme/app#71"), { subagent: "a" });
+  const extended = fold.views().a!;
+  expect(extended[0]?.streaming).toBe(true);
+  expect(transcriptPullRequestKey(extended, true)).toBe(liveKey);
+  expect(transcriptSummaryVersion(extended)).toBe(transcriptSummaryVersion(live));
+  expect(sessionSummary(extended, "acme/app").sources).toEqual([]);
+
+  feed(fold, { sessionUpdate: "subagent_state_update" }, { subagents: [{ id: "a", state: "completed" }] });
+  const settled = fold.views().a!;
+  expect(settled[0]?.streaming).toBe(false);
+  expect(transcriptSummaryVersion(settled)).not.toBe(transcriptSummaryVersion(extended));
+  expect(sessionSummary(settled, "acme/app").sources.map((source) => source.label)).toContain("acme/app#7");
+});
+
+test("nested completion invalidates the parent summary revision", () => {
+  const fold = new SubagentFold();
+  feed(fold, { sessionUpdate: "subagent_spawned" }, { subagents: [{ id: "a", parent: null, name: "Parent" }] });
+  feed(fold, { sessionUpdate: "subagent_spawned" }, { subagents: [{ id: "b", parent: "a", name: "Child" }] });
+  const before = sessionSummary(fold.views().a!, "acme/app");
+  expect(before.subagents).toEqual([{ id: "b", title: "Child", state: "running" }]);
+
+  feed(fold, { sessionUpdate: "subagent_state_update" }, { subagents: [{ id: "b", state: "completed" }] });
+  const after = sessionSummary(fold.views().a!, "acme/app");
+  expect(after).not.toBe(before);
+  expect(after.subagents).toEqual([{ id: "b", title: "Child", state: "done" }]);
+});
+
+test("mixed child activity and nested streams reuse summaries until completion", () => {
+  const fold = new SubagentFold();
+  const childUpdate = (update: object) => feed(fold, update, { subagent: "b" });
+  feed(fold, { sessionUpdate: "subagent_spawned" }, { subagents: [{ id: "a", parent: null }] });
+  feed(fold, { sessionUpdate: "subagent_spawned" }, { subagents: [{ id: "b", parent: "a" }] });
+  childUpdate({
+    sessionUpdate: "tool_call",
+    toolCallId: "done",
+    title: "Read",
+    kind: "read",
+    status: "completed",
+    locations: [{ path: "before.ts" }],
+  });
+  expect(sessionSummary(fold.views().b!).sources.map((source) => source.label)).toEqual(["before.ts"]);
+  childUpdate({ sessionUpdate: "tool_call_update", toolCallId: "done", locations: [{ path: "after.ts" }] });
+  expect(sessionSummary(fold.views().b!).sources.map((source) => source.label)).toEqual(["after.ts"]);
+  childUpdate({ sessionUpdate: "tool_call", toolCallId: "live", title: "Work", kind: "think", status: "in_progress" });
+  expect(sessionSummary(fold.views().b!).subagents).toEqual([{ id: "live", title: "Work", state: "running" }]);
+  const parent = sessionSummary(fold.views().a!, "acme/app");
+  for (let index = 0; index < 50; index++) {
+    childUpdate({ sessionUpdate: "agent_thought_chunk", content: { type: "text", text: "thinking" } });
+    childUpdate({ sessionUpdate: "tool_call_update", toolCallId: "live", title: "Work", status: "in_progress" });
+    expect(sessionSummary(fold.views().a!, "acme/app")).toBe(parent);
+  }
+  const child = sessionSummary(fold.views().b!, "acme/app");
+  childUpdate({ sessionUpdate: "agent_thought_chunk", content: { type: "text", text: "more" } });
+  expect(sessionSummary(fold.views().b!, "acme/app")).toBe(child);
+  feed(fold, { sessionUpdate: "subagent_state_update" }, { subagents: [{ id: "b", state: "completed" }] });
+  expect(sessionSummary(fold.views().a!, "acme/app").subagents[0]?.state).toBe("done");
 });
 
 describe("why a subagent stopped", () => {

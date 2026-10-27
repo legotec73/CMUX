@@ -1,5 +1,6 @@
-// Every pull request a chat created, merged, steered or named, across repositories, read from its
-// transcript (the Inspector's Changes, Claude Code desktop's). The sources, in transcript order:
+// Every pull request a chat created, changed or named, across repositories, read from its transcript.
+// Changes consumes the created/mutated rows; read-only references feed Session Info's Sources. The
+// findings are collected in transcript order:
 //
 // - a `gh pr create` or `glaeda-gh post pr` call: the pull request URL it printed, which the chat
 //   opened, with the `--title` it gave;
@@ -25,12 +26,16 @@ export type SummaryPullRequest = {
   url: string;
   repo: string;
   number: number;
+  /// An issue reference is kept in the same transcript stream for Sources, but never Changes.
+  kind?: "pullRequest" | "issue";
   title?: string;
   state: PullRequestState;
   /// When the chat closed it (epoch ms), if the call says.
   closedAt?: number;
   /// The chat opened it (`gh pr create`, `glaeda-gh post pr`); false for one it only touched or named.
   opened: boolean;
+  /// Opened or mutated pull requests belong in Changes.
+  changed?: boolean;
   /// Only named, never acted on as a pull request: it may be an issue.
   mentioned?: boolean;
   /// Where in the transcript the chat last touched or named it (rises with each row), for order.
@@ -38,12 +43,20 @@ export type SummaryPullRequest = {
 };
 
 const PR_URL = /https:\/\/github\.com\/([\w.-]+\/[\w.-]+)\/pull\/(\d+)/g;
+const ISSUE_URL = /https:\/\/github\.com\/([\w.-]+\/[\w.-]+)\/issues\/(\d+)/g;
 /// `--title "..."`, `--title '...'`, `--title=...` or `-t "..."` on a create line.
 const TITLE = /(?:--title[= ]|-t )(?:"((?:[^"\\]|\\.)*)"|'([^']*)'|(\S+))/;
 const CREATE = /\bgh\s+pr\s+create\b|\bglaeda-gh\s+post\s+pr(?=\s|$)/;
+const ISSUE_CALL = /\bgh\s+issue\s+([a-z][\w-]*)(?=\s|$)([^\n;&|]*)/g;
+/// Writes sent through glaeda's broker are mutations even though they do not use `gh pr`.
+const BROKER_CALL =
+  /\bglaeda-gh\s+(?:[a-z][\w-]*\s+)*(pr-(?:comment|edit|close|reopen|merge|review|approve|request-changes|update-branch)|issue-(?:comment|edit|close|reopen|create|lock|unlock|delete|pin|unpin|transfer))(?=\s|$)([^\n;&|]*)/g;
+const EXECUTED_PR_COMMAND =
+  /^\s*(?:(?:[A-Za-z_]\w*=\S*|env|command|nohup|time)\s+)*(?:[\w./~-]*\/)?(?:gh|glaeda-gh|gh-merge-green)(?:\s|$)/;
 /// One call that acts on a single pull request: a `gh pr` verb, `gh-merge-green`, or `glaeda-gh`
 /// with a `pr` argument (`wait pr`, `status pr`, `checks pr`), up to the end of the call.
-const CALL = /\b(?:gh\s+pr\s+([a-z][\w-]*)|gh-merge-green|glaeda-gh\s+(?:[a-z][\w-]*\s+)*?pr)(?=\s|$)([^\n;&|]*)/g;
+const CALL =
+  /\b(?:gh\s+pr\s+([a-z][\w-]*)|gh-merge-green|glaeda-gh\s+(?:[a-z][\w-]*\s+)*?pr(?:\s+([a-z][\w-]*))?)(?=\s|$)([^\n;&|]*)/g;
 /// `owner/repo#N`, not inside a path or URL.
 const REPO_REF = /(?<![\w/.:#-])([\w-][\w.-]*)\/([\w.-]+)#(\d+)\b/g;
 const OWNER_REPO_REF = /^([\w-][\w.-]*)\/([\w.-]+)#(\d+)$/;
@@ -92,11 +105,34 @@ const SWITCHES = new Set([
   "--json-only",
 ]);
 const SETTLES: Record<string, PullRequestState> = { merge: "merged", close: "closed", reopen: "open" };
+const ISSUE_MUTATING = new Set("create edit comment close reopen lock unlock delete pin unpin transfer".split(" "));
+const MUTATING = new Set("merge close edit comment review ready reopen lock unlock update-branch".split(" "));
 
 const succeeded = (tool: Tool) => tool.status === "completed" && (tool.exitCode ?? 0) === 0;
 const urlOf = (repo: string, number: number) => `https://github.com/${repo}/pull/${number}`;
+const issueUrlOf = (repo: string, number: number) => `https://github.com/${repo}/issues/${number}`;
 /// A command without the text it carries as data.
-const bare = (command: string) => command.replace(HEREDOC, "$3\n").replace(QUOTED, " ");
+const bare = (command: string) =>
+  command
+    .replace(HEREDOC, "$3\n")
+    .replace(QUOTED, " ")
+    .replace(/(^|[ \t;&|])#.*$/gm, "$1");
+
+/// Only explicit JSON title fields or a `.title` query are title evidence.
+function outputTitle(tool: Tool): string | undefined {
+  const output = tool.output?.trim();
+  if (!output) return undefined;
+  try {
+    const value: unknown = JSON.parse(output);
+    if (value && typeof value === "object" && typeof (value as { title?: unknown }).title === "string") {
+      return (value as { title: string }).title.trim() || undefined;
+    }
+  } catch {
+    // `gh pr view --jq .title` emits a plain line rather than JSON.
+  }
+  if (/(?:--jq|-q)(?:=|\s+)["']?\.title["']?(?=\s|$)/.test(tool.command ?? "") && !output.includes("\n")) return output;
+  return undefined;
+}
 
 /// `name`: a repository by its name (`glaeda #12`); one the transcript never names is the word
 /// before a bare `#N` ("Merged #12") when `orFolder`, else nothing.
@@ -104,9 +140,15 @@ type Ref = { kind: "full"; repo: string } | { kind: "name"; name: string; orFold
 /// What one row says about pull requests, before the folder and the transcript's repositories
 /// resolve its `#N` and `repo #N`.
 type Finding =
-  | { how: "opened"; repo: string; number: number; title?: string }
-  | { how: "touched"; ref: Ref; number: number }
-  | { how: "mentioned"; ref: Ref; number: number }
+  | { how: "opened"; repo: string; number: number; title?: string; kind?: "pullRequest" | "issue" }
+  | {
+      how: "touched" | "mentioned";
+      ref: Ref;
+      number: number;
+      changed?: boolean;
+      title?: string;
+      kind?: "pullRequest" | "issue";
+    }
   | { how: "settle"; ref: Ref; number: number; state: PullRequestState; at?: number };
 
 /// The pull request a call names: its first argument, after the flags and their values.
@@ -122,6 +164,8 @@ function callTarget(rest: string): { ref: Ref; number: number } | undefined {
     }
     const url = new RegExp(`^${PR_URL.source}(?:/\\S*)?$`).exec(word);
     if (url) return { ref: { kind: "full", repo: url[1]! }, number: Number(url[2]) };
+    const issue = new RegExp(`^${ISSUE_URL.source}$`).exec(word);
+    if (issue) return { ref: { kind: "full", repo: issue[1]! }, number: Number(issue[2]) };
     const ref = OWNER_REPO_REF.exec(word);
     if (ref) return { ref: { kind: "full", repo: `${ref[1]}/${ref[2]}` }, number: Number(ref[3]) };
     const number = /^#?(\d+)$/.exec(word)?.[1];
@@ -135,37 +179,105 @@ function toolFindings(tool: Tool): Finding[] {
   if (!succeeded(tool)) return [];
   const command = tool.command ?? "";
   const plain = bare(command);
+  const calls = plain
+    .split(/[\n;&|]+/)
+    .filter((part) => EXECUTED_PR_COMMAND.test(part) && !/(?:^|\s)(?:--help|-h)(?=\s|$)/.test(part))
+    .join("\n");
   const found: Finding[] = [];
-  if (CREATE.test(plain)) {
+  if (CREATE.test(calls)) {
     const title = TITLE.exec(command);
     const text = title ? (title[1] ?? title[2] ?? title[3])?.replace(/\\(.)/g, "$1") : undefined;
     for (const match of (tool.output ?? "").matchAll(PR_URL))
-      found.push({ how: "opened", repo: match[1]!, number: Number(match[2]), ...(text ? { title: text } : {}) });
+      found.push({
+        how: "opened",
+        repo: match[1]!,
+        number: Number(match[2]),
+        ...(text ? { title: text } : {}),
+      });
     return found;
   }
-  for (const match of plain.matchAll(CALL)) {
+  let issueCall = false;
+  for (const match of calls.matchAll(ISSUE_CALL)) {
+    issueCall = true;
+    const action = match[1]!;
+    const target = callTarget(match[2] ?? "");
+    const targets = target
+      ? [target]
+      : action === "create"
+        ? [...(tool.output ?? "").matchAll(ISSUE_URL)].map((match) => ({
+            ref: { kind: "full" as const, repo: match[1]! },
+            number: Number(match[2]),
+          }))
+        : [];
+    for (const target of targets)
+      found.push({
+        how: ISSUE_MUTATING.has(action) ? "touched" : "mentioned",
+        ...target,
+        ...(ISSUE_MUTATING.has(action) ? { changed: true } : {}),
+        kind: "issue",
+        title: outputTitle(tool),
+      });
+  }
+  for (const match of calls.matchAll(BROKER_CALL)) {
     const target = callTarget(match[2] ?? "");
     if (!target) continue;
-    found.push({ how: "touched", ref: target.ref, number: target.number });
-    const state = match[0].startsWith("gh-merge-green") ? "merged" : SETTLES[match[1] ?? ""];
+    const issue = match[1]!.startsWith("issue-");
+    issueCall ||= issue;
+    found.push({
+      how: "touched",
+      ref: target.ref,
+      number: target.number,
+      changed: true,
+      kind: issue ? "issue" : "pullRequest",
+      ...(outputTitle(tool) ? { title: outputTitle(tool) } : {}),
+    });
+  }
+  for (const match of calls.matchAll(CALL)) {
+    const action = match[1] ?? match[2];
+    const target = callTarget(match[3] ?? "");
+    if (!target) continue;
+    const titleMatch = action === "edit" ? TITLE.exec(tool.command ?? "") : undefined;
+    const title =
+      outputTitle(tool) ??
+      (titleMatch ? (titleMatch[1] ?? titleMatch[2] ?? titleMatch[3])?.replace(/\\(.)/g, "$1") : undefined);
+    found.push({
+      how: "touched",
+      ref: target.ref,
+      number: target.number,
+      ...(match[0].startsWith("gh-merge-green") || (action && MUTATING.has(action)) ? { changed: true } : {}),
+      ...(title ? { title } : {}),
+    });
+    const state = match[0].startsWith("gh-merge-green") ? "merged" : SETTLES[action ?? ""];
     if (state)
       found.push({ how: "settle", ref: target.ref, number: target.number, state, at: tool.endedAt ?? tool.startedAt });
   }
   for (const match of plain.matchAll(PR_URL))
     found.push({ how: "touched", ref: { kind: "full", repo: match[1]! }, number: Number(match[2]) });
-  for (const match of plain.matchAll(REPO_REF))
-    found.push({ how: "mentioned", ref: { kind: "full", repo: `${match[1]}/${match[2]}` }, number: Number(match[3]) });
+  if (!issueCall)
+    for (const match of plain.matchAll(REPO_REF))
+      found.push({
+        how: "mentioned",
+        ref: { kind: "full", repo: `${match[1]}/${match[2]}` },
+        number: Number(match[3]),
+      });
+  for (const match of plain.matchAll(ISSUE_URL))
+    found.push({ how: "mentioned", ref: { kind: "full", repo: match[1]! }, number: Number(match[2]), kind: "issue" });
   return found;
 }
 
 /// The pull requests a reply names: links, then `owner/repo#N`, then `repo #N`, then a bare `#N`.
 function replyFindings(text: string): Finding[] {
-  if (!text.includes("#") && !text.includes("/pull/")) return [];
+  if (!text.includes("#") && !text.includes("/pull/") && !text.includes("/issues/")) return [];
   const found: Finding[] = [];
-  const mention = (ref: Ref, number: string) => found.push({ how: "mentioned", ref, number: Number(number) });
+  const mention = (ref: Ref, number: string, kind?: "pullRequest" | "issue") =>
+    found.push({ how: "mentioned", ref, number: Number(number), kind });
   // Links and `owner/repo#N` first, then blanked so their numbers are not read again as `#N`.
   let rest = text.replace(PR_URL, (_, repo: string, number: string) => {
-    mention({ kind: "full", repo }, number);
+    mention({ kind: "full", repo }, number, "pullRequest");
+    return " ";
+  });
+  rest = rest.replace(ISSUE_URL, (_, repo: string, number: string) => {
+    mention({ kind: "full", repo }, number, "issue");
     return " ";
   });
   rest = rest.replace(REPO_REF, (_, owner: string, name: string, number: string) => {
@@ -177,7 +289,7 @@ function replyFindings(text: string): Finding[] {
   rest = rest.replace(NAMED_REF, (_, name: string, space: string, number: string) => {
     const word = name.toLowerCase();
     // `PR #5`, `PR#5`: the folder's.
-    if (word === "pr" || word === "pull") mention({ kind: "folder" }, number);
+    if (word === "pr" || word === "pull") mention({ kind: "folder" }, number, "pullRequest");
     else mention({ kind: "name", name: word, orFolder: space === " " }, number);
     return " ";
   });
@@ -192,6 +304,7 @@ const cache = new WeakMap<AcpmuxRow, Finding[]>();
 
 function rowFindings(row: AcpmuxRow, replies: boolean): Finding[] {
   if (row.kind !== "activity" && !(replies && row.kind === "assistant")) return [];
+  if (row.kind === "assistant" && row.streaming) return [];
   const kept = cache.get(row);
   if (kept) return kept;
   const findings =
@@ -205,27 +318,39 @@ function rowFindings(row: AcpmuxRow, replies: boolean): Finding[] {
 // Live snapshots carry a producer-maintained PR activity revision. Reading it is O(1):
 // deriving a fingerprint by walking the transcript in render would cost O(rows) per token.
 const activityVersions = new WeakMap<readonly AcpmuxRow[], symbol>();
+const commandVersions = new WeakMap<readonly AcpmuxRow[], symbol>();
+const summaryVersions = new WeakMap<readonly AcpmuxRow[], symbol>();
 export const markPullRequestActivityVersion = (rows: readonly AcpmuxRow[], version: symbol): void => {
   activityVersions.set(rows, version);
 };
+export const markPullRequestCommandVersion = (rows: readonly AcpmuxRow[], version: symbol): void => {
+  commandVersions.set(rows, version);
+};
+export const markTranscriptSummaryVersion = (rows: readonly AcpmuxRow[], version: symbol): void => {
+  summaryVersions.set(rows, version);
+};
+export const transcriptSummaryVersion = (rows: readonly AcpmuxRow[]): symbol | undefined => summaryVersions.get(rows);
 const fingerprints = new WeakMap<AcpmuxRow, string>();
 
 // The producer asks only about the row it changed. A reply chunk with the same PR references
 // leaves the revision alone; a new mention updates it without scanning historical replies.
 export function pullRequestRowKey(row: AcpmuxRow | undefined, replies = true): string {
   if (!row) return "";
-  const findings = rowFindings(row, replies);
+  // Streaming references may change the dock key, but settling identical text must change it too.
+  const findings =
+    row.kind === "assistant" ? (replies ? replyFindings(row.text ?? "") : []) : rowFindings(row, replies);
   if (findings.length === 0) return "";
   let fingerprint = fingerprints.get(row);
   if (fingerprint === undefined) {
-    fingerprint = JSON.stringify(findings);
+    fingerprint = JSON.stringify([row.streaming === true, findings]);
     fingerprints.set(row, fingerprint);
   }
   return fingerprint;
 }
 
 export function transcriptPullRequestKey(rows: readonly AcpmuxRow[], replies = false): string | symbol {
-  const version = replies ? activityVersions.get(rows) : undefined;
+  // Both consumers use producer revisions to avoid scanning historical rows on every token.
+  const version = (replies ? activityVersions : commandVersions).get(rows);
   if (version !== undefined) return version;
   // Static/gallery rows have no producer. Their fallback keeps the same parsing semantics.
   return rows
@@ -269,38 +394,53 @@ export function transcriptPullRequests(
         : folder;
 
   const found = new Map<string, SummaryPullRequest>();
-  const note = (repo: string, number: number, how: "opened" | "touched" | "mentioned", at: number, title?: string) => {
+  const note = (
+    repo: string,
+    number: number,
+    how: "opened" | "touched" | "mentioned",
+    at: number,
+    title?: string,
+    changed = false,
+    kind?: "pullRequest" | "issue",
+  ) => {
     if (number <= 0) return;
-    const url = urlOf(repo, number);
+    if (!kind && how === "mentioned" && found.has(issueUrlOf(repo, number))) kind = "issue";
+    if (kind === "issue" && !found.get(urlOf(repo, number))?.kind) found.delete(urlOf(repo, number));
+    const url = kind === "issue" ? issueUrlOf(repo, number) : urlOf(repo, number);
     const pr = found.get(url);
     if (!pr) {
       found.set(url, {
         url,
         repo,
         number,
+        ...(kind ? { kind } : how !== "mentioned" ? { kind: "pullRequest" as const } : {}),
         ...(title ? { title } : {}),
         state: "open",
         opened: how === "opened",
+        ...(changed || how === "opened" ? { changed: true } : {}),
         ...(how === "mentioned" ? { mentioned: true } : {}),
         touched: at,
       });
       return;
     }
     pr.touched = at;
+    if (kind) pr.kind = kind;
+    else if (how !== "mentioned") pr.kind = "pullRequest";
     if (how !== "mentioned") delete pr.mentioned;
     if (how === "opened") pr.opened = true;
-    if (title && !pr.title) pr.title = title;
+    if (changed || how === "opened") pr.changed = true;
+    if (title) pr.title = title;
   };
   perRow.forEach((findings, index) => {
     const at = index + 1;
     for (const finding of findings) {
       if (finding.how === "opened") {
-        note(finding.repo, finding.number, "opened", at, finding.title);
+        note(finding.repo, finding.number, "opened", at, finding.title, true, finding.kind);
         continue;
       }
       const repo = resolve(finding.ref);
       if (finding.how !== "settle") {
-        if (repo) note(repo, finding.number, finding.how, at);
+        if (repo) note(repo, finding.number, finding.how, at, finding.title, finding.changed, finding.kind);
         continue;
       }
       // Without a repository (no `-R`, no folder), a merge names every one with its number.

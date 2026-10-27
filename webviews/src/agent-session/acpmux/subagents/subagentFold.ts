@@ -1,4 +1,9 @@
 import type { AcpmuxRow } from "../model";
+import {
+  markPullRequestActivityVersion,
+  markPullRequestCommandVersion,
+  markTranscriptSummaryVersion,
+} from "../summary/transcriptPullRequests";
 import { childRows, type ChildEntry } from "./childRows";
 import { hiddenCall, isPlumbingName } from "../hiddenTools";
 import { applyRetry, applyRetryStep, type RetryState } from "./retryState";
@@ -111,6 +116,7 @@ type Step = { event: Event; update: any };
 /// The most `acpmux run --parent` calls waiting for their sub-session's start at once.
 const PENDING_CHILDREN = 16;
 type Group = { id: string; at: number; version: number; ids: string[] };
+type ViewRevisions = { activity: symbol; command: symbol; summary: symbol };
 
 /// Folds a session's subagent records out of its transcript. Subagents the session spawns
 /// between two pieces of its own text draw as one group row where the first one started; their
@@ -128,6 +134,9 @@ export class SubagentFold {
   private open: Group | undefined;
   /// Each subagent's own updates and the points where it spawned subagents, in order: its view.
   private readonly own = new Map<string, ChildEntry[]>();
+  private readonly viewRevisions = new Map<string, ViewRevisions>();
+  private readonly settledViews = new Map<string, string>();
+  private readonly viewTools = new Map<string, Map<string, boolean>>();
   /// Each subagent view's rows, while its version holds.
   private readonly drawn = new Map<string, { version: number; rows: AcpmuxRow[] }>();
   private readonly versions = new Map<string, number>();
@@ -539,6 +548,16 @@ export class SubagentFold {
         drawn = { version, rows: childRows(id, entries, this.agents, version) };
         this.drawn.set(id, drawn);
       }
+      // Publish revisions from the first chunk, avoiding the unversioned O(rows) fallback.
+      const revisions = this.viewRevisions.get(id) ?? {
+        activity: Symbol(),
+        command: Symbol(),
+        summary: Symbol(),
+      };
+      this.viewRevisions.set(id, revisions);
+      markPullRequestActivityVersion(drawn.rows, revisions.activity);
+      markPullRequestCommandVersion(drawn.rows, revisions.command);
+      markTranscriptSummaryVersion(drawn.rows, revisions.summary);
       views[id] = drawn.rows;
     }
     return views;
@@ -548,7 +567,32 @@ export class SubagentFold {
     const entries = this.own.get(id) ?? [];
     entries.push(entry);
     this.own.set(id, entries);
+    const update = entry.update;
+    let streaming = update?.sessionUpdate === "agent_message_chunk" || update?.sessionUpdate === "agent_thought_chunk";
+    if (update?.sessionUpdate === "tool_call" || update?.sessionUpdate === "tool_call_update") {
+      const tools = this.viewTools.get(id) ?? new Map<string, boolean>();
+      const call = String(update.toolCallId ?? `tool-${entry.event.seq}`);
+      const settled =
+        update.status === undefined ? tools.get(call) : update.status === "completed" || update.status === "failed";
+      // New tools and every update of a settled tool change the summary, even without a status.
+      streaming = tools.has(call) && !settled;
+      tools.set(call, settled ?? false);
+      this.viewTools.set(id, tools);
+    }
+    if (!streaming) this.bumpViewRevision(id);
     this.bump(id);
+  }
+
+  private bumpViewRevision(id: string): void {
+    this.viewRevisions.set(id, { activity: Symbol(), command: Symbol(), summary: Symbol() });
+  }
+
+  private settleView(agent: Subagent): boolean {
+    if (this.settledViews.get(agent.id) === agent.state) return false;
+    this.settledViews.set(agent.id, agent.state);
+    this.bumpViewRevision(agent.id);
+    this.bump(agent.id);
+    return true;
   }
 
   private bump(id: string): void {
@@ -703,11 +747,22 @@ export class SubagentFold {
   }
 
   private touch(agent: Subagent): void {
-    if (agent.parent !== null) this.bump(agent.parent);
+    const stateChanged = this.settleView(agent);
+    if (agent.parent !== null) {
+      if (stateChanged) this.bumpParentViews(agent.parent);
+      else this.bump(agent.parent);
+    }
     const group = this.groupOf.get(agent.id);
     if (!group) return;
     group.version += 1;
     this.changed.add(group);
+  }
+
+  private bumpParentViews(id: string): void {
+    this.bumpViewRevision(id);
+    this.bump(id);
+    const parent = this.agents.get(id)?.parent;
+    if (parent !== null && parent !== undefined) this.bumpParentViews(parent);
   }
 }
 
