@@ -2240,9 +2240,13 @@ mod fence_tests {
         let _ = release.send(());
         agent.retire();
         let fence = Fence::default();
-        let rejected = agent.request_with_hook("not-written", Value::Null, Some(&fence), || {}).await.is_err();
+        let rejected =
+            agent.request_with_hook("not-written", Value::Null, Some(&fence), || {}).await.is_err();
         agent.kill().await;
-        assert!(rejected && fence.is_cut(), "a retired agent left its unsent request's fence unsettled");
+        assert!(
+            rejected && fence.is_cut(),
+            "a retired agent left its unsent request's fence unsettled"
+        );
     }
 
     /// Review 87 of #23322: an agent whose leader exited and left a descendant holding its

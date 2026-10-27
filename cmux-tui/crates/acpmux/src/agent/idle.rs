@@ -36,7 +36,9 @@ impl ChildAgent {
             // A direct child whose exit was not proven: only its waiter's reap clears it.
             let waiter = self.idle_reaper.lock().unwrap_or_else(|e| e.into_inner()).take();
             if let Some(mut waiter) = waiter
-                && tokio::time::timeout(std::time::Duration::from_secs(5), &mut waiter).await.is_err()
+                && tokio::time::timeout(std::time::Duration::from_secs(5), &mut waiter)
+                    .await
+                    .is_err()
             {
                 *self.idle_reaper.lock().unwrap_or_else(|e| e.into_inner()) = Some(waiter);
                 return Err(RpcError::internal("agent is still hibernating"));
