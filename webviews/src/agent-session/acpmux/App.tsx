@@ -1660,6 +1660,14 @@ const RowFrame = React.memo(function RowFrame({
   const t = useT();
   const ref = useRef<HTMLElement>(null);
   const [entering] = useState(enter);
+  // Prompts and replies get the message-specific entrance. Tool/status rows keep the existing
+  // generic rise, while the row's reserved height and absolute placement stay unchanged.
+  // Hidden user rows intentionally render no content and must keep the empty-row geometry.  Do not
+  // add a presentation wrapper to them, or `article.acpmux-row:empty` can no longer collapse them.
+  const messageEntering =
+    entering &&
+    (row.kind === "user" || row.kind === "assistant") &&
+    !(row.kind === "user" && row.incoming?.kind === "hidden");
   const [olderFade] = useState(older);
   const copyRowResult = useCallback(
     (id: string) =>
@@ -1709,7 +1717,7 @@ const RowFrame = React.memo(function RowFrame({
       data-row-id={row.id}
       data-row-card={row.ended ? "true" : undefined}
       data-floating-copy={copyable ? "true" : undefined}
-      className={`acpmux-row acpmux-${kind}${row.below ? " acpmux-row--below" : ""}${joinsPrevious ? " acpmux-row--after-step" : ""}${joinsNext ? " acpmux-row--before-step" : ""}${beforeFooter ? " acpmux-row--before-footer" : ""}${lastFooter ? " acpmux-row--last-footer" : ""}${lastTurn ? " acpmux-row--last-turn" : ""}${entering ? " acpmux-row--enter" : ""}${olderFade ? " acpmux-row--older" : ""}`}
+      className={`acpmux-row acpmux-${kind}${row.below ? " acpmux-row--below" : ""}${joinsPrevious ? " acpmux-row--after-step" : ""}${joinsNext ? " acpmux-row--before-step" : ""}${beforeFooter ? " acpmux-row--before-footer" : ""}${lastFooter ? " acpmux-row--last-footer" : ""}${lastTurn ? " acpmux-row--last-turn" : ""}${messageEntering ? " acpmux-row--message-enter" : entering ? " acpmux-row--enter" : ""}${olderFade ? " acpmux-row--older" : ""}`}
       data-transcript-active={active ? "true" : undefined}
       data-transcript-selected={selected ? "true" : undefined}
       aria-current={active ? "true" : undefined}
@@ -1733,7 +1741,15 @@ const RowFrame = React.memo(function RowFrame({
           {...copyTabStop}
         />
       )}
-      <ReferenceScopeContext.Provider value={referenceScope ?? null}>{children}</ReferenceScopeContext.Provider>
+      {messageEntering ? (
+        // The article is the virtualizer's measured box. Animate only this presentation wrapper:
+        // compositor scale/opacity cannot change drawnHeightOf(article) while the entrance runs.
+        <div className="acpmux-row__message-presentation">
+          <ReferenceScopeContext.Provider value={referenceScope ?? null}>{children}</ReferenceScopeContext.Provider>
+        </div>
+      ) : (
+        <ReferenceScopeContext.Provider value={referenceScope ?? null}>{children}</ReferenceScopeContext.Provider>
+      )}
     </article>
   );
 }, sameRowFrame);
@@ -2354,6 +2370,9 @@ export function VirtualTranscript({
   // reset effect commits. The keyed values below make the first new-session paint fresh as well.
   const [selectionSessionKey, setSelectionSessionKey] = useState(sessionKey);
   const sessionChanged = selectionSessionKey !== sessionKey;
+  /// A row can be newly arrived but outside the mounted virtual range. Pending entrances are
+  /// page-scoped: hiding or switching chats must drop them before that row can mount later.
+  const enteringRows = useRef(new Set<string>());
   useEffect(() => {
     if (sessionChanged) {
       setSelectionSessionKey(sessionKey);
@@ -2363,6 +2382,7 @@ export function VirtualTranscript({
       gutterRelease.current?.();
       setHeldRows(undefined);
       pendingFocus.current = undefined;
+      enteringRows.current.clear();
       return;
     }
     const currentRange = transcriptRangeRef.current;
@@ -2373,6 +2393,13 @@ export function VirtualTranscript({
       return presence.anchor && presence.focus ? current : undefined;
     });
   }, [rows, sessionChanged, sessionKey]);
+  useEffect(() => {
+    const clearHiddenEntrances = () => {
+      if (document.visibilityState === "hidden") enteringRows.current.clear();
+    };
+    document.addEventListener("visibilitychange", clearHiddenEntrances);
+    return () => document.removeEventListener("visibilitychange", clearHiddenEntrances);
+  }, []);
   // Rows that arrive live (a reply, a tool call, a status line) enter once. The rows at the first
   // render, and many at once (a session switch, older history), are a load and do not.
   const knownRows = useRef<Set<string> | null>(null);
@@ -2384,7 +2411,6 @@ export function VirtualTranscript({
   /// Where this snapshot first differs from the last, found once below; the rail reads it instead
   /// of comparing the rows again (model.ts minimapTurns).
   const rowsChange = useRef<RowsChange | undefined>(undefined);
-  const enteringRows = useRef(new Set<string>());
   /// The minimap's hook for this commit's settled offset (ThreadMinimap `placed`).
   const minimapPlaced = useRef<(() => void) | undefined>(undefined);
   const olderRows = useRef<OlderRowFade | undefined>(undefined);
@@ -4064,7 +4090,9 @@ export function VirtualTranscript({
                       expanded={isExpanded}
                       observer={observer}
                       report={reportDrawn}
-                      enter={enteringRows.current.has(row.id)}
+                      // A session switch is a load, not a live arrival. The reset effect runs after
+                      // this render, so gate it here as well to avoid a reused row id animating once.
+                      enter={!sessionChanged && enteringRows.current.has(row.id)}
                       onEntered={onEntered}
                       older={olderRows.current!.has(row.id) ? olderRows.current : undefined}
                       onOlderShown={onOlderShown}
