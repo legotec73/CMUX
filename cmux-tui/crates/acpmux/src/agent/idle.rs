@@ -17,6 +17,10 @@ impl ChildAgent {
         #[cfg(unix)]
         {
             if let Some(hosted) = &self.hosted {
+                // A reader that stopped would never hear the exit: never retire through it.
+                if self.is_broken() || self.is_stopped() || !self.is_alive().await {
+                    return None;
+                }
                 return hosted.link().query().await.ok()?.idle_generation;
             }
             let reported = match (&self.translator, &self.codex) {
@@ -29,30 +33,30 @@ impl ChildAgent {
         }
     }
 
-    /// Called under the session spawn lease before a wake reuses a live process.
-    pub(crate) async fn reconcile_idle(&self) -> Result<(), RpcError> {
+    /// Called under the session spawn lease before a wake reuses a live process. True when an
+    /// idle retirement makes this agent unusable: it retired, or it is still uncertain.
+    pub(crate) async fn reconcile_idle(&self) -> Result<bool, RpcError> {
         #[cfg(unix)]
         if self.idle_uncertain.load(Ordering::SeqCst) && self.hosted.is_none() {
             // A direct child whose exit was not proven: only its waiter's reap clears it.
-            let waiter = self.idle_reaper.lock().unwrap_or_else(|e| e.into_inner()).take();
-            if let Some(mut waiter) = waiter
-                && tokio::time::timeout(std::time::Duration::from_secs(5), &mut waiter)
-                    .await
-                    .is_err()
-            {
-                *self.idle_reaper.lock().unwrap_or_else(|e| e.into_inner()) = Some(waiter);
-                return Err(RpcError::internal("agent is still hibernating"));
-            }
+            tokio::time::timeout(std::time::Duration::from_secs(5), self.idle_reaped())
+                .await
+                .map_err(|_| RpcError::internal("agent is still hibernating"))?;
             self.idle_uncertain.store(false, Ordering::SeqCst);
         }
         #[cfg(unix)]
         if self.idle_uncertain.load(Ordering::SeqCst)
             && let Some(hosted) = &self.hosted
         {
+            // A reader that stopped hears no exit: the caller reconnects (`readopt`), which
+            // reconciles again on the new link. The agent stays unusable until then.
+            if self.is_broken() || self.is_stopped() {
+                return Ok(true);
+            }
             if hosted.exit_seen.load(Ordering::SeqCst) {
                 self.retire();
                 self.idle_uncertain.store(false, Ordering::SeqCst);
-                return Ok(());
+                return Ok(true);
             }
             // Query is ordered behind any delayed Hibernate. Its sender expiry was fixed
             // before enqueue, so an older frame cannot commit after this rejection proof.
@@ -66,10 +70,24 @@ impl ChildAgent {
                         .map_err(|_| RpcError::internal("agent is still hibernating"))?;
                 }
                 self.retire();
+                self.idle_uncertain.store(false, Ordering::SeqCst);
+                return Ok(true);
             }
             self.idle_uncertain.store(false, Ordering::SeqCst);
         }
-        Ok(())
+        Ok(false)
+    }
+
+    /// Resolves once a retired direct child's waiter reaped it (at once when none ran).
+    pub(crate) async fn idle_reaped(&self) {
+        #[cfg(unix)]
+        {
+            let reaped = self.idle_reaper.lock().unwrap_or_else(|e| e.into_inner()).clone();
+            if let Some(mut reaped) = reaped {
+                // A waiter that ended without a reap dropped the child: nothing is left to wait on.
+                let _ = reaped.wait_for(|done| *done).await;
+            }
+        }
     }
 
     /// True only after the exact held child exited. Lost/old hosts are retained. A close that
@@ -124,22 +142,26 @@ impl ChildAgent {
             unsafe {
                 libc::kill(pid as i32, libc::SIGTERM);
             }
+            // The exit watcher and every wake wait on this until the child is reaped.
+            let (reaped, rx) = tokio::sync::watch::channel(false);
+            *self.idle_reaper.lock().unwrap_or_else(|e| e.into_inner()) = Some(rx);
             // task-owner: holds the child until it is reaped, so no timeout drops it unproven.
-            let mut waiter = tokio::spawn(async move {
+            tokio::spawn(async move {
                 if tokio::time::timeout(KILL_GRACE, child.wait()).await.is_err() {
                     let _ = child.start_kill();
                 }
-                child.wait().await.is_ok()
+                let _ = child.wait().await;
+                let _ = reaped.send(true);
             });
-            match tokio::time::timeout(std::time::Duration::from_secs(5), &mut waiter).await {
-                Ok(reaped) => reaped.unwrap_or(false),
-                Err(_) => {
-                    // Not proven exited: no wake reuses or replaces it before the reap.
-                    self.idle_uncertain.store(true, Ordering::SeqCst);
-                    *self.idle_reaper.lock().unwrap_or_else(|e| e.into_inner()) = Some(waiter);
-                    false
-                }
+            if tokio::time::timeout(std::time::Duration::from_secs(5), self.idle_reaped())
+                .await
+                .is_err()
+            {
+                // Not proven exited: no wake reuses or replaces it before the reap.
+                self.idle_uncertain.store(true, Ordering::SeqCst);
+                return false;
             }
+            true
         }
     }
 }

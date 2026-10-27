@@ -589,7 +589,7 @@ pub struct ChildAgent {
     idle_uncertain: std::sync::atomic::AtomicBool,
     /// A retired direct child's waiter that did not prove its reap in time (`agent/idle.rs`).
     #[cfg(unix)]
-    idle_reaper: std::sync::Mutex<Option<tokio::task::JoinHandle<bool>>>,
+    idle_reaper: std::sync::Mutex<Option<tokio::sync::watch::Receiver<bool>>>,
     idle_activity: AtomicU64,
     /// The question preview format its command was pinned to, for a direct
     /// start (a host's is recorded where the host starts, `hub/hosts.rs`).
@@ -978,6 +978,8 @@ impl ChildAgent {
                 }
                 drop(p);
                 let code = agent_for_exit.wait_exit().await;
+                // A retired child is reported only once its retirement's waiter reaped it.
+                agent_for_exit.idle_reaped().await;
                 if let Some(stop) = agent_for_exit.writer_stop.get() {
                     stop.agent_ended().await;
                 }

@@ -544,8 +544,8 @@ impl Hub {
         }
         let live = session.child.lock().await.clone();
         if let Some(child) = live {
-            child.reconcile_idle().await?;
-            if child.is_alive().await && !child.is_retired() {
+            let unusable = child.reconcile_idle().await?;
+            if !unusable && child.is_alive().await && !child.is_retired() {
                 // A closed session with a live agent: a host the daemon adopted at its start that
                 // outlived the stop. It reopens for this request, ready.
                 if session.status() == SessionStatus::Closed {
@@ -563,6 +563,10 @@ impl Hub {
             self.reopen_to_start(session, stops)?;
             match self.readopt(session).await {
                 Some(child) if child.is_alive().await => {
+                    // A retirement left uncertain behind a stopped reader settles on the new link.
+                    if child.reconcile_idle().await? {
+                        return Err(RpcError::internal("agent is still hibernating"));
+                    }
                     // Reached again, not started: no start below decides its Ctrl-B.
                     self.note_host_kind(session, &child, Some(profile.kind)).await;
                     return Ok(child);
