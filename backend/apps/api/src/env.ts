@@ -120,6 +120,23 @@ export interface Env {
   readonly CLOUD_VM_API_IMAGE_REVISION?: string
   /** The https API origin written into each VM's bind file (the image's bind agent calls it). */
   readonly CLOUD_API_ORIGIN?: string
+  /**
+   * `upstash` runs new Chief jobs (`chief-auto`) on Upstash Workflow (chief-brain-cc/jobs-upstash.ts): the
+   * records in each team's `<team>/chief-jobs` brain object, a QStash schedule per cron job, a workflow run
+   * per fire, and webhook and provider-event (CI failed) triggers. Anything else (the default) keeps them on
+   * the SchedulerDO. Needs all four settings below; with any missing, jobs stay on the SchedulerDO. Jobs made
+   * on the SchedulerDO keep running there either way.
+   */
+  readonly CHIEF_JOBS_ENGINE?: string
+  /** This Worker's public URL of POST /v1/hooks/upstash/chief-job (where QStash delivers each fire). */
+  readonly CHIEF_JOBS_WORKFLOW_URL?: string
+  /** Secret: the QStash token of the cmux Upstash account. */
+  readonly QSTASH_TOKEN?: string
+  /** Optional QStash API origin (a regional or local QStash). */
+  readonly QSTASH_URL?: string
+  /** Secrets: QStash's request signing keys; every workflow request is verified with them. */
+  readonly QSTASH_CURRENT_SIGNING_KEY?: string
+  readonly QSTASH_NEXT_SIGNING_KEY?: string
   /** Secret: the operator key for /v1/admin/cloud/abandoned/clear (also needs a person's session token). */
   readonly CLOUD_ADMIN_KEY?: string
   /** Comma-separated user ids who may use the Cloud admin routes (with CLOUD_ADMIN_KEY and their own verified session). */
