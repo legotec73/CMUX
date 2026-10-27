@@ -989,8 +989,13 @@ impl State {
                 c.resumed = true;
             }
             ControllerFrame::Line { msg, receipt } => {
-                // A retirement under way drops the line whole: no queued note, no line.
-                if !self.idle_pid_only.load(std::sync::atomic::Ordering::SeqCst) {
+                // A retirement under way drops the line whole: no queued note, no line, and its
+                // receipt says never written.
+                if self.idle_pid_only.load(std::sync::atomic::Ordering::SeqCst) {
+                    if let Some(receipt) = receipt {
+                        self.receipt(receipt, false);
+                    }
+                } else {
                     self.activity.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                     // Logged before any line of it is queued, so a log that has one of its lines
                     // has this too, and a next daemon knows the line is fenced (`QUEUED_METHOD`).
@@ -1002,13 +1007,13 @@ impl State {
                         });
                     }
                     self.on_line(msg).await;
-                }
-                // Behind every line of it: the writer answers once they are written.
-                // Its stdin writer stopped (the harness's stdin closed): never written.
-                if let Some(receipt) = receipt
-                    && self.stdin_tx.send(Stdin::Receipt(receipt)).is_err()
-                {
-                    self.receipt(receipt, false);
+                    // Behind every line of it: the writer answers once they are written.
+                    // Its stdin writer stopped (the harness's stdin closed): never written.
+                    if let Some(receipt) = receipt
+                        && self.stdin_tx.send(Stdin::Receipt(receipt)).is_err()
+                    {
+                        self.receipt(receipt, false);
+                    }
                 }
             }
             ControllerFrame::Ack { h } => self.drop_through(h),
