@@ -87,6 +87,11 @@ public final class SidebarDocStore {
     @ObservationIgnored private var adopting: Set<SidebarDocWorkspaceRef> = []
     /// What to run when a fold (`setGroupCollapsed`) is refused, by its key.
     @ObservationIgnored private var foldRefusals: [String: @MainActor () -> Void] = [:]
+    /// What pending changes write on records (a group's name, color, icon; a new group), drawn over `records` (#26382).
+    @ObservationIgnored private var pendingRecords = SidebarDocPendingRecords()
+
+    /// The records the rows draw: the confirmed ones with the pending changes' writes (`SidebarDocPendingRecords`).
+    public var shownRecords: SidebarDocRecords { pendingRecords.isEmpty ? records : pendingRecords.applied(to: records) }
 
     /// The app's one document store (one home session per app); the
     /// App's composition root sets it.
@@ -113,8 +118,9 @@ public final class SidebarDocStore {
             return
         }
         loading = true
-        // The load answers the changes unanswered before it was asked for (a later one asks for another load).
-        let answering = unanswered
+        // The load answers the changes unanswered before it was asked for (a later one asks for another load), and holds
+        // the changes answered before it was asked for: a change answered while it is on the way may not be in it.
+        let answering = unanswered, held = pendingRecords.replied
         // task-owner: one sidebar.get; settles the load
         Task { [weak self] in
             defer {
@@ -132,7 +138,12 @@ public final class SidebarDocStore {
             }
             self.failedLoads = 0
             // The document has each unanswered change or never will: it shows as loaded (no replay on top).
-            for key in answering { mirror.reject(key) }
+            for key in answering {
+                mirror.reject(key)
+                self.pendingRecords.remove(key)
+            }
+            // The document holds the changes answered before the load was asked for (or never will): their rows draw it.
+            for key in held { self.pendingRecords.remove(key) }
             self.unanswered.subtract(answering)
             self.records = records
             self.groupFolds = records.items.compactMapValues(\.body.groupCollapsed)
@@ -151,14 +162,17 @@ public final class SidebarDocStore {
             if loading, mirror != nil, earlyBatches.count < 512 { earlyBatches.append(data) }
             return
         }
+        // The mirror drops the pending intent with the batch's key in every case: so do its record writes.
+        let settled = !pendingRecords.isEmpty && SidebarDocWire.Batch.key(of: data).map { pendingRecords.remove($0) } == true
         // The reducer judges the revision chain: a skipped one refetches.
         switch mirror.apply(batch: data) {
-        case .stale: return
+        case .stale:
+            if settled { bump() }
         case .refetch: return refresh()
         case .applied(let revision):
             let folds = records.apply(batch: data)
             if let revision { records.revision = revision }
-            guard let folds else {
+            guard let folds, !settled else {
                 groupFolds = records.items.compactMapValues(\.body.groupCollapsed)
                 return bump()
             }
@@ -316,8 +330,10 @@ public final class SidebarDocStore {
         } catch {
             throw refused(SidebarDocStrings.unavailable)
         }
-        if redraws { bump() }
         let key = intent.idempotencyKey
+        // A rename, recolor or new group draws from its records: they show with the rows, not at the echo (#26382).
+        pendingRecords.add(key: key, ops: stamped ?? intent.ops, records: shownRecords)
+        if redraws { bump() }
         // An undo's or redo's inverse fills the step the undo put; a user's change puts its own step now (cx-kpicb).
         let origin = Self.undoOrigin ?? (undoable ? onUndoPending(title) : nil)
         // task-owner: one sidebar mutation; settles its pending intent
@@ -332,6 +348,7 @@ public final class SidebarDocStore {
                     // echo, and the first echo may have gone to a closed connection. The next load settles the key.
                     if asked > 1 { self.settleByLoad(key) }
                     self.foldRefusals[key] = nil
+                    self.pendingRecords.noteReplied(key)
                     // A no-op change echoes no batch: its intent must not stay pending.
                     if !reply.hasInverse {
                         self.drop(key, redraws: redraws)
@@ -382,7 +399,7 @@ public final class SidebarDocStore {
 
     private func drop(_ key: String, redraws: Bool = true) {
         mirror?.reject(key)
-        if redraws { bump() }
+        if pendingRecords.remove(key) || redraws { bump() }
     }
 
     private func bump() { version &+= 1 }

@@ -1,3 +1,4 @@
+import CmuxNextActions
 import CmuxNextBridge
 import CmuxNextCompat
 import CmuxNextDaemon
@@ -120,8 +121,8 @@ final class SidebarRows {
     }
 
     /// Folds or opens `group` at once and keeps that look until `body`
-    /// replied and the home store holds it, or failed (then `resync`).
-    func fold(_ group: GroupID, collapsed: Bool, on home: DaemonService, resync: @escaping @MainActor () -> Void,
+    /// replied and the home store holds it, or failed (then `failed`).
+    func fold(_ group: GroupID, collapsed: Bool, on home: DaemonService, failed: @escaping @MainActor (ActionWorkFailure) -> Void,
               _ body: @escaping DaemonCommandBody) {
         foldSerial += 1
         let serial = foldSerial
@@ -136,9 +137,9 @@ final class SidebarRows {
         let transaction = ClientTransactionID.generate()
         // task-owner: one personal fold command; settles its fold
         Task {
-            guard await home.request("update-personal-group", transaction: transaction, { connection, _ in try await body(connection) }) != nil else {
+            if let failure = await home.failure("update-personal-group", body) {
                 settle()
-                return resync()
+                return failed(failure)
             }
             home.whenApplied(transaction, settle)
         }
@@ -208,27 +209,43 @@ final class SidebarRows {
         show()
     }
 
-    /// A command's outcome for `edit`: `failed` settles it and runs `resync`;
+    /// A command's outcome for `edit`: `failed` settles it and runs `onFailure`
+    /// (the bridge's `saveFailed`: re-sync and say why);
     /// `applied` settles it (run once the home store holds the command's result).
-    func outcome(_ edit: SidebarPendingEdits.Token?, resync: @escaping @MainActor () -> Void)
-        -> (failed: @MainActor () -> Void, applied: (@MainActor () -> Void)?) {
-        let failed: @MainActor () -> Void = { [weak self] in
+    func outcome(_ edit: SidebarPendingEdits.Token?, failed onFailure: @escaping @MainActor (ActionWorkFailure) -> Void)
+        -> (failed: @MainActor (ActionWorkFailure) -> Void, applied: (@MainActor () -> Void)?) {
+        let failed: @MainActor (ActionWorkFailure) -> Void = { [weak self] failure in
             self?.settle(edit)
-            resync()
+            onFailure(failure)
         }
         guard let edit else { return (failed, nil) }
         return (failed, { [weak self] in self?.settle(edit) })
     }
 
-    /// Sends one personal-state command to `home` for `edit`.
-    func send(_ label: String, edit: SidebarPendingEdits.Token?, on home: DaemonService, resync: @escaping @MainActor () -> Void,
-              _ body: @escaping DaemonCommandBody) {
-        let (failed, applied) = outcome(edit, resync: resync)
-        let transaction = ClientTransactionID.generate()
-        // task-owner: one personal command; settles its edit
-        Task {
-            guard await home.request(label, transaction: transaction, { connection, _ in try await body(connection) }) != nil else { return failed() }
-            if let applied { home.whenApplied(transaction, applied) }
+    /// Sends `commands` for `edit`, each to its own daemon and each on its own (a slow or failed one never holds
+    /// back the others, which were already told their workspaces close): the edit settles once every one replied and
+    /// its daemon's store holds the result (read-your-writes), or at the first failure, which runs `failed` once.
+    func send(_ edit: SidebarPendingEdits.Token?, _ commands: [(label: String, daemon: DaemonService, body: DaemonCommandBody)],
+              failed onFailure: @escaping @MainActor (ActionWorkFailure) -> Void) {
+        let (failed, applied) = outcome(edit, failed: onFailure)
+        guard !commands.isEmpty else {
+            applied?()
+            return
         }
+        let replies = SidebarReplies(commands.count, failed: failed, applied: applied)
+        for command in commands {
+            // task-owner: one sidebar command; reports to the change's `Replies`
+            Task {
+                if let failure = await command.daemon.failure(command.label, command.body) { return replies.failed(failure) }
+                // Its daemon's store holds it once that daemon's events up to the reply are applied.
+                command.daemon.whenApplied(.generate(), replies.applied)
+            }
+        }
+    }
+
+    /// Sends one personal-state command to `home` for `edit`.
+    func send(_ label: String, edit: SidebarPendingEdits.Token?, on home: DaemonService,
+              failed: @escaping @MainActor (ActionWorkFailure) -> Void, _ body: @escaping DaemonCommandBody) {
+        send(edit, [(label, home, body)], failed: failed)
     }
 }
