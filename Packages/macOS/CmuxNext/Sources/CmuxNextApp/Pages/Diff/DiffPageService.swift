@@ -5,6 +5,7 @@ import CmuxNextBridge
 import CmuxNextCompat
 import CmuxNextDesign
 import typealias CmuxNextDaemon.SurfaceID
+import CmuxNextDaemonService
 import CmuxNextDiff
 import CmuxNextIcons
 import CmuxNextPages
@@ -19,6 +20,8 @@ extension InternalPageID {
 nonisolated enum DiffOpenFailure: Error, Sendable, Equatable {
     /// The folder is in no git repository (or the session host cannot say).
     case notRepository
+    /// The folder's machine did not answer (#25581): the reason, naming the machine.
+    case unavailable(String)
 }
 
 /// Owns the diff viewer tabs: `cmux-page://cmux.diff/` pages, one per tab, each
@@ -41,6 +44,9 @@ final class DiffPageService: InternalPageProvider {
         /// The chat's session host. A remote tab must retain this link for every page read.
         var gitLink: AgentPaneGitLink?
         var runtime: DiffPageRuntime?
+        /// The daemon of the Cloud workspace's machine the repository is on (#25581); nil for this
+        /// Mac and for a remote chat's tab. Its file opens in that machine's file tab.
+        var machine: DaemonService?
         var page: PageWebView?
         var provider: DiffPageProvider?
         var host: DiffTabHost?
@@ -111,12 +117,39 @@ final class DiffPageService: InternalPageProvider {
     /// `.turn` (an edited-files card) opens on it, at its file.
     @discardableResult
     func open(folder: URL, source: DiffOpenSource = .default, turn: DiffTurn? = nil, in pane: PaneController,
-              focus: Bool, created: (@MainActor (SurfaceID) -> Void)? = nil) async throws(DiffOpenFailure) -> String {
+              focus: Bool, on machine: DaemonService? = nil,
+              created: (@MainActor (SurfaceID) -> Void)? = nil) async throws(DiffOpenFailure) -> String {
+        let paneLink = machine.flatMap { $0.isLocal ? nil : services.agentGit.link(for: $0) }
+        if let machine, let link = paneLink, readsOnPaneMachine(link, selected: pane.selectedTab?.id) {
+            // A Cloud workspace's folder (#25581): that machine's session host reads it.
+            let repository: DiffRepository?
+            do {
+                repository = try await DiffPageRuntime.repository(at: folder, git: DiffAgentGit(link: link))
+            } catch {
+                guard error == .notConnected || error == .timedOut else { throw .notRepository }
+                throw .unavailable(DiffPageStrings.machineOffline(machineName(machine)))
+            }
+            guard let repository else { throw .notRepository }
+            return open(repository: repository, source: source, turn: turn, gitLink: link, runtime: runtime(for: link),
+                        in: pane, focus: focus, on: machine, created: created)
+        }
         guard let link = gitLink(for: pane.selectedTab?.id) else { throw .notRepository }
         let tabRuntime = runtime(for: link)
         guard let repository = await tabRuntime.repository(at: folder) else { throw .notRepository }
         return open(repository: repository, source: source, turn: turn, gitLink: link, runtime: tabRuntime,
                     in: pane, focus: focus, created: created)
+    }
+
+    /// Whether an open from a pane on the machine of `link` reads there. A selected chat's diff
+    /// reads where its session runs (``gitLink(for:)``, #26113), so it takes the pane's machine only
+    /// when that is the same one: a chat this Mac runs, or one refused, never reads the pane's VM.
+    func readsOnPaneMachine(_ link: AgentPaneGitLink, selected: String?) -> Bool {
+        guard let selected, services.locateTab(selected)?.0.agentSession != nil else { return true }
+        return gitLink(for: selected) === link
+    }
+
+    private func machineName(_ machine: DaemonService) -> String {
+        services.machines.machineName(machine.machineID) ?? machine.machineID
     }
 
     /// ``open(folder:source:turn:in:focus:)`` once the repository is known. One tab per
@@ -125,14 +158,16 @@ final class DiffPageService: InternalPageProvider {
     @discardableResult
     func open(repository: DiffRepository, source: DiffOpenSource = .default, turn: DiffTurn? = nil,
               gitLink: AgentPaneGitLink? = nil, runtime: DiffPageRuntime? = nil, in pane: PaneController,
-              focus: Bool, created: (@MainActor (SurfaceID) -> Void)? = nil) -> String {
-        record(repository, source: source)
+              focus: Bool, on machine: DaemonService? = nil, created: (@MainActor (SurfaceID) -> Void)? = nil) -> String {
+        let link = gitLink ?? services.agentGit.local
+        // The recents are repositories of this Mac.
+        if link.isLocal { record(repository, source: source) }
         let before = Set(tabs.keys)
         let key = show(in: pane, focus: focus,
-                       Tab(repository: repository, source: source, turn: turn, gitLink: gitLink ?? services.agentGit.local,
-                           runtime: runtime), created: created) {
+                       Tab(repository: repository, source: source, turn: turn, gitLink: link,
+                           runtime: runtime, machine: machine), created: created) {
             DiffTabReuse.reuses(root: $0.repository?.root, source: $0.source, for: repository.root, source)
-                && $0.gitLink === (gitLink ?? services.agentGit.local)
+                && $0.gitLink === link && $0.machine?.machineID == machine?.machineID
         }
         // A tab already there takes the chat's turn: a card's reloads it on the turn and file; a
         // header's newer turn is what its Last turn shows from then on, with no reload.
@@ -186,7 +221,10 @@ final class DiffPageService: InternalPageProvider {
         }
         let key = LocalPageTab.makeKey(.diff)
         tabs[key] = tab
-        if let window, services.pages.openStoreTab(.diff, in: pane, window: window, focus: focus, key: key, created: created) != nil {
+        // A store tab comes back on its route alone (``restore(_:for:)``), as a repository of this
+        // Mac: another machine's repository opens as an app-only tab.
+        if tab.gitLink?.isLocal != false, let window,
+           services.pages.openStoreTab(.diff, in: pane, window: window, focus: focus, key: key, created: created) != nil {
             return key
         }
         services.pages.open(.diff, in: pane.paneKey, of: pane.daemon.store, after: pane.stripModel.selectedID?.rawValue,
@@ -246,7 +284,8 @@ final class DiffPageService: InternalPageProvider {
 
     /// The tab `key` now shows `repository`: record it and retitle the tab.
     fileprivate func opened(_ repository: DiffRepository, source: DiffOpenSource, in key: String) {
-        record(repository, source: source)
+        // The recents are repositories of this Mac.
+        if tabs[key]?.gitLink?.isLocal != false { record(repository, source: source) }
         if tabs[key]?.repository?.root != repository.root { tabs[key]?.turn = nil }
         tabs[key]?.repository = repository
         tabs[key]?.source = source
@@ -276,6 +315,12 @@ final class DiffPageService: InternalPageProvider {
     /// False when nothing opened (the page then says so).
     fileprivate func openFile(_ file: URL, line: Int?, target: DiffFileTarget, from key: String) -> Bool {
         guard let pane = services.linkOpener.source(tab: key) else { return false }
+        // A Cloud workspace's repository (#25581): the file's page reads it there. The provider
+        // sends only `.tab` for one.
+        if let machine = tabs[key]?.machine {
+            guard target == .tab else { return false }
+            return services.linkOpener.openFile(file, on: machine, from: pane, at: line.map { FilePosition(line: $0) })
+        }
         switch target {
         case .tab:
             let position = line.map { FilePosition(line: $0) }
@@ -310,7 +355,7 @@ final class DiffPageService: InternalPageProvider {
         let ready = tab.repository.map { tabRuntime.prepare(repository: $0, source: tab.source, turn: tab.turn) }
         let tabGit: (any DiffGitRunning)? = tab.gitLink.map { DiffAgentGit(link: $0) } ?? diffGit
         let provider = DiffPageProvider(ready: ready, sidecar: tabRuntime.sidecar, languages: tabRuntime.languages, host: host,
-                                        stores: stores, git: tabGit)
+                                        stores: stores, git: tabGit, machine: tab.machine.map { machineName($0) })
         let native = AppPageNativeProvider(services: services, page: .diff)
         let routes = [PageRoute(prefix: "cmux.diff.", provider: provider), PageRoute(prefix: "cmux.app.", provider: native)]
         guard let page = PageWebView(descriptor: .diff, routes: routes, options: Self.engineOptions, surface: .diff,
