@@ -147,6 +147,9 @@ test.serial("with no harness installed, the page has no No agent row and the chi
   expect(host.textContent).not.toContain("No agent to ask");
   expect(named("Integrate a harness")).toBeUndefined();
 
+  // Return already exercised the shared opener above. Reset the observation before checking the
+  // chip itself so this assertion covers one chip click, not the two independent entry points.
+  opened.count = 0;
   const chip = named("Add harness", host.querySelector(".nt-composer")!);
   expect(chip).toBeDefined();
   expect(chip!.textContent?.trim()).toBe("Add harness");
@@ -162,9 +165,9 @@ test.serial(
     await act(async () => void openPicker("Model"));
     const menu = host.querySelector<HTMLElement>(".acpmux-mp")!;
     expect(menu).not.toBeNull();
-    const actionable = buttons(menu).filter((button) => !button.disabled);
-    expect(actionable.at(-1)?.textContent?.trim()).toBe("Add harness…");
-    await act(async () => actionable.at(-1)!.click());
+    const addHarness = menu.querySelector<HTMLButtonElement>(".acpmux-mp-add-harness");
+    expect(addHarness?.textContent?.trim()).toBe("Add harness…");
+    await act(async () => addHarness!.click());
     expect(opened.count).toBe(1);
 
     // From the search field, ArrowUp walks the rows back and wraps to Add harness…; Return opens it.
