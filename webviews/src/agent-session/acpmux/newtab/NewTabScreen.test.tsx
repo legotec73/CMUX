@@ -3,6 +3,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { JSDOM } from "jsdom";
 import { noChat } from "../../../gallery/fixtures/acpmux";
+import { ClosedList } from "./ClosedList";
 import { NewTabScreen } from "./NewTabScreen";
 
 let dom: JSDOM | undefined;
@@ -12,7 +13,9 @@ const scope = globalThis as Record<string, unknown>;
 const saved = new Map<string, unknown>();
 
 beforeEach(() => {
-  dom = new JSDOM("<!doctype html><html><body><main id=root></main></body></html>", { url: "http://localhost/" });
+  dom = new JSDOM("<!doctype html><html><body><main id=root></main></body></html>", {
+    url: "http://localhost/",
+  });
   const requestAnimationFrame = (callback: FrameRequestCallback) =>
     setTimeout(() => callback(Date.now()), 0) as unknown as number;
   for (const key of [
@@ -115,4 +118,18 @@ test("a chosen document uses the New Tab upload path and becomes sendable", asyn
   expect((asks[0] as unknown[])[5]).toEqual([
     expect.objectContaining({ kind: "link", path: "/tmp/notes.txt", saved: true }),
   ]);
+});
+
+test("a closed agent chat uses the semantic agent glyph and preserves its title", async () => {
+  await act(async () => {
+    root!.render(
+      <ClosedList
+        items={[{ id: "closed:chat", kind: "agent", title: "Pinned chat", closedAt: 1, available: true }]}
+        onReopen={() => {}}
+      />,
+    );
+  });
+
+  expect(container.querySelector('.nt-row-glyph[data-kind="agent"] svg[data-icon="agent.chat"]')).toBeTruthy();
+  expect(container.querySelector(".nt-row-title")?.textContent).toBe("Pinned chat");
 });
