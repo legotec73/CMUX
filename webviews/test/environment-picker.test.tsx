@@ -42,7 +42,10 @@ let host: HTMLElement;
 let refreshes = 0;
 
 beforeAll(() => {
-  dom = new JSDOM("<!doctype html><div id=root></div>", { pretendToBeVisual: true, url: "https://cmux.test/" });
+  dom = new JSDOM("<!doctype html><div id=root></div>", {
+    pretendToBeVisual: true,
+    url: "https://cmux.test/",
+  });
   Object.assign(scope, {
     window: dom.window,
     document: dom.window.document,
@@ -114,7 +117,13 @@ async function mount(environments: boolean, extra: Record<string, unknown> = {})
     summary: { sessionId: "", harness: "claude", host: "This Mac", hostKind: "local" },
     sessions: [
       { sessionId: "a", cwd: "/home/dev/model", host: "gpu-box", peer: "gpu-box", updatedAt: 0 },
-      { sessionId: "b", cwd: "/home/you/cache", host: "build-cloud", hostKind: "cloud", updatedAt: 0 },
+      {
+        sessionId: "b",
+        cwd: "/home/you/cache",
+        host: "build-cloud",
+        hostKind: "cloud",
+        updatedAt: 0,
+      },
     ],
     peers: status.peers.map((peer) => peer.name),
     peerKinds: peerKindsFromStatus(relayedStatus),
@@ -202,7 +211,9 @@ test("a peer's connected flag reads the same from the relayed reply and the daem
   const connected = { "gpu-box": true, "cloud-1": false };
   expect(peerConnectedFromStatus(relayedStatus)).toEqual(connected);
   expect(
-    peerConnectedFromStatus({ peers: [...status.peers.slice(0, 1), { ...status.peers[1], connected: false }] }),
+    peerConnectedFromStatus({
+      peers: [...status.peers.slice(0, 1), { ...status.peers[1], connected: false }],
+    }),
   ).toEqual(connected);
   // An older acpmux or relay that sends no flag (or not a boolean) says nothing about the machine.
   expect(peerConnectedFromStatus({ peers: [{ name: "bare" }, { name: "odd", connected: 1 }] })).toEqual({});
@@ -368,9 +379,21 @@ const startedOn = (hostKind: "local" | "cloud" | "ssh") => ({
   offloads: (hostKind === "local" ? ["move"] : hostKind === "cloud" ? ["bringBack"] : []) as unknown,
   summary:
     hostKind === "local"
-      ? { sessionId: "s", harness: "claude", host: "This Mac", hostKind: "local", cwd: "/Users/you/src/cmux" }
+      ? {
+          sessionId: "s",
+          harness: "claude",
+          host: "This Mac",
+          hostKind: "local",
+          cwd: "/Users/you/src/cmux",
+        }
       : hostKind === "cloud"
-        ? { sessionId: "s", harness: "claude", host: "build-cloud", hostKind: "cloud", cwd: "/home/you/cache" }
+        ? {
+            sessionId: "s",
+            harness: "claude",
+            host: "build-cloud",
+            hostKind: "cloud",
+            cwd: "/home/you/cache",
+          }
         : {
             sessionId: "s",
             harness: "claude",
@@ -494,7 +517,13 @@ test("⌥⌘1 on the environment already chosen stays the app's", async () => {
 
 // hq#2569 #9: a new chat chooses a worktree beside its folder, as Codex's Worktree and Claude's chips do.
 const inFolder = {
-  summary: { sessionId: "", harness: "claude", host: "This Mac", hostKind: "local", cwd: "/Users/you/src/cmux" },
+  summary: {
+    sessionId: "",
+    harness: "claude",
+    host: "This Mac",
+    hostKind: "local",
+    cwd: "/Users/you/src/cmux",
+  },
 };
 const worktreeButton = () =>
   [...host.querySelectorAll<HTMLButtonElement>(".acpmux-location-button")].find(
@@ -587,7 +616,11 @@ test("New Tab, previews on: a slower worktree reply doesn't replace a newer choi
 
 test("New Tab, previews on: a worktree reply after a machine pick doesn't take the chat back here", async () => {
   const replies: ((folder: string) => void)[] = [];
-  const snapshot = noChat([], { peers: ["devbox"], peerKinds: { devbox: "ssh" }, peerConnected: { devbox: true } });
+  const snapshot = noChat([], {
+    peers: ["devbox"],
+    peerKinds: { devbox: "ssh" },
+    peerConnected: { devbox: true },
+  });
   await mountNewTab(() => new Promise<string | undefined>((resolve) => replies.push(resolve)), snapshot);
   await act(async () => worktreeButton()!.click());
   await openPicker();
@@ -688,9 +721,11 @@ test("a peer's link state reads the same from the relayed reply and the daemon's
   expect(peerStatesFromStatus({ peers: [{ name: "a", url: "ssh://a", state: "reconnecting" }] })).toEqual({
     a: "reconnecting",
   });
-  expect(peerStatesFromStatus({ peers: [{ name: "a", transport: "ssh", state: "connected" }, { name: "b" }] })).toEqual(
-    { a: "connected" },
-  );
+  expect(
+    peerStatesFromStatus({
+      peers: [{ name: "a", transport: "ssh", state: "connected" }, { name: "b" }],
+    }),
+  ).toEqual({ a: "connected" });
   // No state: the connected flag decides; nothing known counts as a place to start.
   expect(environmentReady({ id: "a", label: "a", kind: "ssh", connected: false })).toBe(false);
   expect(environmentReady({ id: "a", label: "a", kind: "ssh" })).toBe(true);
@@ -823,7 +858,13 @@ test("an open machine list reads the machines again until it closes", async () =
 
 test("a numbered pair is the person's own; three or more of one stem are a pool", async () => {
   const { environmentSections } = await import("../src/agent-session/acpmux/environments");
-  const ssh = (name: string) => ({ id: name, label: name, kind: "ssh" as const, connected: true, state: "connected" });
+  const ssh = (name: string) => ({
+    id: name,
+    label: name,
+    kind: "ssh" as const,
+    connected: true,
+    state: "connected",
+  });
   const sections = environmentSections(
     ["build-mini-1", "build-mini-2", "cmux16", "lane-1", "lane-2", "lane-3"].map(ssh),
   );
@@ -899,4 +940,45 @@ test("Labs: with Sandboxed picked the control names it, no machine is checked, a
   const cloud = rows().find((row) => row.querySelector('[data-kind="cloud"]'))!;
   await act(async () => cloud.click());
   expect(calls).toEqual([["mode", "persistent"]]);
+});
+
+test("Auto shows its destination before opening and keeps explicit machines available", async () => {
+  const calls = await mount(true, {
+    auto: { detail: "gpu-box", kind: "ssh", selected: true, onPick: () => undefined },
+  });
+  expect(computerButton()?.textContent).toContain("Auto · gpu-box");
+  await openPicker();
+  const machine = machineRows().find((row) => rowText(row).includes("gpu-box"));
+  expect(machine).toBeTruthy();
+  await act(async () => machine!.click());
+  expect(calls).toContainEqual(["project", "/home/dev/model", "gpu-box"]);
+});
+
+test("searching a machine skips Auto even when Auto would choose that machine", async () => {
+  const calls = await mount(true, {
+    auto: { detail: "gpu-box", kind: "ssh", selected: true, onPick: () => undefined },
+  });
+  await openPicker();
+  const field = await typeKeys("gpu");
+  expect(newRows().some((row) => rowText(row).includes("Auto"))).toBe(false);
+  await press(field, { key: "Enter" });
+  expect(calls).toContainEqual(["project", "/home/dev/model", "gpu-box"]);
+});
+
+test("searching Auto and pressing Enter selects it without an empty-state message", async () => {
+  let picked = false;
+  await mount(true, {
+    auto: {
+      detail: "This Mac",
+      selected: false,
+      onPick: () => {
+        picked = true;
+      },
+    },
+  });
+  await openPicker();
+  const field = await typeKeys("auto");
+  expect(doc().querySelector(".acpmux-location-empty")).toBeNull();
+  await press(field, { key: "Enter" });
+  expect(picked).toBe(true);
 });

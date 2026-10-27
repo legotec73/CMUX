@@ -111,6 +111,7 @@ export function EnvironmentPicker({
   onOpen,
   offload,
   onOffload,
+  auto,
   runMode,
 }: {
   label: string;
@@ -131,12 +132,14 @@ export function EnvironmentPicker({
   /// A started chat's move, run by `onOffload`.
   offload?: OffloadKind;
   onOffload?(kind: OffloadKind): void;
+  /// A new chat's automatic destination. It stays at the top of the picker until an explicit row is picked.
+  auto?: { detail: string; selected: boolean; onPick(): void };
   /// A new chat's Run as (preview, hq#3367): Persistent (a chat, as before) or Sandboxed (the
   /// first message runs once on a throwaway Cloud VM).
   runMode?: RunModeRows;
 }) {
   // A picked saved environment is the current row: every machine row is then a change.
-  const currentRow = saved?.current !== undefined ? SAVED + saved.current : current;
+  const currentRow = auto?.selected ? ACTION + "auto" : saved?.current !== undefined ? SAVED + saved.current : current;
   const [query, setQuery] = useState("");
   const trigger = useRef<HTMLButtonElement>(null);
   const escaped = useRef(false);
@@ -228,11 +231,26 @@ export function EnvironmentPicker({
     value: string;
     text: string;
     detail?: string;
-    kind: "local" | "ssh" | "cloud" | "saved" | "phone";
+    kind: "auto" | "local" | "ssh" | "cloud" | "saved" | "phone";
     icon?: React.ReactNode;
     run(): void;
   };
   const actions: Action[] = [
+    ...(auto
+      ? [
+          {
+            value: ACTION + "auto",
+            text: t("composer.auto"),
+            detail: auto.detail,
+            kind: "auto" as const,
+            icon: <AutoIcon />,
+            run: () => {
+              persistent();
+              auto.onPick();
+            },
+          },
+        ]
+      : []),
     ...(offload && onOffload
       ? [
           offload === "move"
@@ -293,7 +311,12 @@ export function EnvironmentPicker({
       : []),
     ...(onConnect
       ? [
-          { value: ACTION + "ssh", text: t("composer.connectSSH"), kind: "ssh" as const, run: () => onConnect("ssh") },
+          {
+            value: ACTION + "ssh",
+            text: t("composer.connectSSH"),
+            kind: "ssh" as const,
+            run: () => onConnect("ssh"),
+          },
           // Connect Phone… opens the Mobile Pairing page: cmux on iPhone reaches this Mac.
           {
             value: ACTION + "phone",
@@ -315,13 +338,19 @@ export function EnvironmentPicker({
       : []),
   ];
   const suggestions = [
+    ...actions
+      .filter((action) => action.kind === "auto")
+      .filter((action) => matches(words, action.text))
+      .map((action) => action.value),
     ...savedShown.map((environment) => SAVED + environment.id),
     ...shown.map((environment) => environment.id),
-    ...actions.map((action) => action.value),
+    ...actions.filter((action) => action.kind !== "auto").map((action) => action.value),
   ];
   const cloudShown = shown.some((environment) => sectionOf(environment) === "fleet");
   const localShown = shown.some((environment) => sectionOf(environment) === "local");
-  const firstNew = actions.find((action) => action.kind !== "cloud" && action.kind !== "local");
+  const firstNew = actions.find(
+    (action) => action.kind !== "auto" && action.kind !== "cloud" && action.kind !== "local",
+  );
   // New Cloud Machine's row shows Sandboxed instead while ⌥ is held (or, once picked, until it is),
   // or while the search names Sandboxed.
   const sandboxFace =
@@ -435,16 +464,27 @@ export function EnvironmentPicker({
       return (
         <span
           className="acpmux-location-row acpmux-env-row acpmux-env-new"
-          data-kind={action.kind === "saved" || action.kind === "phone" ? undefined : action.kind}
+          data-kind={
+            action.kind === "saved" || action.kind === "phone" || action.kind === "auto" ? undefined : action.kind
+          }
           data-section={section}
           data-first-section={first ? "" : undefined}
         >
           {action.icon ?? (
-            <EnvironmentIcon kind={action.kind === "saved" || action.kind === "phone" ? "local" : action.kind} />
+            <EnvironmentIcon
+              kind={
+                action.kind === "saved" || action.kind === "phone" || action.kind === "auto" ? "local" : action.kind
+              }
+            />
           )}
           <span className="acpmux-menu-text acpmux-location-name">
             <span className="acpmux-menu-label">{action.text}</span>
-            {action.detail && <span className="acpmux-env-detail">{action.detail}</span>}
+            {action.detail && (
+              <span className="acpmux-env-detail">
+                {action.kind === "auto" ? " · " : ""}
+                {action.detail}
+              </span>
+            )}
           </span>
         </span>
       );
@@ -553,7 +593,11 @@ export function EnvironmentPicker({
             // chat; Open Cloud…, SSH…) only
             // once the arrow keys or the pointer reached it, never when Base UI highlighted it on its
             // own: a search that leaves no machine moves that highlight onto the first action.
-            if (event.key === "Enter" && autoHighlighted.current?.startsWith(ACTION)) {
+            if (
+              event.key === "Enter" &&
+              autoHighlighted.current?.startsWith(ACTION) &&
+              autoHighlighted.current !== ACTION + "auto"
+            ) {
               event.preventDefault();
               event.preventBaseUIHandler?.();
             }
@@ -570,9 +614,13 @@ export function EnvironmentPicker({
           autoHighlight
           inline
         />
-        {query.trim() !== "" && shown.length === 0 && savedShown.length === 0 && !sandboxFace && (
-          <div className="acpmux-location-empty">{t("composer.environmentNone")}</div>
-        )}
+        {query.trim() !== "" &&
+          shown.length === 0 &&
+          savedShown.length === 0 &&
+          !sandboxFace &&
+          !suggestions.includes(ACTION + "auto") && (
+            <div className="acpmux-location-empty">{t("composer.environmentNone")}</div>
+          )}
       </Popover>
     </span>
   );
@@ -604,6 +652,26 @@ function PlusIcon() {
       focusable="false"
     >
       <path d="M8 3.5v9M3.5 8h9" />
+    </svg>
+  );
+}
+
+function AutoIcon() {
+  return (
+    <svg
+      className="acpmux-icon acpmux-location-icon acpmux-env-icon ui-ghost-icon"
+      width={14}
+      height={14}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.25}
+      strokeLinecap="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M3 8h10M8 3v10" />
+      <circle cx="8" cy="8" r="5.5" />
     </svg>
   );
 }

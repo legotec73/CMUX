@@ -69,7 +69,12 @@ type Location = {
   section?: string;
   disabled?: boolean;
 };
-type Computer = Location & { kind: EnvironmentKind; connected?: boolean; state?: string; cloudMachine?: CloudMachine };
+type Computer = Location & {
+  kind: EnvironmentKind;
+  connected?: boolean;
+  state?: string;
+  cloudMachine?: CloudMachine;
+};
 const NO_PEER_KINDS: Record<string, "ssh" | "cloud"> = {};
 const NO_PEER_CONNECTED: Record<string, boolean> = {};
 const NO_PEER_STATES: Record<string, string> = {};
@@ -107,6 +112,7 @@ export function ComposerContext({
   onComputer,
   cloudMachines,
   onCloudMachine = (machine) => void runCloudMachine(machine),
+  auto,
   runMode,
 }: {
   summary?: Summary;
@@ -165,10 +171,13 @@ export function ComposerContext({
   cloudMachines?: readonly CloudMachine[];
   /// A pick of one acpmux does not list: it resumes (paused) or opens; by default through the app.
   onCloudMachine?(machine: CloudMachine): void;
+  /// A new chat's default destination. The picker keeps Auto selected until an explicit row wins.
+  auto?: { detail: string; kind?: EnvironmentKind; selected: boolean; onPick(): void };
   /// A new chat's Run as in the environment picker (Persistent or Sandboxed, hq#3367).
   runMode?: RunModeRows;
 }) {
   const newChat = !started && onProject !== undefined;
+  const autoLabel = auto?.selected ? `${t("composer.auto")} · ${auto.detail}` : undefined;
   const accountMachines = useCloudMachines();
   const shownMachines = cloudMachines ?? accountMachines;
   // Every machine acpmux lists (`_acpmux/status` peers) and every host its chats ran on, with each
@@ -203,7 +212,10 @@ export function ComposerContext({
         // An account Cloud machine acpmux does not list says what a pick does, and is a pick.
         ...(ready
           ? {}
-          : { ...(isCloudMachineRow(computer) ? {} : { disabled: true }), detail: environmentStateLabel(computer) }),
+          : {
+              ...(isCloudMachineRow(computer) ? {} : { disabled: true }),
+              detail: environmentStateLabel(computer),
+            }),
       };
     });
   }, [computers]);
@@ -284,7 +296,7 @@ export function ComposerContext({
   };
   const pickComputer = (id: string) => {
     if (pickCloudMachine(id)) return;
-    if (!readOnly && id !== selectedComputer) {
+    if (!readOnly && (id !== selectedComputer || auto?.selected)) {
       setSelectedComputer(id);
       const folder = availableFolders(summary, sessions, id)[0]?.id;
       if (folder) onProject?.(folder, id === "local" ? undefined : id);
@@ -396,7 +408,7 @@ export function ComposerContext({
               value={
                 sandboxPicked
                   ? t("composer.sandboxed")
-                  : (savedPick?.name ?? currentComputer?.label ?? t(CONTEXT_LABELS.chooseComputer))
+                  : (autoLabel ?? savedPick?.name ?? currentComputer?.label ?? t(CONTEXT_LABELS.chooseComputer))
               }
               face={
                 // Sandboxed picked (hq#3367): the control names it where the machine was.
@@ -406,11 +418,15 @@ export function ComposerContext({
                   <LocationFace
                     icon={
                       <EnvironmentIcon
-                        kind={savedPick?.kind ?? currentComputer?.kind ?? "local"}
+                        kind={
+                          auto?.selected
+                            ? (auto.kind ?? "local")
+                            : (savedPick?.kind ?? currentComputer?.kind ?? "local")
+                        }
                         name={savedPick ? undefined : currentComputer?.label}
                       />
                     }
-                    value={savedPick?.name ?? currentComputer?.label ?? t(CONTEXT_LABELS.chooseComputer)}
+                    value={autoLabel ?? savedPick?.name ?? currentComputer?.label ?? t(CONTEXT_LABELS.chooseComputer)}
                     chevron
                   />
                 )
@@ -418,6 +434,7 @@ export function ComposerContext({
               environments={offload && currentComputer ? [currentComputer] : computers}
               current={selectedComputer}
               onPick={pickEnvironment}
+              {...(auto ? { auto } : {})}
               {...(offload && onOffload ? { offload, onOffload } : {})}
               {...(!started && onConnect ? { onConnect } : {})}
               {...(savedRows ? { saved: savedRows } : {})}
@@ -438,8 +455,16 @@ export function ComposerContext({
               extras={
                 !started && onConnect
                   ? [
-                      { id: "ssh", label: t(CONTEXT_LABELS.connectSSH), onSelect: () => onConnect("ssh") },
-                      { id: "cloud", label: t(CONTEXT_LABELS.newCloudMachine), onSelect: () => onConnect("cloud") },
+                      {
+                        id: "ssh",
+                        label: t(CONTEXT_LABELS.connectSSH),
+                        onSelect: () => onConnect("ssh"),
+                      },
+                      {
+                        id: "cloud",
+                        label: t(CONTEXT_LABELS.newCloudMachine),
+                        onSelect: () => onConnect("cloud"),
+                      },
                     ]
                   : undefined
               }

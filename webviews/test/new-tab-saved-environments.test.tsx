@@ -105,11 +105,13 @@ async function mount({
   worktree = "ok",
   tabCwd = "/Users/you",
   peerStart = "ok",
+  onNewWorktree: onNewWorktreeOverride,
 }: {
   previews?: boolean;
   worktree?: "ok" | "refused";
   tabCwd?: string;
   peerStart?: "ok" | "refused" | "none";
+  onNewWorktree?: (cwd: string) => Promise<string | undefined>;
 } = {}) {
   const { createRoot } = await import("react-dom/client");
   const { NewTabScreen } = await import("../src/agent-session/acpmux/newtab/NewTabScreen");
@@ -165,12 +167,15 @@ async function mount({
         ]}
         environments={previews}
         onConnect={noop}
-        onNewWorktree={(cwd) => {
-          let folder: string | undefined;
-          return newWorktree(callNative, cwd, (used) => {
-            folder = used;
-          }).then(() => folder);
-        }}
+        onNewWorktree={
+          onNewWorktreeOverride ??
+          ((cwd) => {
+            let folder: string | undefined;
+            return newWorktree(callNative, cwd, (used) => {
+              folder = used;
+            }).then(() => folder);
+          })
+        }
         {...actions}
       />,
     ),
@@ -239,7 +244,11 @@ test("the picker lists the saved environments in a Saved section over the machin
   ]);
   expect(saved[0]!.querySelector(".acpmux-env-row")!.getAttribute("data-section")).toBe(t("composer.envSaved"));
   // The machines follow, still numbered from ⌥⌘1, and Create environment heads New environment.
-  expect(rows()[3]!.querySelector(".acpmux-env-key")?.textContent).toBe("⌥⌘1");
+  expect(
+    rows()
+      .find((item) => item.querySelector(".acpmux-env-key"))
+      ?.querySelector(".acpmux-env-key")?.textContent,
+  ).toBe("⌥⌘1");
   const created = row(t("environment.create"));
   expect(created?.querySelector(".acpmux-env-row")!.getAttribute("data-section")).toBe(t("composer.newEnvironment"));
   // No Edit environment until one is picked.
@@ -463,4 +472,79 @@ test("a chat started on another machine starts on the model the page showed", as
     model: "claude-opus-5-5",
     peer: "devbox",
   });
+});
+
+test("Auto previews the remote destination without showing the local folder it will not send", async () => {
+  const calls = await mount({ tabCwd: APP });
+  await type(host.querySelector<HTMLTextAreaElement>(".nt-field"), "Build in cloud");
+  expect(environmentButton()?.textContent).toContain("Auto · cloud-1");
+  expect(host.querySelector(".acpmux-composer-context")?.textContent).not.toContain("app");
+  await ask("Build in cloud");
+  const launch = calls.find((call) => call.method === "chat.new");
+  expect(launch?.params?.peer).toBe("cloud-1");
+  expect(launch?.params?.cwd).toBeUndefined();
+});
+
+test("preview features off keeps a cloud-keyword prompt on the displayed local machine", async () => {
+  const calls = await mount({ previews: false, tabCwd: APP });
+  await ask("Build in cloud");
+  expect(calls.find((call) => call.method === "chat.new")?.params?.peer).toBeUndefined();
+});
+
+test("Auto keeps an ordinary coding prompt on this Mac", async () => {
+  const calls = await mount({ tabCwd: APP });
+  await type(host.querySelector<HTMLTextAreaElement>(".nt-field"), "Fix the build error in this repo");
+  expect(environmentButton()?.textContent).toContain(t("composer.thisMac"));
+  await ask("Fix the build error in this repo");
+  expect(calls.find((call) => call.method === "chat.new")?.params).toMatchObject({ harness: "claude" });
+  // Local creation inherits the tab folder; no cwd override is needed.
+  expect(calls.find((call) => call.method === "chat.new")?.params?.cwd).toBeUndefined();
+  expect(calls.find((call) => call.method === "chat.new")?.params?.peer).toBeUndefined();
+});
+
+test("Auto selection wins over a pending New Worktree reply", async () => {
+  const replies: ((folder: string) => void)[] = [];
+  const calls = await mount({
+    onNewWorktree: () => new Promise<string | undefined>((resolve) => replies.push(resolve)),
+  });
+  await click(folderButton());
+  await click($$(".acpmux-folder-popover .acpmux-menu-item").find((item) => item.textContent?.includes("api")));
+  const worktree = [...host.querySelectorAll<HTMLButtonElement>(".acpmux-location-button")].find(
+    (button) => button.textContent?.trim() === t("worktree.new"),
+  );
+  await click(worktree);
+  expect(replies).toHaveLength(1);
+  await click(environmentButton());
+  await click(row(t("composer.auto")));
+  await act(async () => replies[0]!(WORKTREE));
+  await settle();
+  expect(environmentButton()?.textContent).toContain(t("composer.auto"));
+  await ask("fix the button");
+  expect(calls.find((call) => call.method === "chat.new")?.params).toMatchObject({ cwd: API });
+  expect(calls.find((call) => call.method === "chat.new")?.params?.cwd).not.toBe(WORKTREE);
+});
+
+test.each([false, true])("Auto cancels a pending saved worktree launch (reject: %s)", async (reject) => {
+  let finish!: () => void;
+  const calls = await mount({
+    onNewWorktree: () =>
+      new Promise<string | undefined>((resolve, fail) => {
+        finish = () => (reject ? fail(new Error("stale worktree failure")) : resolve(WORKTREE));
+      }),
+  });
+  await click(environmentButton());
+  await click(row("API worktree"));
+  await ask("fix the button");
+  await click(environmentButton());
+  await click(row(t("composer.auto")));
+  await act(async () => finish());
+  await settle();
+  expect(environmentButton()?.textContent).toContain(t("composer.auto"));
+  expect(calls.some((call) => call.method === "chat.new")).toBe(false);
+  expect(host.querySelector('[role="alert"]')).toBeNull();
+  await ask("fix the button");
+  const chats = calls.filter((call) => call.method === "chat.new");
+  expect(chats).toHaveLength(1);
+  expect(chats[0]?.params?.cwd).not.toBe(WORKTREE);
+  expect(chats[0]?.params?.peer).toBeUndefined();
 });
