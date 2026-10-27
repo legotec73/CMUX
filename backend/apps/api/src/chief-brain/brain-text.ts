@@ -157,6 +157,37 @@ export const formatMessage = (head: Head, m: Message, opts: { readonly files?: b
 }
 
 /**
+ * The thread a message shows in: its `thread_root`, else, for a reply without one (`reply_to` only: an
+ * inline reply, a client from before threads, an import), the thread of the message it answers, as every
+ * Home client draws it (`rootOf`). Null at the top level and when the answered message is not loaded.
+ */
+export const threadOf = (m: Message, messages: ReadonlyArray<Message>): string | null => {
+  if (m.thread_root) return m.thread_root
+  const target = m.reply_to?.message_id
+  return target && target !== m.id ? rootOf(target, messages) : null
+}
+
+/**
+ * The thread a reply to `message` goes in: its `thread_root`, else up the replies without one to the first
+ * message that answers none (the Home page's rule, model.ts `withThreadRoots`). Every message it can return
+ * has no `thread_root`, so the owner takes it as a root; a chain that leaves the loaded messages or loops
+ * stops at the last one loaded. Null when `message` itself is not loaded.
+ */
+export const rootOf = (message: string, messages: ReadonlyArray<Message>): string | null => {
+  const byId = new Map(messages.map((m) => [m.id, m]))
+  const seen = new Set<string>()
+  for (let at = byId.get(message); at; ) {
+    if (at.thread_root) return at.thread_root
+    seen.add(at.id)
+    const up = at.reply_to?.message_id
+    const next = up === undefined || seen.has(up) ? undefined : byId.get(up)
+    if (!next) return at.id
+    at = next
+  }
+  return null
+}
+
+/**
  * The inbox kind of a Chief's conversation its owner shared with teammates (cmux#25569). It reads like
  * the Chief's own line (the main timeline), but the reply quotes the message it answers, so each person
  * sees which of their messages the Chief answered.
@@ -177,12 +208,21 @@ export const oneLine = (kind: string): boolean => kind === "chief" || kind === S
  * Where the reply goes: in a channel or group, the thread of the message answered (its own thread,
  * or the thread it is in); in the chief's line or a DM, the main timeline unless that message was
  * already in a thread; in a shared chief's line, the main timeline as a reply to the message answered.
+ * `threadRoot` is the answered message's thread (`threadOf`). The owner takes a
+ * `reply_to` with a `thread_root` only when the root is the answered message's own (home-core apply:
+ * "a named root must be the parent's own"), so with a root `threadOf` derived (`ownRoot` false: the
+ * message answers another without naming a thread) the reply names the thread alone: it shows in that
+ * thread, never at the top level, and is not refused.
  */
-export const replyTarget = (kind: string, message: string, threadRoot: string | null): { reply_to?: string; thread_root?: string } => {
+export const replyTarget = (kind: string, message: string, threadRoot: string | null, ownRoot = true): { reply_to?: string; thread_root?: string } => {
+  if (threadRoot && !ownRoot) return { thread_root: threadRoot }
   if (kind === SHARED_CHIEF) return { reply_to: message, ...(threadRoot ? { thread_root: threadRoot } : {}) }
   if (kind === "chief" || kind === "dm") return threadRoot ? { reply_to: message, thread_root: threadRoot } : {}
   return { reply_to: message, thread_root: threadRoot ?? message }
 }
+
+/** Whether `threadOf(m)` is the root `m` names itself (or none): a reply to `m` may then name it with `reply_to: m`. */
+export const ownsRoot = (m: Message): boolean => m.thread_root !== undefined || m.reply_to === undefined
 
 /** The model's "post nothing" answer, with punctuation and case ignored ("NO_REPLY.", "no_reply"). */
 export const isNoReply = (text: string) => text.replace(/[^A-Za-z_]/g, "").toUpperCase() === NO_REPLY
