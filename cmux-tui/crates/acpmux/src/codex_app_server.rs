@@ -205,6 +205,7 @@ impl AuthGate {
 }
 
 impl Translator {
+    #[cfg(unix)]
     pub(crate) fn has_background_work(&self) -> bool {
         self.background().has_work()
     }
