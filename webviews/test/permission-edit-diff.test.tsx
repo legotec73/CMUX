@@ -18,15 +18,21 @@ const keys = [
   "Node",
   "customElements",
   "MutationObserver",
+  "ResizeObserver",
+  "getComputedStyle",
+  "requestAnimationFrame",
+  "cancelAnimationFrame",
   "IS_REACT_ACT_ENVIRONMENT",
 ] as const;
 const saved = keys.map((key) => [key, key in scope, scope[key]] as const);
 const added: string[] = [];
 let root: Root | undefined;
 let host: HTMLElement;
+let dom: JSDOM;
 
 beforeAll(() => {
-  const { window } = new JSDOM("<!doctype html><div id=root></div>", { pretendToBeVisual: true });
+  dom = new JSDOM("<!doctype html><div id=root></div>", { pretendToBeVisual: true });
+  const { window } = dom;
   Object.assign(scope, {
     window,
     document: window.document,
@@ -36,6 +42,15 @@ beforeAll(() => {
     Node: window.Node,
     customElements: window.customElements,
     MutationObserver: window.MutationObserver,
+    // jsdom has no layout observer; Pierre still needs its subscription API to render the hunks.
+    ResizeObserver: class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+    getComputedStyle: window.getComputedStyle.bind(window),
+    requestAnimationFrame: window.requestAnimationFrame.bind(window),
+    cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
     IS_REACT_ACT_ENVIRONMENT: true,
   });
   // Pierre's registered elements (the diff card) read their own DOM constructors at import time.
@@ -49,6 +64,7 @@ beforeAll(() => {
 
 afterAll(() => {
   act(() => root?.unmount());
+  dom.window.close();
   for (const key of added) delete scope[key];
   for (const [key, had, value] of saved) {
     if (had) scope[key] = value;
@@ -164,3 +180,119 @@ test("a long edit awaiting approval shows whole, never cut to a preview", async 
   expect(diff.querySelector(".cv-edit-diff__body")?.hasAttribute("data-preview")).toBe(false);
   expect([...diff.querySelectorAll("button")].some((node) => node.textContent?.startsWith("Show all"))).toBe(false);
 });
+
+async function renderAsk(toolCall: Record<string, unknown>, grouped: boolean, v2 = false) {
+  const { createRoot } = await import("react-dom/client");
+  const { PermissionPanel } = await import("../src/agent-session/acpmux/permissions/Panel");
+  const { PermissionCard } = await import("../src/agent-session/acpmux/PermissionCard");
+  const { permissionFromMessage } = await import("../src/agent-session/acpmux/direct");
+  const request = {
+    ...(v2 ? { subject: { type: "tool_call", toolCall } } : { toolCall }),
+    options: [{ optionId: "allow", name: "Allow", kind: "allow_once" }],
+  };
+  await act(async () => root?.unmount());
+  root = createRoot(host);
+  await act(async () => {
+    if (grouped) {
+      root!.render(
+        <PermissionPanel
+          state={{ ...state, groups: [{ ...group, items: [{ ...group.items[0]!, request }] }] }}
+          working
+          onRespond={() => {}}
+          onRetry={() => {}}
+          onRevoke={() => {}}
+          onRefresh={() => {}}
+        />,
+      );
+    } else {
+      const permission = permissionFromMessage(
+        { sessionId: "session-1", permissionId: "permission-1", request },
+        "session-1",
+      );
+      expect(permission).toBeDefined();
+      root!.render(<PermissionCard permission={permission!} onAnswer={() => {}} />);
+    }
+  });
+}
+
+function shownChanges() {
+  return [...host.querySelectorAll(".cv-edit-diff")].map((diff) => ({
+    name: diff.querySelector(".cv-edit-diff__name")?.textContent,
+    added: diff.querySelector(".cv-edit-diff__add")?.textContent,
+    removed: diff.querySelector(".cv-edit-diff__del")?.textContent,
+    cut: diff.querySelector(".cv-edit-diff__body")?.hasAttribute("data-preview"),
+  }));
+}
+
+for (const grouped of [false, true]) {
+  const surface = grouped ? "grouped approval" : "single approval";
+  for (const v2 of [false, true]) {
+    const envelope = v2 ? "ACP v2 subject" : "ACP tool call";
+    test(`${surface} shows the explicit diff from an ${envelope}`, async () => {
+      await renderAsk(
+        {
+          kind: "edit",
+          title: "Edit upload.sh",
+          content: [{ type: "diff", path, oldText: before, newText: after }],
+          // The explicit diff is authoritative, even if input differs.
+          rawInput: { file_path: path, old_string: "wrong\n", new_string: "also\nwrong\n" },
+        },
+        grouped,
+        v2,
+      );
+      expect(shownChanges()).toEqual([{ name: "upload.sh", added: "+1", removed: "-0", cut: false }]);
+    });
+
+    test(`${surface} previews Claude Edit input from an ${envelope}`, async () => {
+      await renderAsk(
+        {
+          kind: "edit",
+          title: "Edit upload.sh",
+          rawInput: { file_path: path, old_string: "exit 1\n", new_string: "echo done\nexit 0\n" },
+        },
+        grouped,
+        v2,
+      );
+      expect(shownChanges()).toEqual([{ name: "upload.sh", added: "+2", removed: "-1", cut: false }]);
+    });
+  }
+
+  test(`${surface} previews every MultiEdit fragment`, async () => {
+    await renderAsk(
+      {
+        kind: "edit",
+        rawInput: {
+          file_path: path,
+          edits: [
+            { old_string: "attempt=0\n", new_string: "attempt=1\n" },
+            { old_string: "exit 1\n", new_string: "echo done\nexit 0\n" },
+          ],
+        },
+      },
+      grouped,
+    );
+    expect(shownChanges()).toEqual([{ name: "upload.sh", added: "+3", removed: "-2", cut: false }]);
+  });
+
+  test(`${surface} does not invent a before image for Write or malformed input`, async () => {
+    for (const rawInput of [
+      { file_path: path, content: "replacement\n" },
+      { file_path: path, old_string: null, new_string: "replacement\n" },
+      { old_string: "before", new_string: "after" },
+    ]) {
+      await renderAsk({ kind: "edit", rawInput }, grouped);
+      expect(shownChanges()).toEqual([]);
+    }
+  });
+
+  test(`${surface} does not infer an edit from a different tool's input fields`, async () => {
+    await renderAsk(
+      {
+        kind: "read",
+        rawInput: { file_path: path, old_string: "before", new_string: "after" },
+      },
+      grouped,
+    );
+    expect(shownChanges()).toEqual([]);
+  });
+}
