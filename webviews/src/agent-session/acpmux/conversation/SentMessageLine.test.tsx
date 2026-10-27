@@ -126,6 +126,29 @@ test("a send whose text comes from a file names only its target", async () => {
   expect(unknown.querySelector(".cv-sent")!.textContent).toBe("Sent message to reports:leo");
 });
 
+test("a captured file body is rendered, while an unavailable file keeps Raw as the fallback", async () => {
+  const captured = bash("acpmux send --no-wait reports:leo - < /tmp/summary.md", { output: "queued" });
+  captured.inputPath = { path: "/tmp/summary.md", canonical: "/tmp/summary.md" };
+  captured.diffs = [
+    {
+      path: "/tmp/summary.md",
+      canonical: "/tmp/summary.md",
+      newText: "## Captured summary\n\n- **Ready**",
+      fragment: true,
+      fromInput: true,
+    },
+  ];
+  const rendered = await line(captured);
+  await act(async () => rendered.querySelector<HTMLElement>(".cv-sent")!.click());
+  expect(rendered.querySelector(".cv-subsession__under h2")?.textContent).toBe("Captured summary");
+  expect(rendered.querySelector(".cv-subsession__under strong")?.textContent).toBe("Ready");
+  // Without a captured event body, the parser still marks this as a file input and the row falls
+  // back to Raw; it must never inspect `/tmp/summary.md` while rendering history.
+  expect(acpmuxSendCall(bash("acpmux send --no-wait reports:leo - < /tmp/summary.md", { output: "queued" }))).toMatchObject({
+    fileInput: true,
+  });
+});
+
 test("a failed send says it could not send and opens to its output", async () => {
   const container = await line(
     bash("acpmux send perf-lane 'Profile it.'", {
