@@ -126,6 +126,12 @@ final class TerminalViewController: UIViewController, UIScrollViewDelegate {
     /// Selection in a full-screen app (vim, htop): a long press always selects,
     /// like Shift-drag on the Mac when the app captures the mouse (G-14).
     let tuiSelection = TerminalSelectionController()
+    /// Find… over the rows (the system find bar), scrollback included.
+    let finder = TerminalFindController()
+    /// The shell's tap, and whether its touch landed on a moving page (that tap only
+    /// stops the page, as in UIKit; it never opens the link under it).
+    private weak var shellTap: UITapGestureRecognizer?
+    private var tapStoppedScroll = false
     /// A vertical drag in a full-screen app scrolls the app (T-SCROLL-12).
     private let tuiScroll = TerminalTUIScrollController()
     /// A tap in a full-screen app: a click when the app asked for the mouse,
@@ -533,10 +539,13 @@ final class TerminalViewController: UIViewController, UIScrollViewDelegate {
             }
         }
 
-        let tap = UITapGestureRecognizer(target: self, action: #selector(terminalTapped))
+        let tap = UITapGestureRecognizer(target: self, action: #selector(shellTapped(_:)))
+        tap.delegate = self
+        shellTap = tap
         scrollView.addGestureRecognizer(tap)
         tuiClip.addGestureRecognizer(tuiTap)
         installSelection()
+        installFind()
         installTUIScroll()
 
         surface.configurePasteControlTarget()
@@ -1116,6 +1125,7 @@ final class TerminalViewController: UIViewController, UIScrollViewDelegate {
         settingOffset = false
         place(atRow: presentedTop)
         selection.shiftRows(by: -rows)
+        finder.shiftRows(by: -rows)
     }
 
     /// Ghostty's rows in the scrollbar's numbering (`TerminalRowSpace`): the
@@ -1231,6 +1241,7 @@ final class TerminalViewController: UIViewController, UIScrollViewDelegate {
         TerminalBenchProbe.shared?.outputProcessed(raw)
         #endif
         let replayDone = replayGate.parsed(raw)
+        finder.outputArrived()
         if replayGate.isReplaying {
             // A reset's replay is still being fed: no layout, no frame swap
             // until all of it is parsed (user report 2026-10-14).
@@ -1247,6 +1258,8 @@ final class TerminalViewController: UIViewController, UIScrollViewDelegate {
             // Ghostty's next scrollbar report has the replay's row count.
             if readingMark != nil { readingMarkAwaitsReport = true }
             updateDocument()
+            // The mirror was reset and replayed: an open find searches the new rows.
+            finder.rowsReplaced()
         }
         if freezeView != nil, raw > Self.mirrorReset.count || replayDone, replayHasContent() {
             // The replay is parsed and draws something: drop the held frame on
@@ -1276,6 +1289,7 @@ final class TerminalViewController: UIViewController, UIScrollViewDelegate {
             measured("scrollbar") { scrollbarReported(total: total, offset: offset, visible: visible) }
         case .cellSize:
             view.setNeedsLayout()
+            if model.isTUI { finder.rowsReplaced() }
         case .bell:
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
         }
@@ -1572,6 +1586,7 @@ final class TerminalViewController: UIViewController, UIScrollViewDelegate {
             place(atRow: presentedTop)
             selection.redraw()
             tuiSelection.redraw()
+            finder.redraw()
         }
         // The scroll model places the rows: the bottom when following, the
         // anchored rows when reading, nothing while a finger owns the page.
@@ -1924,6 +1939,7 @@ final class TerminalViewController: UIViewController, UIScrollViewDelegate {
         let origin = CGPoint(x: Self.sidePadding, y: CGFloat(presentedTop - originRow) * cell.height)
         if surface.frame.origin != origin {
             UIView.performWithoutAnimation { surface.frame.origin = origin }
+            if finder.isActive { finder.redraw() }
         }
     }
 
@@ -1978,6 +1994,7 @@ final class TerminalViewController: UIViewController, UIScrollViewDelegate {
             applyScroll()
         }
         surface.drawNow()
+        finder.rowsReplaced()
         // The TUI's rows follow the settled keyboard (R1-1); the shell's do not.
         view.setNeedsLayout()
     }
@@ -2192,9 +2209,133 @@ final class TerminalViewController: UIViewController, UIScrollViewDelegate {
         model.session.noteInteraction()
         // A tap that ends a selection only ends it, as in the shell.
         if selection.selection == nil, tuiSelection.selection == nil, model.isTUI, surface.superview === tuiHost {
+            // A link opens unless the app asked for the mouse: then the tap is its click.
+            if !surface.capturesMouse, let url = tuiLink(at: tap.location(in: tuiHost)) {
+                model.openLink(url)
+                return
+            }
             surface.click(at: tap.location(in: surface))
         }
         terminalTapped()
+    }
+
+    /// A tap on the shell's rows: a web link opens in a browser tab beside the terminal
+    /// (the Mac's Cmd-click); anywhere else the terminal takes the keyboard.
+    @objc private func shellTapped(_ tap: UITapGestureRecognizer) {
+        if !tapStoppedScroll, selection.selection == nil, tuiSelection.selection == nil, !model.isTUI,
+           let url = shellLink(at: tap.location(in: scrollView)) {
+            model.session.noteInteraction()
+            model.openLink(url)
+            return
+        }
+        terminalTapped()
+    }
+
+    /// The web link under `point` (scroll view content) on the shell's rows: the tapped
+    /// cell's row and the rows a program may have broken the link across.
+    private func shellLink(at point: CGPoint) -> URL? {
+        guard let document, let cell = selection.cellAt(point),
+              selection.rectFor(cell).insetBy(dx: -2, dy: -2).contains(point) else { return nil }
+        let first = max(document.originRow, cell.row - TerminalLinkFinder.reach)
+        let last = min(document.endRow - 1, cell.row + TerminalLinkFinder.reach)
+        guard last >= first else { return nil }
+        let reader = rowReader
+        let rows = (first...last).map { reader.text(TerminalAbsoluteRow($0)) ?? "" }
+        return TerminalLinkFinder(rows: rows, firstRow: first, columns: max(1, surface.grid.columns))
+            .link(row: cell.row, column: cell.column)?.url
+    }
+
+    /// The web link under `point` (TUI host) on a full-screen app's screen.
+    private func tuiLink(at point: CGPoint) -> URL? {
+        guard let cell = tuiSelection.cellAt(point), tuiSelection.rectFor(cell).insetBy(dx: -2, dy: -2).contains(point) else { return nil }
+        let first = max(0, cell.row - TerminalLinkFinder.reach)
+        let last = min(surface.grid.rows - 1, cell.row + TerminalLinkFinder.reach)
+        guard last >= first else { return nil }
+        let rows = (first...last).map { tuiSelection.rowText($0) ?? "" }
+        return TerminalLinkFinder(rows: rows, firstRow: first, columns: max(1, surface.grid.columns))
+            .link(row: cell.row, column: cell.column)?.url
+    }
+
+    // MARK: Find
+
+    /// Find… (the page menu, Cmd-F).
+    func presentFind() {
+        selection.clear()
+        tuiSelection.clear()
+        finder.present(terminalHadFocus: surface.isFirstResponder)
+    }
+
+    private func installFind() {
+        // On the surface: the find bar's interaction needs a view that can take the keyboard.
+        finder.install(in: surface)
+        finder.readRows = { [weak self] in
+            guard let self, cell.height > 0 else { return nil }
+            let columns = max(1, surface.grid.columns)
+            if model.isTUI {
+                // A full-screen app: its screen only (it has no scrollback).
+                let rows = (0..<max(0, surface.grid.rows)).map { self.tuiSelection.rowText($0) ?? "" }
+                return (rows, Array(repeating: false, count: rows.count), 0, columns)
+            }
+            // The shell: every row the phone holds, scrollback included, numbered like the scrollbar.
+            guard let screen = surface.screenRows() else { return nil }
+            return (screen.rows, screen.wraps, 0, columns)
+        }
+        finder.rectFor = { [weak self] point in
+            guard let self else { return .zero }
+            return model.isTUI ? tuiSelection.rectFor(point) : selection.rectFor(point)
+        }
+        finder.drawnRows = { [weak self] in
+            guard let self else { return 0..<0 }
+            if model.isTUI { return 0..<max(0, surface.grid.rows) }
+            return presentedTop..<(presentedTop + max(surface.grid.rows, surfaceRows))
+        }
+        finder.highlightHost = { [weak self] in
+            guard let self else { return nil }
+            return model.isTUI ? tuiHost : scrollView
+        }
+        finder.reveal = { [weak self] match in self?.revealFindMatch(match) }
+        finder.ended = { [weak self] restoreFocus in
+            if restoreFocus { self?.focusTerminal() }
+        }
+    }
+
+    /// Scrolls the shell so `match` shows, a third of the way down the rows, unless it
+    /// shows already. A full-screen app's matches are all on its screen.
+    private func revealFindMatch(_ match: TerminalFindResults.Match) {
+        guard !model.isTUI, let document, cell.height > 0 else { return }
+        let rowY = document.contentY(ofRow: match.row, cellHeight: cell.height)
+        let visibleTop = scrollView.contentOffset.y + scrollView.adjustedContentInset.top
+        let visibleBottom = scrollView.contentOffset.y + scrollView.bounds.height - scrollView.adjustedContentInset.bottom
+        if rowY >= visibleTop, rowY + cell.height <= visibleBottom { return }
+        let visibleRows = max(1, Int((visibleBottom - visibleTop) / cell.height))
+        let top = max(document.originRow, match.row - visibleRows / 3)
+        let topY = document.contentY(ofRow: top, cellHeight: cell.height) - scrollView.adjustedContentInset.top
+        fling?.stop()
+        fling = nil
+        if topY >= maxOffsetY - 0.5 {
+            scroll.jumpToBottom()
+        } else {
+            // The top row and how far above it the page starts (the top inset at the document's top).
+            scroll.reveal(row: top, delta: topY - document.contentY(ofRow: top, cellHeight: cell.height))
+        }
+        placesFromReport = false
+        applyScroll()
+    }
+
+    // MARK: Find commands
+
+    // The system's Find, Find Next and Find Previous (Cmd-F, Cmd-G, Shift-Cmd-G): the
+    // standard responder actions, so the system's own key commands reach the terminal
+    // from the surface or the composer.
+    override func find(_ sender: Any?) { presentFind() }
+    override func findNext(_ sender: Any?) { finder.step(forward: true, terminalHadFocus: surface.isFirstResponder) }
+    override func findPrevious(_ sender: Any?) { finder.step(forward: false, terminalHadFocus: surface.isFirstResponder) }
+
+    override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
+        if action == #selector(find(_:)) || action == #selector(findNext(_:)) || action == #selector(findPrevious(_:)) {
+            return started
+        }
+        return super.canPerformAction(action, withSender: sender)
     }
 
     @objc private func terminalTapped() {
@@ -2282,6 +2423,17 @@ final class TerminalViewController: UIViewController, UIScrollViewDelegate {
             scroll.began()
         }
         selection.autoscrollEnded = { [weak self] in self?.settleScroll() }
+        selection.linkAt = { [weak self] cell in
+            guard let self, let document else { return nil }
+            let first = max(document.originRow, cell.row - TerminalLinkFinder.reach)
+            let last = min(document.endRow - 1, cell.row + TerminalLinkFinder.reach)
+            guard last >= first else { return nil }
+            let reader = rowReader
+            let rows = (first...last).map { reader.text(TerminalAbsoluteRow($0)) ?? "" }
+            return TerminalLinkFinder(rows: rows, firstRow: first, columns: max(1, surface.grid.columns))
+                .link(row: cell.row, column: cell.column)?.url
+        }
+        selection.openLink = { [weak self] url, external in self?.model.openLink(url, external: external) }
         selection.install(in: scrollView)
         if let press = selection.longPress {
             press.addTarget(self, action: #selector(selectionPressChanged(_:)))
@@ -2313,6 +2465,16 @@ final class TerminalViewController: UIViewController, UIScrollViewDelegate {
             return surface.viewportText(from: TerminalCellPoint(row: row, column: 0), to: TerminalCellPoint(row: row, column: last))
         }
         tuiSelection.text = { [weak self] start, end in self?.surface.viewportText(from: start, to: end) }
+        tuiSelection.linkAt = { [weak self] cell in
+            guard let self else { return nil }
+            let first = max(0, cell.row - TerminalLinkFinder.reach)
+            let last = min(surface.grid.rows - 1, cell.row + TerminalLinkFinder.reach)
+            guard last >= first else { return nil }
+            let rows = (first...last).map { self.tuiSelection.rowText($0) ?? "" }
+            return TerminalLinkFinder(rows: rows, firstRow: first, columns: max(1, surface.grid.columns))
+                .link(row: cell.row, column: cell.column)?.url
+        }
+        tuiSelection.openLink = { [weak self] url, external in self?.model.openLink(url, external: external) }
         tuiSelection.install(in: tuiHost)
     }
 
@@ -2386,6 +2548,8 @@ final class TerminalViewController: UIViewController, UIScrollViewDelegate {
         // saved frame for the next cold launch follows (R2-5).
         model.saveFrameSoon()
         updateViewport(visibleMinY: scrollView.contentOffset.y)
+        // A full-screen app gets other rows with the keyboard up or down (R1-1).
+        if model.isTUI { finder.rowsReplaced() }
     }
 
     /// Keyboard state for the toolbar icon and the input target; layout
@@ -2578,6 +2742,7 @@ extension TerminalViewController: @MainActor UIGestureRecognizerDelegate {
         } else {
             hostGridNote.isHidden = true
         }
+        if finder.isActive { finder.redraw() }
     }
 
     @objc func tuiPanned(_ pan: UIPanGestureRecognizer) {
@@ -2595,6 +2760,13 @@ extension TerminalViewController: @MainActor UIGestureRecognizerDelegate {
 
     /// The sideways pan of a full-screen app wider than the phone: a drag
     /// that is more horizontal than vertical (the app's own drag scrolls it).
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        if gestureRecognizer === shellTap {
+            tapStoppedScroll = fling != nil || scrollView.isDecelerating
+        }
+        return true
+    }
+
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         guard gestureRecognizer === tuiHorizontalPan, let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
         guard model.isTUI, hostLayout.maxPanX > 0 else { return false }
