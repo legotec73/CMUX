@@ -37,6 +37,7 @@ const kept = keys.map((key) => [key, key in scope, scope[key]] as const);
 let dom: JSDOM;
 let root: Root | undefined;
 let host: HTMLElement;
+let left = 0;
 
 beforeAll(() => {
   dom = new JSDOM("<!doctype html><div id=root></div>", {
@@ -116,6 +117,7 @@ async function mount({
   const { newTabScreenActions } = await import("../src/agent-session/acpmux/newtab/screenActions");
   const { newWorktree, pickFolder } = await import("../src/agent-session/acpmux/startFolder");
   const calls: Call[] = [];
+  left = 0;
   const callNative = async (method: string, params?: Record<string, unknown>) => {
     calls.push({ method, ...(params ? { params } : {}) });
     switch (method) {
@@ -143,7 +145,9 @@ async function mount({
   const actions = newTabScreenActions({
     callNative,
     cwd: tabCwd,
-    leave: noop,
+    leave: () => {
+      left += 1;
+    },
     selectSession: noop,
     showAllChats: noop,
     runShell: noop,
@@ -264,6 +268,8 @@ test("a saved SSH environment names the strip and asks on its machine, in its fo
   expect(calls.some((call) => call.method === "git.worktree.create")).toBe(false);
   expect(calls.find((call) => call.method === "chat.send")?.params).toEqual({
     text: "tail the logs",
+    expectedSessionId: "session-1",
+    accepted: expect.any(Function),
   });
 });
 
@@ -320,7 +326,11 @@ test("picking another machine acpmux lists starts the chat there", async () => {
   expect(asked).toMatchObject({ harness: "claude", peer: "devbox" });
   // Another machine's folder is not this Mac's: no local folder check.
   expect(calls.some((call) => call.method === "workspace.useFolder")).toBe(false);
-  expect(calls.find((call) => call.method === "chat.send")?.params).toEqual({ text: "tail the logs" });
+  expect(calls.find((call) => call.method === "chat.send")?.params).toEqual({
+    text: "tail the logs",
+    expectedSessionId: "session-1",
+    accepted: expect.any(Function),
+  });
 });
 
 test("a chat started on another machine with no folder there does not take this tab's folder", async () => {
@@ -413,13 +423,21 @@ test("a saved local environment starts in its folder even when the tab already s
   expect(calls.find((call) => call.method === "chat.new")?.params).toMatchObject({ cwd: APP });
 });
 
-test("a start the SSH machine refused sends the prompt nowhere", async () => {
+test("a refused session/new keeps the prompt, chosen machine and inline reason", async () => {
   const calls = await mount({ peerStart: "refused" });
   await click(environmentButton());
   await click(row("Devbox API"));
   await ask("tail the logs");
   expect(calls.some((call) => call.method === "chat.new")).toBe(true);
   expect(calls.some((call) => call.method === "chat.send")).toBe(false);
+  expect(left).toBe(0);
+  expect(host.querySelector<HTMLTextAreaElement>(".nt-field")?.value).toBe("tail the logs");
+  expect(environmentButton()?.getAttribute("aria-label")).toBe(`${t("composer.environment")}: Devbox API`);
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain("devbox is not connected");
+  // A retry goes to the same machine with the retained prompt, never to this Mac.
+  await click(host.querySelector('[data-create="chat"]'));
+  expect(calls.filter((call) => call.method === "chat.new")).toHaveLength(2);
+  expect(calls.filter((call) => call.method === "chat.new").every((call) => call.params?.peer === "devbox")).toBe(true);
 });
 
 test("New chat after a refused worktree leaves the page's create buttons working", async () => {
@@ -463,4 +481,80 @@ test("a chat started on another machine starts on the model the page showed", as
     model: "claude-opus-5-5",
     peer: "devbox",
   });
+});
+
+test("a superseded SSH start never sends the retained prompt to a different chat", async () => {
+  const { newTabScreenActions } = await import("../src/agent-session/acpmux/newtab/screenActions");
+  const calls: Call[] = [];
+  let current = true;
+  let leaves = 0;
+  let finish!: (session: string) => void;
+  const actions = newTabScreenActions({
+    callNative: (method, params) => {
+      calls.push({ method, params });
+      return method === "chat.new"
+        ? new Promise<string>((resolve) => {
+            finish = resolve;
+          })
+        : Promise.resolve();
+    },
+    startScope: () => () => current,
+    leave: () => {
+      leaves += 1;
+    },
+    selectSession: () => {},
+    showAllChats: () => {},
+    runShell: () => {},
+  });
+  const started = Promise.resolve(
+    actions.onAsk("claude", "only for A", undefined, undefined, undefined, undefined, { peer: "devbox" }),
+  );
+  current = false;
+  finish("session-A");
+  await expect(started).rejects.toThrow();
+  expect(leaves).toBe(0);
+  expect(calls.some((call) => call.method === "chat.send")).toBe(false);
+});
+
+test("a direct start keeps its draft until the first prompt is accepted, including a send preflight refusal", async () => {
+  const { newTabScreenActions } = await import("../src/agent-session/acpmux/newtab/screenActions");
+  let left = 0;
+  let refuse: (error: Error) => void = () => {};
+  let finish: () => void = () => {};
+  let accepted: () => void = () => {};
+  const noop = () => {};
+  const actions = newTabScreenActions({
+    callNative: (method, params) =>
+      method === "chat.send"
+        ? new Promise((resolve, reject) => {
+            refuse = reject;
+            finish = () => resolve(undefined);
+            accepted = params!.accepted as () => void;
+          })
+        : Promise.resolve(method === "chat.new" ? "session-1" : undefined),
+    leave: () => {
+      left += 1;
+    },
+    selectSession: noop,
+    showAllChats: noop,
+    runShell: noop,
+  });
+  const pending = Promise.resolve(
+    actions.onAsk("claude", "keep this draft", undefined, undefined, undefined, undefined, { peer: "devbox" }),
+  );
+  await Promise.resolve();
+  expect(left).toBe(0);
+  refuse(new Error("connection changed before send"));
+  await expect(pending).rejects.toThrow("connection changed before send");
+  expect(left).toBe(0);
+  const retry = Promise.resolve(
+    actions.onAsk("claude", "keep this draft", undefined, undefined, undefined, undefined, { peer: "devbox" }),
+  );
+  await Promise.resolve();
+  expect(left).toBe(0);
+  accepted();
+  expect(left).toBe(1);
+  finish();
+  await retry;
+  expect(left).toBe(1);
 });

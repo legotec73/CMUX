@@ -4399,7 +4399,19 @@ function AcpmuxPane() {
   /// handshake: the field types from its first render, a chat needs acpmux.
   const withSubmitAfterHandshake = (actions: NewTabScreenActions): NewTabScreenActions => ({
     ...actions,
-    onAsk: (...args) => whenHandshaken(() => actions.onAsk(...args)),
+    onAsk: (...args) => {
+      setNewTabStartPage(newTabGeneration);
+      newTabRetainsDraft.current = true;
+      return new Promise<void>((resolve, reject) => {
+        whenHandshaken(() => {
+          try {
+            Promise.resolve(actions.onAsk(...args)).then(() => resolve(), reject);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      });
+    },
     onOpenSession: (...args) => whenHandshaken(() => actions.onOpenSession(...args)),
   });
   // An unsent chat can choose its folder even before an agent is available.
@@ -4834,7 +4846,9 @@ function AcpmuxPane() {
   const continueAvailable = canContinueIn(snapshot);
   /// Takes acpmux's trust refusal of a prompt (useFolderTrustAsk.ts): the question shows for the
   /// folder it named, and `again` sends the held prompt after Trust.
-  const trustRefused = useRef<((error: unknown, again?: () => void) => boolean) | undefined>(undefined);
+  const trustRefused = useRef<((error: unknown, again?: () => void, declined?: () => void) => boolean) | undefined>(
+    undefined,
+  );
   /// Keeps a send's gesture for the prompt acpmux held behind the trust question (heldPrompt.ts).
   const holdPrompt = useRef<(() => void) | undefined>(undefined);
   // A folder without a trust answer is asked about beside the chat's other permission asks as
@@ -5793,6 +5807,12 @@ function AcpmuxPane() {
     setProjectDraft(named);
   }, []);
   const newTabGeneration = useNewTabAdoption(adoptNewTab);
+  // A start owns this visit's screen until accepted, even while a switch publishes queued rows.
+  // A new adoption has a different generation and never inherits this pending/error view.
+  const [newTabStartPage, setNewTabStartPage] = useState<number>();
+  const newTabRetainsDraft = useRef(false);
+  const newTabVisit = useRef(newTabGeneration);
+  newTabVisit.current = newTabGeneration;
   useNewTabPlaces(setNewTab);
   useNewTabWeather(setNewTab);
   // Whether the page knows it is a New Tab page or a chat: the host's context came with the
@@ -6672,9 +6692,12 @@ function AcpmuxPane() {
   /// (startFolder.tsx); `use` runs only with a folder the host took.
   /// Only the latest pick's answer counts (two quick picks can answer out of order).
   const folderPick = useRef(0);
+  const folderPickCancel = useRef<(() => void) | undefined>(undefined);
   const shownSession = useRef(snapshot.sessionId);
   shownSession.current = snapshot.sessionId;
   const requestFolder = useCallback((cwd: string, use: (folder: string) => void, cancel?: () => void) => {
+    folderPickCancel.current?.();
+    folderPickCancel.current = cancel;
     const pick = ++folderPick.current;
     folderConfirmGeneration.current += 1;
     folderConfirmInFlight.current = false;
@@ -6682,10 +6705,21 @@ function AcpmuxPane() {
     const sessionId = shownSession.current;
     setFolderAsk(undefined);
     setWorktreeCreating(false);
-    void pickFolder(callNative, cwd, (folder) => {
-      if (pick === folderPick.current) use(folder);
-    }).then((ask) => {
-      if (ask && pick === folderPick.current) setFolderAsk({ ask, use, cancel, sessionId });
+    let accepted = false;
+    const cancelPick = () => {
+      if (pick === folderPick.current) folderPickCancel.current = undefined;
+      cancel?.();
+    };
+    const accept = (folder: string) => {
+      if (pick !== folderPick.current) return cancelPick();
+      accepted = true;
+      folderPickCancel.current = undefined;
+      use(folder);
+    };
+    void pickFolder(callNative, cwd, accept, cancelPick).then((ask) => {
+      if (pick !== folderPick.current) return cancelPick();
+      if (ask) setFolderAsk({ ask, use: accept, cancel: cancelPick, sessionId });
+      else if (!accepted) cancelPick();
     });
   }, []);
   const freshRef = useRef(false);
@@ -6714,6 +6748,8 @@ function AcpmuxPane() {
   /// New Worktree (cx-lyqio.2): the new chat starts in a worktree of its folder, or says why not.
   const [worktreeError, setWorktreeError] = useState<string | undefined>();
   const startInWorktree = useCallback((cwd: string) => {
+    folderPickCancel.current?.();
+    folderPickCancel.current = undefined;
     // A newer folder pick wins over this worktree, as between two picks.
     const pick = ++folderPick.current;
     folderConfirmGeneration.current += 1;
@@ -7229,8 +7265,8 @@ function AcpmuxPane() {
         });
         // Every trust refusal (a new chat, a resumed one, a switch, a prewarm, a prompt) shows the
         // folder's one question above the composer; Trust re-runs the refused step (cx-nn3e).
-        client.onTrustRefused = (refusal, again) => {
-          trustRefused.current?.(refusal, again);
+        client.onTrustRefused = (refusal, again, declined) => {
+          trustRefused.current?.(refusal, again, declined);
         };
         // Only a connected client clears the error, so a stale endpoint doesn't flicker it away.
         setHostError(undefined);
@@ -7271,7 +7307,10 @@ function AcpmuxPane() {
           accepted?: () => void,
           steer = false,
           promptId?: string,
+          expectedSessionId?: string,
         ) => {
+          if (expectedSessionId && (directClient.current !== client || client.selectedSession !== expectedSessionId))
+            throw new Error(translate("switch.cancelled"));
           // The reader sent it: by default the transcript goes to its latest message now, even
           // scrolled up. With the preference off, only a reader already at the latest row follows;
           // an up-scroll keeps its row and offset while this prompt and its reply arrive below.
@@ -7286,7 +7325,7 @@ function AcpmuxPane() {
             counted = false;
           };
           try {
-            return await sendThrough(text, attachments, accepted, steer, promptId, handedOn);
+            return await sendThrough(text, attachments, accepted, steer, promptId, handedOn, expectedSessionId);
           } finally {
             handedOn();
           }
@@ -7298,6 +7337,7 @@ function AcpmuxPane() {
           steer: boolean,
           promptId: string | undefined,
           handedOn: () => void,
+          expectedSessionId?: string,
         ) => {
           // acpmux holds the prompt while the folder's trust question is open (on session/new
           // or session/prompt): the question shows for the folder acpmux named, and Trust sends
@@ -7323,12 +7363,25 @@ function AcpmuxPane() {
                 );
               } else {
                 void heldPrompt.hold();
-                if (!inComposer) restorePrompt(text, attachments);
-                trustRefused.current?.(error, () => composerHandle.current?.send());
+                if (newTabRetainsDraft.current && expectedSessionId) {
+                  // New Tab still holds this first prompt. Trust retries this session's send,
+                  // including its acceptance callback, rather than the unmounted chat composer.
+                  trustRefused.current?.(
+                    error,
+                    () =>
+                      void send(text, attachments, accepted, steer, promptId, expectedSessionId).catch(() => undefined),
+                  );
+                } else {
+                  if (!inComposer) restorePrompt(text, attachments);
+                  trustRefused.current?.(error, () => composerHandle.current?.send());
+                }
               }
             }
             throw error;
           };
+          const ownsSession = () =>
+            !expectedSessionId || (directClient.current === client && client.selectedSession === expectedSessionId);
+          if (!ownsSession()) throw new Error(translate("switch.cancelled"));
           // A harness switch holds the prompt in its own row until its session is ready, and
           // hands it back to the composer when the switch fails.
           const held = harnessSwitch.send(text, attachments, () => promptLanded.current(), promptId);
@@ -7348,7 +7401,9 @@ function AcpmuxPane() {
             if (isStartRefusal(error)) client.notice(failedSendText(error, false));
             return refused(error, Boolean(accepted));
           });
+          if (!ownsSession()) throw new Error(translate("switch.cancelled"));
           await persistSession(sessionId);
+          if (!ownsSession()) throw new Error(translate("switch.cancelled"));
           const turn = client
             .send(text, attachments, kept?.promptId, accepted, kept?.ticket, steer)
             .catch((error: unknown) => refused(error, Boolean(accepted)));
@@ -7360,12 +7415,14 @@ function AcpmuxPane() {
         };
         window.cmuxAcpmuxActions = {
           // `accepted` (in-page only): the composer holds the prompt until acpmux takes it.
-          "chat.send": ({ text, attachments, accepted, steer }) =>
+          "chat.send": ({ text, attachments, accepted, steer, expectedSessionId }) =>
             send(
               String(text ?? ""),
               Array.isArray(attachments) ? attachments : [],
               typeof accepted === "function" ? (accepted as () => void) : undefined,
               steer === true,
+              undefined,
+              typeof expectedSessionId === "string" ? expectedSessionId : undefined,
             ),
           "chat.cancel": () => client.cancel(),
           "chat.typing": async ({ text, sessionId }) =>
@@ -7483,6 +7540,7 @@ function AcpmuxPane() {
               peer ? String(peer) : undefined,
               noProject === true,
               peer && model ? String(model) : undefined,
+              newTabRetainsDraft.current,
             );
             await persistSession(started);
             return started;
@@ -7845,7 +7903,11 @@ function AcpmuxPane() {
         };
         notifyDraftActionsChanged();
         harnessSwitch.setHandlers({
-          restore: restorePrompt,
+          restore: (text, attachments) => {
+            // A failed New Tab start never surrendered this draft. Restoring it into the future
+            // chat composer too would duplicate the prompt and attachments after a successful retry.
+            if (!newTabRetainsDraft.current) restorePrompt(text, attachments);
+          },
           opened: (sessionId) => {
             void persistSession(sessionId);
             // The harness has started and probed its models: refresh the catalog behind the picker.
@@ -8363,9 +8425,10 @@ function AcpmuxPane() {
     // Sandboxed isn't offered until a read answers, and the chat view offers Check again.
     sandboxView === undefined &&
     !sandboxDraftMoved &&
-    (sessionSelection?.state === "pending" || !snapshot.sessionId) &&
-    snapshot.rows.length === 0 &&
+    (newTabStartPage === newTabGeneration ||
+      ((sessionSelection?.state === "pending" || !snapshot.sessionId) && snapshot.rows.length === 0)) &&
     (handshaken || hostError === undefined);
+  newTabRetainsDraft.current = showNewTab && newTabStartPage === newTabGeneration;
   const commandSession = showNewTab ? switchView.intent?.sessionId : undefined;
   const commandRevision = clientSnapshot.sessions.find((session) => session.sessionId === commandSession);
   const readSessionCommands = useCallback(
@@ -8845,18 +8908,20 @@ function AcpmuxPane() {
       onCancel={cancelPendingFolder}
     />
   ) : null;
+  const trustQuestion =
+    trustAsk.ask && (trustAsk.ask.state !== "decided" || trustAsk.ask.level === "untrusted") ? (
+      <TrustAsk
+        ask={trustAsk.ask}
+        agent={snapshot.summary?.harness ? agentName(snapshot.summary.harness) : t("trust.agent")}
+        onTrust={trustAsk.trust}
+        onTrustRepo={trustAsk.trustRepo}
+        onDistrust={trustAsk.distrust}
+        onUndo={trustAsk.undo}
+      />
+    ) : undefined;
   const asks = hasBottomAsk ? (
     <div className="acpmux-permission acpmux-asks-stack">
-      {trustAsk.ask && (trustAsk.ask.state !== "decided" || trustAsk.ask.level === "untrusted") && (
-        <TrustAsk
-          ask={trustAsk.ask}
-          agent={snapshot.summary?.harness ? agentName(snapshot.summary.harness) : t("trust.agent")}
-          onTrust={trustAsk.trust}
-          onTrustRepo={trustAsk.trustRepo}
-          onDistrust={trustAsk.distrust}
-          onUndo={trustAsk.undo}
-        />
-      )}
+      {trustQuestion}
       {!trustPending && hasPermissionGroups && snapshot.permissionGroups && (
         <PermissionPanel
           state={snapshot.permissionGroups}
@@ -9733,6 +9798,7 @@ function AcpmuxPane() {
                 );
               }}
               key={newTabGeneration}
+              startNotice={trustQuestion}
               environments={preview}
               // The tab's run, found by a read, takes the chat view: the page's draft goes to its composer.
               onLeaveDraft={(text, attachments) => {
@@ -9828,7 +9894,18 @@ function AcpmuxPane() {
                   chatCwd: startFolder,
                   requestFolder,
                   startsHere: () => !directClient.current?.startsOnSend,
-                  leave: () => setNewTab(undefined),
+                  startScope: (allowReconnect) => {
+                    const client = directClient.current;
+                    const selected = sessionSelectionToken.current;
+                    return () =>
+                      showsNewTabRef.current &&
+                      newTabVisit.current === newTabGeneration &&
+                      (allowReconnect || directClient.current === client) &&
+                      sessionSelectionToken.current === selected;
+                  },
+                  leave: () => {
+                    if (newTabVisit.current === newTabGeneration && showsNewTabRef.current) setNewTab(undefined);
+                  },
                   selectSession,
                   showAllChats,
                   runShell: (command, cwd) => {

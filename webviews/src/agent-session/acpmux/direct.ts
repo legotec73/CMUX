@@ -1818,6 +1818,7 @@ export class AcpmuxDirectClient {
 
   /** Drops everything that belongs to the previously selected session, before another one attaches. */
   private resetSessionState(): void {
+    this.cancelTrustStart?.();
     // Typing and presence stop with the chat at once, not when the next attach lands: a keystroke
     // meanwhile never reaches the chat before.
     this.presence.detached();
@@ -4719,6 +4720,8 @@ export class AcpmuxDirectClient {
   /** A new chat starting (`create`): a Send meanwhile waits for it and goes to the new chat, not to
    *  the session still on screen (a harness pick), and a Send with no session joins it. */
   private creating?: Promise<string | undefined>;
+  /// A New Tab start suspended for Trust settles when its selection or client goes away.
+  private cancelTrustStart?: () => void;
   async ensureSession(): Promise<string | undefined> {
     // This send belongs to the requested chat. A refused or empty start must not send it to
     // the previous chat, or start the default harness instead of the one the person picked.
@@ -5875,46 +5878,83 @@ export class AcpmuxDirectClient {
     this.trustRoute = route;
     const waiting = this.waitingTrust;
     this.waitingTrust = undefined;
-    if (route && waiting) route(waiting.refusal, waiting.again);
+    if (route && waiting) route(waiting.refusal, waiting.again, waiting.declined);
   }
   private trustRoute?: TrustRoute;
-  private waitingTrust?: { refusal: TrustRefusal; again?: () => void };
+  private waitingTrust?: { refusal: TrustRefusal; again?: () => void; declined?: () => void };
   /// True when `error` is a trust refusal, which then went to the route.
-  routeTrustRefusal(error: unknown, again?: () => void): boolean {
+  routeTrustRefusal(error: unknown, again?: () => void, declined?: () => void): boolean {
     const refusal = trustRefusal(error);
     if (!refusal) return false;
-    if (this.trustRoute) this.trustRoute(refusal, again);
-    else this.waitingTrust = { refusal, again };
+    if (this.trustRoute) this.trustRoute(refusal, again, declined);
+    else this.waitingTrust = { refusal, again, declined };
     return true;
   }
   /// `session/new` for every caller: a trust refusal goes to the one route, then rejects as before.
-  private async newSession(params: Record<string, unknown>, again?: () => void): Promise<any> {
+  private async newSession(params: Record<string, unknown>, again?: () => void, declined?: () => void): Promise<any> {
     try {
       return await this.request("session/new", params);
     } catch (error) {
-      this.routeTrustRefusal(error, again);
+      this.routeTrustRefusal(error, again, declined);
       throw error;
     }
   }
   /// A new session, in `cwd` when given; otherwise in the inherited cwd, then where acpmux defaults.
   /// `noProject` starts it in no project: the host's agent-home folder, never the inherited cwd.
   /// `model`: the model to start on (a chat on another machine starts on the one the page showed).
+  /// `waitForTrust`: New Tab still owns the first prompt; keep this start pending through its Trust answer.
   create(
     harness?: string,
     cwd?: string,
     peer?: string,
     noProject = false,
     model?: string,
+    waitForTrust = false,
   ): Promise<string | undefined> {
+    this.cancelTrustStart?.();
+    const generation = this.selectionGeneration;
     const started = (async () => {
-      const sessionId = await this.startSession(
-        harness,
-        cwd,
-        peer,
-        () => void this.create(harness, cwd, peer, noProject, model).catch(() => undefined),
-        noProject,
-        model,
-      );
+      // The New Tab request still owns its draft, attachments and machine. Trust resumes this
+      // same promise, so its sender runs once and never targets an unmounted chat composer.
+      const sessionId = waitForTrust
+        ? await new Promise<string | undefined>((resolve, reject) => {
+            let settled = false;
+            let running = false;
+            const finish = (id?: string, error?: unknown) => {
+              if (settled) return;
+              settled = true;
+              if (this.cancelTrustStart === cancel) this.cancelTrustStart = undefined;
+              if (error) reject(error);
+              else resolve(id);
+            };
+            const cancel = () => finish();
+            this.cancelTrustStart = cancel;
+            const run = () => {
+              if (this.closed || generation !== this.selectionGeneration) return cancel();
+              if (settled || running) return;
+              running = true;
+              void this.startSession(harness, cwd, peer, run, noProject, model, () =>
+                finish(undefined, new Error(translate("switch.cancelled"))),
+              ).then(
+                (id) => finish(id),
+                (error: unknown) => {
+                  running = false;
+                  if (!isTrustRefusal(error)) finish(undefined, error);
+                },
+              );
+            };
+            run();
+          })
+        : await this.startSession(
+            harness,
+            cwd,
+            peer,
+            () => void this.create(harness, cwd, peer, noProject, model).catch(() => undefined),
+            noProject,
+            model,
+          );
+      // A user who opened another chat while session/new was out owns that selection.
+      if (this.closed || generation !== this.selectionGeneration) return undefined;
       return sessionId ? this.select(sessionId) : undefined;
     })();
     const tracked = started.finally(() => {
@@ -5935,10 +5975,12 @@ export class AcpmuxDirectClient {
     again?: () => void,
     noProject = false,
     model?: string,
+    declined?: () => void,
   ): Promise<string | undefined> {
     const result = await this.newSession(
       newSessionParams(newSessionHost(this.host, cwd, peer, noProject), harness, noProject, model),
       again,
+      declined,
     );
     // The inherited cwd is the first default chat's; later ones start where acpmux defaults.
     if (result?.sessionId && !cwd) this.host = { ...this.host, cwd: undefined };
@@ -6719,6 +6761,7 @@ export class AcpmuxDirectClient {
     // and a tail left in this page's map would be drawn by whatever client comes after it.
     this.rememberCurrentTail(false);
     this.closed = true;
+    this.cancelTrustStart?.();
     for (const gone of this.resendWaits.keys()) gone();
     const hold = this.snapshotHold;
     if (hold) clearTimeout(hold.timer);
@@ -6776,7 +6819,7 @@ export function isTrustRefusal(error: unknown): boolean {
 /// What a trust refusal names: its reason and the folder acpmux asks about.
 export type TrustRefusal = { reason: "trust.pending" | "trust.untrusted"; cwd?: string };
 /// The pane's handler of every trust refusal (`AcpmuxDirectClient.onTrustRefused`).
-export type TrustRoute = (refusal: TrustRefusal, again?: () => void) => void;
+export type TrustRoute = (refusal: TrustRefusal, again?: () => void, declined?: () => void) => void;
 
 export function trustRefusal(error: unknown): TrustRefusal | undefined {
   if (!isTrustRefusal(error)) return undefined;
