@@ -1,5 +1,6 @@
 import Foundation
 import CmuxNextCompat
+import CmuxNextWakeups
 
 /// The URLSession WebSocket behind ``AgentPaneTransport``. Its callbacks run on its own serial
 /// queue; the queues are guarded by one Mutex that is never held across IO.
@@ -35,6 +36,7 @@ nonisolated final class AcpmuxPaneSocket: NSObject, URLSessionWebSocketDelegate,
         var challengeRead = false
         var challenge: AcpmuxPersonChallenge?
         var challengeWaiters: [CheckedContinuation<AcpmuxPersonChallenge?, Never>] = []
+        var hostReplies: [Int: @Sendable ([String: Any]) -> Void] = [:]
 
         /// A full flush waits: it goes even to a pane nobody can see (``pageWaits``).
         func backlogged(_ limits: AgentPaneTransport.Limits) -> Bool {
@@ -178,6 +180,16 @@ nonisolated final class AcpmuxPaneSocket: NSObject, URLSessionWebSocketDelegate,
             var page: [String] = []
             var awaited = 0
             for text in batch {
+                if case .duplicate = AcpmuxJSONKeys.verdict(text) {
+                    state.withLock { $0.processing = false }
+                    return close(code: 1008, reason: "duplicate key", error: .duplicateKey)
+                }
+                if let object = try? JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any],
+                   object["method"] == nil, let id = object["id"] as? Int, ids.isHost(id),
+                   let reply = state.withLock({ $0.hostReplies.removeValue(forKey: id) }) {
+                    reply(object)
+                    continue
+                }
                 switch ids.toPage(text) {
                 case .drop:
                     continue
@@ -374,12 +386,112 @@ nonisolated final class AcpmuxPaneSocket: NSObject, URLSessionWebSocketDelegate,
         return nil
     }
 
+    /// One host-owned chunk, acknowledged before the caller reads another.
+    func uploadChunk(sessionId: String, uploadId: String, offset: Int, bytes: Data) async throws -> [String: Any] {
+        try await callHost("_acpmux/file_put_chunk", params: ["sessionId": sessionId, "uploadId": uploadId,
+                          "offset": offset, "data": bytes.base64EncodedString()])
+    }
+
+    /// A host-owned JSON-RPC request never enters the page queue.
+    func callHost(_ method: String, params: [String: Any]) async throws -> [String: Any] {
+        let id = ids.hostID()
+        let request: [String: Any] = ["jsonrpc": "2.0", "id": id, "method": method, "params": params]
+        guard JSONSerialization.isValidJSONObject(request),
+              let data = try? JSONSerialization.data(withJSONObject: request, options: [.sortedKeys]),
+              let text = String(data: data, encoding: .utf8) else {
+            _ = ids.isHost(id)
+            throw AgentPaneTransportError.invalidFrame
+        }
+        var lateReply: (@Sendable ([String: Any]) -> Void)?
+        if method == "_acpmux/file_put_begin", let sessionId = params["sessionId"] as? String {
+            lateReply = { [weak self] object in
+                if let result = object["result"] as? [String: Any], let uploadId = result["uploadId"] as? String {
+                    self?.cancelUpload(sessionId: sessionId, uploadId: uploadId)
+                }
+            }
+        }
+        return try await hostReply(id: id, text: text, lateReply: lateReply)
+    }
+
+    private func hostReply(id: Int, text: String, lateReply: (@Sendable ([String: Any]) -> Void)?) async throws -> [String: Any] {
+        let timeout = DemandTimer(owner: "agent-pane.upload.rpc")
+        timeout.schedule(after: .seconds(AgentPaneUserGestures.uploadStallLimit)) { [weak self] in
+            self?.cancelHostReply(id, lateReply: lateReply)
+        }
+        defer { timeout.cancel() }
+        let data: Data = try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                let callback: @Sendable ([String: Any]) -> Void = { object in
+                    if object["_cmuxCancelled"] as? Bool == true {
+                        continuation.resume(throwing: CancellationError())
+                    } else if let error = object["error"] as? [String: Any] {
+                        let data = error["data"] as? [String: Any] ?? [:]
+                        let code = data["reason"] as? String ?? "upload_failed"
+                        let message = error["message"] as? String ?? "upload refused"
+                        let details = ["host", "path"].reduce(into: [String: String]()) { result, key in
+                            if let value = data[key] as? String { result[key] = value }
+                        }
+                        continuation.resume(throwing: AgentPaneUploadError.rpcDetails(code: code, message: message, details: details))
+                    } else {
+                        do {
+                            continuation.resume(returning: try JSONSerialization.data(withJSONObject: object["result"] as? [String: Any] ?? [:]))
+                        } catch { continuation.resume(throwing: error) }
+                    }
+                }
+                let registered = state.withLock { state in
+                    guard state.closed == nil else { return false }
+                    state.hostReplies[id] = callback
+                    return true
+                }
+                let failed: @Sendable () -> Void = { [self] in
+                    _ = ids.isHost(id)
+                    state.withLock { $0.hostReplies.removeValue(forKey: id) }?(["error": ["message": "upload connection closed"]])
+                }
+                guard registered else {
+                    _ = ids.isHost(id)
+                    continuation.resume(throwing: AgentPaneTransportError.closed)
+                    return
+                }
+                if Task.isCancelled { cancelHostReply(id, lateReply: lateReply) }
+                else if send(text) != nil { failed() }
+            }
+        } onCancel: { self.cancelHostReply(id, lateReply: lateReply) }
+        return try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
+    }
+
+    private func cancelHostReply(_ id: Int, lateReply: (@Sendable ([String: Any]) -> Void)? = nil) {
+        let reply = state.withLock { state in
+            let reply = state.hostReplies.removeValue(forKey: id)
+            // A cancelled begin can still create a daemon upload. Keep only its cleanup handler.
+            if reply != nil, let lateReply { state.hostReplies[id] = lateReply }
+            return reply
+        }
+        if lateReply == nil { _ = ids.isHost(id) }
+        reply?(["_cmuxCancelled": true])
+    }
+
+    /// The foreground cancellation waits for the daemon ACK; caller cancellation does not cancel this cleanup.
+    func cancelUploadAndWait(sessionId: String, uploadId: String) async -> Bool {
+        do { _ = try await callHost("_acpmux/file_put_cancel", params: ["sessionId": sessionId, "uploadId": uploadId]); return true }
+        catch { return false }
+    }
+
+    /// Cleanup never waits for the daemon's cancellation response (used by late begin replies).
+    func cancelUpload(sessionId: String, uploadId: String) {
+        let id = ids.hostID()
+        let frame: [String: Any] = ["jsonrpc": "2.0", "id": id, "method": "_acpmux/file_put_cancel",
+                                   "params": ["sessionId": sessionId, "uploadId": uploadId]]
+        if let data = try? JSONSerialization.data(withJSONObject: frame),
+           let text = String(data: data, encoding: .utf8), send(text) == nil { return }
+        _ = ids.isHost(id)
+    }
+
     // MARK: Close
 
     /// Closes the socket (the host's decision): queued inbound frames are dropped on an error.
     func close(code: Int, reason: String, error: AgentPaneTransportError?) {
-        let (task, session, wake, first) = state.withLock { state -> (URLSessionWebSocketTask?, URLSession?, Bool, Bool) in
-            guard state.closed == nil else { return (nil, nil, false, false) }
+        let (task, session, wake, first, hostReplies) = state.withLock { state -> (URLSessionWebSocketTask?, URLSession?, Bool, Bool, [@Sendable ([String: Any]) -> Void]) in
+            guard state.closed == nil else { return (nil, nil, false, false, []) }
             state.closed = AgentPaneTransportClose(code: code, reason: reason, error: error)
             if error != nil {
                 state.inbox.removeAll()
@@ -388,8 +500,11 @@ nonisolated final class AcpmuxPaneSocket: NSObject, URLSessionWebSocketDelegate,
             }
             // Always woken: the close goes even to a hidden pane (``pageWaits``).
             state.signaled = true
-            return (state.task, state.session, true, true)
+            let replies = Array(state.hostReplies.values)
+            state.hostReplies.removeAll()
+            return (state.task, state.session, true, true, replies)
         }
+        hostReplies.forEach { $0(["error": ["message": "upload connection closed"]]) }
         task?.cancel(with: URLSessionWebSocketTask.CloseCode(rawValue: code) ?? .normalClosure, reason: Data(reason.utf8))
         session?.finishTasksAndInvalidate()
         if first, let wire { wire.cancel(code: code, reason: reason) }
@@ -405,14 +520,17 @@ nonisolated final class AcpmuxPaneSocket: NSObject, URLSessionWebSocketDelegate,
     }
 
     private func finish(code: Int, reason: String, error: AgentPaneTransportError?) {
-        let (opening, session, wake) = state.withLock { state -> (CheckedContinuation<Void, any Error>?, URLSession?, Bool) in
+        let (opening, session, wake, hostReplies) = state.withLock { state -> (CheckedContinuation<Void, any Error>?, URLSession?, Bool, [@Sendable ([String: Any]) -> Void]) in
             let opening = state.opening
             state.opening = nil
-            guard state.closed == nil else { return (opening, nil, false) }
+            guard state.closed == nil else { return (opening, nil, false, []) }
             state.closed = AgentPaneTransportClose(code: code, reason: reason, error: error)
             state.signaled = true
-            return (opening, state.session, true)
+            let replies = Array(state.hostReplies.values)
+            state.hostReplies.removeAll()
+            return (opening, state.session, true, replies)
         }
+        hostReplies.forEach { $0(["error": ["message": "upload connection closed"]]) }
         opening?.resume(throwing: AgentPaneTransportError.connectFailed)
         session?.finishTasksAndInvalidate()
         resolveChallenge(nil)

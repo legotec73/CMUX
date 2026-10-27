@@ -14,6 +14,8 @@ import os
 ///   ``PageHostTrust`` checks them as for WebKit.
 /// - Replies go back into the sender's context only (`__cmuxPageHostResolve(seq, reply)`).
 /// - ``evaluate(_:)`` runs scripts in order; the ones queued together go in one `Runtime.evaluate`.
+public nonisolated enum AgentPageUploadError: Error, Equatable, Sendable { case invalidBlob }
+
 @MainActor
 public final class ChromiumPageHostBridge: PageHostBridge {
     public let engine = PageHostEngine.cef
@@ -24,8 +26,15 @@ public final class ChromiumPageHostBridge: PageHostBridge {
     /// Longest message accepted (page calls are small; large data goes through replies and pushes).
     nonisolated public static let maximumPayloadBytes = 4 << 20
 
+    public typealias UploadHandler = @MainActor (_ page: any PageChromiumPage, _ context: Int, _ params: [String: Any], _ chunks: AsyncThrowingStream<Data, any Error>) async -> [String: Any]?
+    public typealias UploadQueryHandler = @MainActor (_ op: String, _ context: Int, _ params: [String: Any]) async -> [String: Any]?
+    /// Set by the pane host. The page passes only an upload token; the host reads the Blob in its context.
+    public var uploadHandler: UploadHandler?
+    public var uploadQueryHandler: UploadQueryHandler?
+
     private let logger = Logger(subsystem: "com.cmuxterm.app.next", category: "page-host.chromium")
     private weak var page: (any PageChromiumPage)?
+    private let descriptor: PageDescriptor?
     /// Handler names without a reply (the paint probe): their messages go to ``onMessage``.
     private let fireAndForget: [String]
     private var handler: PageHostHandler?
@@ -42,14 +51,18 @@ public final class ChromiumPageHostBridge: PageHostBridge {
     /// - Parameters:
     ///   - page: The Chromium page.
     ///   - fireAndForget: Extra `window.webkit.messageHandlers` names whose messages need no reply.
-    public init(page: any PageChromiumPage, fireAndForget: [String] = []) {
+    public init(page: any PageChromiumPage, fireAndForget: [String] = [], uploadHandler: UploadHandler? = nil,
+                uploadQueryHandler: UploadQueryHandler? = nil, descriptor: PageDescriptor? = nil) {
         self.page = page
         self.fireAndForget = fireAndForget
+        self.uploadHandler = uploadHandler
+        self.uploadQueryHandler = uploadQueryHandler
+        self.descriptor = descriptor
     }
 
     /// The DevTools calls that set the page up, in order: run them before the first document loads
     /// (``ChromiumPageSetup``), then again for every committed document (``rebind()``).
-    public static func setupCalls(handlers: [String], documentScripts: [String]) -> [(String, [String: any Sendable])] {
+    public static func setupCalls(handlers: [String], documentScripts: [String], supportsUploads: Bool = false) -> [(String, [String: any Sendable])] {
         var calls: [(String, [String: any Sendable])] = [
             // New-document scripts run only while the Page domain is on, and bindings reach worlds
             // made later only while the Runtime domain is on.
@@ -58,6 +71,9 @@ public final class ChromiumPageHostBridge: PageHostBridge {
             ("Runtime.addBinding", ["name": bindingName]),
             ("Page.addScriptToEvaluateOnNewDocument", ["source": pageScript(handlers: handlers), "runImmediately": true]),
         ]
+        if supportsUploads {
+            calls.append(("Page.addScriptToEvaluateOnNewDocument", ["source": "globalThis.__cmuxNativePromptUploads = true;", "runImmediately": true]))
+        }
         for source in documentScripts {
             calls.append(("Page.addScriptToEvaluateOnNewDocument", ["source": source, "runImmediately": true]))
         }
@@ -158,8 +174,63 @@ public final class ChromiumPageHostBridge: PageHostBridge {
             onMessage?(message.name, message.body)
             return
         }
-        guard let handler, let seq = message.seq else { return }
+        guard let seq = message.seq else { return }
         noteReached()
+        if let uploadQueryHandler, let body = message.body as? [String: Any],
+           body["t"] as? String == "call", let op = body["op"] as? String,
+           (op == "cmux.agent.uploads.status" || op == "cmux.agent.uploads.cancel"),
+           let callID = body["id"] as? NSNumber {
+            let result: [String: Any]?
+            if let descriptor, PageHostTrust.isTrusted(request, page: descriptor) {
+                result = await uploadQueryHandler(op, context, body["params"] as? [String: Any] ?? [:])
+            } else { result = ["ok": false, "error": ["code": "page.untrusted", "userMessage": "The page is not trusted", "retryable": false]] }
+            guard self.handler != nil else { return }
+            let reply: [String: Any]
+            if result?["ok"] as? Bool == true { reply = ["t": "ok", "id": callID, "value": result?["value"] ?? NSNull()] }
+            else {
+                let error = result?["error"] as? [String: Any] ?? [:]
+                var value: [String: Any] = ["t": "err", "id": callID, "code": error["code"] ?? "upload_failed", "message": error["userMessage"] ?? "The upload could not be completed", "retryable": error["retryable"] ?? false]
+                if let details = error["details"] { value["details"] = details }
+                if let origin = error["origin"] { value["origin"] = origin }
+                reply = value
+            }
+            let expression = ChromiumPageHostWire.resolveExpression(seq: seq, reply: reply)
+            _ = try? await page.devTools("Runtime.evaluate", params: ["expression": expression, "contextId": context, "silent": true])
+            answered += 1
+            return
+        }
+        if let uploadHandler, let body = message.body as? [String: Any],
+           body["t"] as? String == "call", body["op"] as? String == "cmux.agent.uploads.begin",
+           let callID = body["id"] as? NSNumber {
+            let result: [String: Any]?
+            if let descriptor, PageHostTrust.isTrusted(request, page: descriptor) {
+                let params = body["params"] as? [String: Any] ?? [:]
+                let reader = ChromiumUploadBlobReader(page: page, context: context, token: params["token"] as? String ?? "")
+                let chunks = AsyncThrowingStream<Data, any Error>(unfolding: { try await reader.next() })
+                result = await uploadHandler(page, context, params, chunks)
+                await reader.close()
+            } else {
+                result = ["ok": false, "error": ["code": "page.untrusted", "userMessage": "The page is not trusted", "retryable": false]]
+            }
+            guard self.handler != nil else { return }
+            let reply: [String: Any]
+            if result?["ok"] as? Bool == true {
+                reply = ["t": "ok", "id": callID, "value": result?["value"] ?? NSNull()]
+            } else {
+                let error = result?["error"] as? [String: Any] ?? [:]
+                var value: [String: Any] = ["t": "err", "id": callID, "code": error["code"] ?? "upload_failed",
+                         "message": error["userMessage"] ?? "The upload could not be completed",
+                         "retryable": error["retryable"] ?? false]
+                if let details = error["details"] { value["details"] = details }
+                if let origin = error["origin"] { value["origin"] = origin }
+                reply = value
+            }
+            let expression = ChromiumPageHostWire.resolveExpression(seq: seq, reply: reply)
+            _ = try? await page.devTools("Runtime.evaluate", params: ["expression": expression, "contextId": context, "silent": true])
+            answered += 1
+            return
+        }
+        guard let handler else { return }
         let reply = await handler(request)
         guard self.handler != nil else { return }
         let expression = ChromiumPageHostWire.resolveExpression(seq: seq, reply: reply)
