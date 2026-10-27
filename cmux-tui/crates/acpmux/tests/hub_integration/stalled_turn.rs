@@ -248,9 +248,9 @@ async fn a_tool_call_that_ends_brings_the_stalled_deadline_back() {
 }
 
 /// A turn whose prompt has not reached its agent is never stalled: its count starts when the
-/// prompt is written, never from the previous turn's last word. Here the agent exited idle and
+/// prompt is written, never from the previous turn's last word. Here the agent stopped and
 /// starts again slowly for the next turn; the reaper, woken by the new agent, must not send it a
-/// cancel before its prompt.
+/// cancel before its prompt. An opaque harness is never retired idle, so the test stops it.
 #[tokio::test]
 async fn a_turn_counts_from_its_prompt_being_written() {
     let env = BTreeMap::from([("FAKE_INIT_DELAY_MS".to_owned(), "1500".to_owned())]);
@@ -262,9 +262,9 @@ async fn a_turn_counts_from_its_prompt_being_written() {
     let id = new_session(&mut c, "stall-written").await;
     c.request(method::SESSION_PROMPT, prompt(&id, "hi", None)).await.unwrap();
     c.request(method::MUX_DETACH, json!({"sessionId": id})).await.unwrap();
-    // The agent exits idle; the last word was 5 min ago, past one period.
+    // The agent stops; the last word was 5 min ago, past one period.
     clock.advance(Duration::from_secs(301));
-    tokio::time::sleep(Duration::from_millis(300)).await;
+    hub.detach_child(&hub.resolve("stall-written").unwrap()).await;
     let status = hub.session_summary(&hub.resolve("stall-written").unwrap())["status"].clone();
     assert_eq!(status, "idle", "the agent did not exit idle");
 
