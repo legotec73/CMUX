@@ -1447,6 +1447,7 @@ impl Hub {
             && let Ok(_idle) = session.spawn_lock.try_lock()
             && !self.managed_off_runs_full_access(&off, session)
             && let Some(child) = session.child.lock().await.as_ref()
+            && child.idle_reusable()
             && child.is_alive().await
             && !(off.off() && child.replay_pending())
             // Under MDM's off an agent whose reader stopped is not heard: `ensure_child` ends it
