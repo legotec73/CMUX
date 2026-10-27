@@ -2022,8 +2022,12 @@ impl ChildAgent {
                 // `exited` and the exit notify follow the Exit entry's ack
                 // (`start_reader`), so a terminate that waits on them never
                 // returns before the host knows its Exit is logged.
-                let exited =
-                    Inbound::Exited { pid: self.pid, agent: self.generation, code, host_seq: Some(h) };
+                let exited = Inbound::Exited {
+                    pid: self.pid,
+                    agent: self.generation,
+                    code,
+                    host_seq: Some(h),
+                };
                 let _ = inbound.send(exited).await;
                 true
             }
