@@ -219,7 +219,8 @@ pub fn forget(session_id: &str) {
     }
 }
 
-/// Claude's own words for "no usable sign-in".
+/// Claude's own words for "no usable sign-in": a missing login, and the API's refusal of the
+/// credential it sent ("Failed to authenticate. API Error: 401 … authentication_error").
 pub fn is_sign_in_failure(message: &str) -> bool {
     let m = message.to_lowercase();
     m.contains("not logged in")
@@ -227,6 +228,8 @@ pub fn is_sign_in_failure(message: &str) -> bool {
         || m.contains("invalid api key")
         || m.contains("oauth token has expired")
         || m.contains("authentication_failed")
+        || m.contains("authentication_error")
+        || m.contains("failed to authenticate. api error")
 }
 
 /// The explanation for a Claude agent's sign-in failure, or None when this
@@ -293,7 +296,15 @@ fn compose(agent: &Found, terminal: &Found, shell: Option<&str>, original: &str)
     } else {
         out.push_str(" Your terminal has no Claude sign-in either.");
     }
-    let fix = if agent.signed_in() {
+    let fix = if agent.endpoint.is_none() && agent.env_keys.iter().any(|k| k == "ANTHROPIC_API_KEY") {
+        // Claude Code prefers ANTHROPIC_API_KEY over a `claude /login` sign-in, so logging in
+        // again does not help while a rejected key is set. Not with an endpoint: a route or a
+        // proxy set that key (routes.rs), and removing it would break the route.
+        format!(
+            "Claude uses ANTHROPIC_API_KEY before your `claude /login` sign-in. To use your Claude sign-in, remove ANTHROPIC_API_KEY from {} or this agent's profile and open a new terminal; or replace the key. Then send the message again.",
+            rc_file(shell)
+        )
+    } else if agent.signed_in() {
         "Run `claude /login` in a terminal, or check that key, then send the message again."
             .to_owned()
     } else if terminal.signed_in() && agent.home != terminal.home {
@@ -328,4 +339,39 @@ fn compose(agent: &Found, terminal: &Found, shell: Option<&str>, original: &str)
     out.push_str(&fix);
     out.push_str(&format!(" (Claude said: {})", original.trim()));
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Dogfood 2026-10-26: Claude Code's 401 ("Failed to authenticate") reached the person as
+    /// raw API text instead of the sign-in explanation.
+    #[test]
+    fn a_rejected_credential_is_a_sign_in_failure() {
+        let said = r#"Failed to authenticate. API Error: 401 {"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}"#;
+        assert!(is_sign_in_failure(said));
+        assert!(is_sign_in_failure("Not logged in · Please run /login"));
+        assert!(!is_sign_in_failure("API Error: 529 overloaded_error"));
+    }
+
+    /// A rejected ANTHROPIC_API_KEY wins over `claude /login`, so the fix names the key, not a
+    /// login that would not help.
+    #[test]
+    fn a_rejected_env_api_key_says_to_remove_it() {
+        let agent = Found {
+            home: PathBuf::from("/h/.claude"),
+            sources: vec!["an API key (ANTHROPIC_API_KEY)".to_owned()],
+            env_keys: vec!["ANTHROPIC_API_KEY".to_owned()],
+            ..Found::default()
+        };
+        let text = compose(&agent, &agent, Some("/bin/zsh"), "Failed to authenticate. API Error: 401");
+        assert!(text.contains("remove ANTHROPIC_API_KEY from ~/.zshrc"), "{text}");
+        assert!(!text.contains("Run `claude /login`"), "{text}");
+
+        // Review of #25950: a route's key (with its endpoint) is not the person's to remove.
+        let routed = Found { endpoint: Some("router.example:443".to_owned()), ..agent };
+        let text = compose(&routed, &routed, Some("/bin/zsh"), "Failed to authenticate. API Error: 401");
+        assert!(!text.contains("remove ANTHROPIC_API_KEY"), "{text}");
+    }
 }
