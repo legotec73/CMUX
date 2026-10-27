@@ -3,7 +3,7 @@
 // browser reports it, a frame later. chat-find's fold case lost its match that way on loaded runners
 // (react-apps-check, 2026-10-13). jsdom reports no scroll for a scrollTop write, so the race is
 // deterministic here.
-import { afterAll, expect, test } from "bun:test";
+import { afterAll, expect, jest, test } from "bun:test";
 import { JSDOM, VirtualConsole } from "jsdom";
 import type { AcpmuxRow } from "../src/agent-session/acpmux/model";
 import type { ChatFind } from "../src/agent-session/acpmux/conversation/chatFind";
@@ -118,5 +118,121 @@ test("a Find jump stays on its match when the transcript measures again before t
     expect(scroller().scrollTop).toBe(atMatch);
   } finally {
     await act(async () => root.unmount());
+  }
+});
+
+for (const mode of ["find", "count"] as const) {
+  test(`manual input cancels a pending ${mode} reveal before its row arrives`, async () => {
+    const rows = turnView(turns, new Set());
+    const root = createRoot(dom.window.document.getElementById("root")!);
+    const late = row("late-answer", "assistant", "Late answer.\n\n".repeat(30));
+    const find: ChatFind = {
+      open: true,
+      query: "Late answer",
+      matches: [{ rowIndex: rows.length, rowId: late.id, occurrence: 0 }],
+      active: 0,
+      show: noop,
+      hide: noop,
+      setQuery: noop,
+      next: noop,
+      previous: noop,
+      focusRequest: 1,
+    };
+    const render = (shown: AcpmuxRow[], key = 1) =>
+      root.render(
+        <VirtualTranscript
+          rows={shown}
+          onToggleActivity={noop}
+          expanded={new Set()}
+          find={mode === "find" ? { ...find, query: key === 1 ? "Late answer" : "Late" } : undefined}
+          reveal={mode === "count" ? { rowId: late.id, key, toolId: "late" } : undefined}
+        />,
+      );
+    try {
+      await act(async () => render(rows));
+      const node = dom.window.document.querySelector<HTMLElement>(".acpmux-scroll")!;
+      await act(async () => {
+        node.dispatchEvent(new dom.window.WheelEvent("wheel", { deltaY: -80 }));
+        node.scrollTop -= 80;
+        node.dispatchEvent(new dom.window.Event("scroll", { bubbles: true }));
+      });
+      const parked = node.scrollTop;
+      await act(async () => render([...rows, late]));
+      expect(node.scrollTop).toBe(parked);
+      // A new explicit request remains usable within the same input hold.
+      await act(async () => render([...rows, late], 2));
+      expect(node.scrollTop).toBeGreaterThan(parked);
+    } finally {
+      await act(async () => root.unmount());
+    }
+  });
+}
+
+test("held input does not apply a browser clamp twice when rows above shrink", async () => {
+  const rows = turnView(turns, new Set());
+  const tall = rows.map((item) =>
+    item.id === "t0-answer" ? { ...item, text: "A tall paragraph.\n\n".repeat(30) } : item,
+  );
+  const root = createRoot(dom.window.document.getElementById("root")!);
+  const render = (shown: AcpmuxRow[]) =>
+    root.render(<VirtualTranscript rows={shown} onToggleActivity={noop} expanded={new Set()} />);
+  try {
+    await act(async () => render(tall));
+    const node = dom.window.document.querySelector<HTMLElement>(".acpmux-scroll")!;
+    const height = () => parseFloat(node.querySelector<HTMLElement>(".acpmux-spacer")!.style.height);
+    const oldHeight = height();
+    await act(async () => {
+      node.dispatchEvent(new dom.window.WheelEvent("wheel", { deltaY: -100 }));
+      node.scrollTop -= 100;
+      node.dispatchEvent(new dom.window.Event("scroll", { bubbles: true }));
+    });
+    const parked = node.scrollTop;
+    // Model the browser clamping the live offset in the DOM commit before React's layout pass.
+    Object.defineProperty(node, "scrollHeight", { configurable: true, get: height });
+    Object.defineProperty(node, "scrollTop", {
+      configurable: true,
+      get() {
+        return Math.min(offsets.get(node) ?? 0, height() - VIEWPORT);
+      },
+      set(top: number) {
+        offsets.set(node, Math.min(top, height() - VIEWPORT));
+      },
+    });
+    await act(async () => render(rows));
+    expect(oldHeight - height()).toBeGreaterThan(100);
+    expect(node.scrollTop).toBeCloseTo(parked - (oldHeight - height()), 4);
+  } finally {
+    await act(async () => root.unmount());
+  }
+});
+
+test("quiet expiry places a final streamed chunk without another token", async () => {
+  jest.useFakeTimers();
+  const root = createRoot(dom.window.document.getElementById("root")!);
+  const render = (shown: AcpmuxRow[]) =>
+    root.render(<VirtualTranscript rows={shown} onToggleActivity={noop} expanded={new Set()} />);
+  try {
+    await act(async () => render(turnView(turns, new Set())));
+    const node = dom.window.document.querySelector<HTMLElement>(".acpmux-scroll")!;
+    const before = node.scrollTop;
+    await act(async () => {
+      node.dispatchEvent(new dom.window.Event("pointerdown", { bubbles: true }));
+      render(turnView([...turns, ...turn(30), ...turn(31)], new Set()));
+    });
+    expect(node.scrollTop).toBe(before);
+    await act(async () => {
+      dom.window.document.dispatchEvent(new dom.window.Event("pointerup"));
+      jest.advanceTimersByTime(999);
+    });
+    expect(node.scrollTop).toBe(before);
+    await act(async () => {
+      jest.advanceTimersByTime(1);
+    });
+    const latest = parseFloat(node.querySelector<HTMLElement>(".acpmux-spacer")!.style.height) - VIEWPORT;
+    expect(node.scrollTop).toBe(latest);
+    expect(node.scrollTop).toBeGreaterThan(before);
+  } finally {
+    await act(async () => root.unmount());
+    jest.useRealTimers();
   }
 });

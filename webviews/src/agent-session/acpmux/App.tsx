@@ -95,6 +95,7 @@ import { ChatMinimap } from "./chatMinimap/ChatMinimap";
 import type { RowsChange } from "./threadMinimap/model";
 import { PromptMarksSession } from "./threadMinimap/promptMarks";
 import { preserveScrollAnchorTop, scrollAnchorBase } from "./conversation/scrollAnchor";
+import { attachUserScrollIntent, userScrollIntent } from "./conversation/userScroll";
 import { setBookmarkTransport } from "./threadMinimap/bookmarks";
 import { composerDraft, DRAFT_SETTLE_MS, notifyDraftActionsChanged, settleDraftWithin } from "./composerDraft";
 import { paneContext } from "./paneContext";
@@ -2133,6 +2134,8 @@ export function VirtualTranscript({
   // ref so those events cannot turn a pinned transcript into a one-frame jump when the composer
   // stack changes height.
   const followingRef = useRef(true);
+  const followDeferred = useRef(false);
+  const [followResume, resumeDeferredFollow] = useReducer((count: number) => count + 1, 0);
   const follow = (next: boolean) => {
     followingRef.current = next;
     onFollowingChange?.(next);
@@ -2181,9 +2184,9 @@ export function VirtualTranscript({
   const stopJump = useCallback(() => {
     // Find, reveal and an asynchronous send own their new placement, even without a jump in flight.
     wheelGlide.current?.stop();
-    const active = jumpTarget.current !== undefined;
     jumpTarget.current = undefined;
-    if (active && ref.current) stopScroll(ref.current);
+    // A footnote also owns the shared runner and must end on session/send/Find transitions.
+    if (ref.current) stopScroll(ref.current);
   }, []);
   // The shared animation owns one RAF and its input listeners. Leaving this chat or unmounting
   // cancels that ride before the next session can reuse this scroller.
@@ -2684,6 +2687,9 @@ export function VirtualTranscript({
   // while the pointer rests on the same row.
   const pointedRows = useRef<AcpmuxRow[] | undefined>(undefined);
   const scrolledTo = useRef({ top: 0, atLatest: false });
+  /// Fractional layout corrections that the DOM rounds away are carried into the next
+  /// placement pass, so repeated row measurement cannot walk the reader against their input.
+  const anchorCorrection = useRef<{ top: number; remainder: number } | undefined>(undefined);
   /// The disclosure line the reader just clicked, held where they clicked it while its fold plays
   /// (conversation/foldAnchor.ts).
   const foldAnchor = useRef<FoldAnchor | undefined>(undefined);
@@ -3091,6 +3097,8 @@ export function VirtualTranscript({
       // scroll anchor from the old session before the placement pass chooses the new session's
       // openAt position or latest row.
       previousSession.current = sessionId;
+      followDeferred.current = false;
+      anchorCorrection.current = undefined;
       wheelGlide.current?.stop();
       didOpenAtLatest.current = false;
       // Another chat's count (the subagent view takes none) is not a send in this one.
@@ -3161,7 +3169,11 @@ export function VirtualTranscript({
       // bottom offset would immediately snap the reader back. Once the event is acknowledged,
       // layout-only corrections use the stored offset because WebKit may already include a resize
       // adjustment in `live`.
-      const top = scrollAnchorBase(live, scrolledTo.current.top, readerLeft);
+      const top = scrollAnchorBase(
+        live,
+        scrolledTo.current.top,
+        readerLeft || (!clamped && userScrollIntent(node).isHeld()),
+      );
       // Following is reader intent, not proximity. A token must not recapture a parked reader
       // just because the last recorded offset remains inside the bottom deadband.
       const atLatest = followingRef.current;
@@ -3180,7 +3192,8 @@ export function VirtualTranscript({
         // The shared animation reads the moving end every frame on its original clock.
         // Retargeting a native smooth-scroll here restarted its easing at every measurement.
         if (jumping) jumpTarget.current = latest;
-        const settled = jumping ? clamped : settleFollowBottom(node, latest) || clamped;
+        followDeferred.current = !jumping && userScrollIntent(node).isHeld();
+        const settled = jumping ? clamped : (!followDeferred.current && settleFollowBottom(node, latest)) || clamped;
         if (settled) followTrace.set(latest);
       } else if (top > 0 || rows[0]?.id !== oldRows[0]?.id) {
         // Keep the row at the top of the viewport where it is as rows above it change height.
@@ -3194,14 +3207,18 @@ export function VirtualTranscript({
           oldRows,
           newRows: rows,
           liveTop: top,
-          anchorTop: top,
+          anchorTop: top + (anchorCorrection.current?.top === top ? anchorCorrection.current.remainder : 0),
         });
-        if (nextTop !== undefined && (clamped || Math.abs(nextTop - top) > 0.5)) {
-          node.scrollTop = nextTop;
-          // Keep React's rendered offset in the same frame as the anchor correction. Otherwise a
-          // rounded DOM offset arrives through scroll later and can briefly show Jump to latest.
-          scrollPacer.current?.cancel();
-          setScrollAt(node.scrollTop);
+        if (nextTop !== undefined) {
+          if (clamped || Math.abs(nextTop - top) > 0.5) {
+            node.scrollTop = nextTop;
+            // Keep React's rendered offset in the same frame as the anchor correction. Otherwise a
+            // rounded DOM offset arrives through scroll later and can briefly show Jump to latest.
+            scrollPacer.current?.cancel();
+            setScrollAt(node.scrollTop);
+          }
+          const remainder = nextTop - node.scrollTop;
+          anchorCorrection.current = Math.abs(remainder) <= 0.5 ? { top: node.scrollTop, remainder } : undefined;
         }
       }
     }
@@ -3275,7 +3292,20 @@ export function VirtualTranscript({
     // The minimap's band reads the offset this pass settled on.
     minimapPlaced.current?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- openAt is read once, at the first open
-  }, [layout, rows, range.first, height, width, dockSpace, room, lift, sessionId, seekExpired, canLoadOlder]);
+  }, [
+    layout,
+    rows,
+    range.first,
+    height,
+    width,
+    dockSpace,
+    room,
+    lift,
+    sessionId,
+    seekExpired,
+    canLoadOlder,
+    followResume,
+  ]);
   // A toggled "Worked for" plays when its rows are placed again (watchTurnFold, started at the
   // toggle), not on every render. A render only checks, in O(1), whether the fold is over or another
   // chat shows, so nothing of it is left drawn over the new rows.
@@ -3392,11 +3422,16 @@ export function VirtualTranscript({
   // The current match's reveal window: 0 until it starts, then the window's own number.
   const revealWindow = useRef(0);
   const revealWindows = useRef(0);
+  const findRequest = useRef<(() => boolean) | undefined>(undefined);
+  const findFrame = useRef<number | undefined>(undefined);
+  useLayoutEffect(() => {
+    findRequest.current = ref.current ? userScrollIntent(ref.current).request() : undefined;
+  }, [findTargetRowId, findTargetOccurrence, findQuery]);
   useLayoutEffect(() => {
     revealing.current = targetKey;
     revealWindow.current = 0;
     const node = ref.current;
-    if (!node || !findTarget || !targetKey) return;
+    if (!node || !findTarget || !targetKey || !findRequest.current?.()) return;
     const top = layout.tops[findIndex];
     const bottom = top + layout.heights[findIndex];
     // In view where it draws (`lift` from its place while the rows follow a grown composer).
@@ -3418,9 +3453,13 @@ export function VirtualTranscript({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one reveal per key, once its row is drawn
     [reveal?.key, revealIndex >= 0],
   );
+  const rowRequest = useRef<(() => boolean) | undefined>(undefined);
+  useLayoutEffect(() => {
+    rowRequest.current = ref.current ? userScrollIntent(ref.current).request() : undefined;
+  }, [reveal?.key]);
   useLayoutEffect(() => {
     const node = ref.current;
-    if (!node || revealIndex < 0) return;
+    if (!node || revealIndex < 0 || !rowRequest.current?.()) return;
     const top = layout.tops[revealIndex];
     const bottom = top + layout.heights[revealIndex];
     // In view where it draws (`lift` from its place while the rows follow a grown composer).
@@ -3447,7 +3486,7 @@ export function VirtualTranscript({
         ? { rowId: drawnId, card: drawnCard, occurrence: findTargetOccurrence }
         : undefined,
     );
-    if (!current || revealing.current !== targetKey) return;
+    if (!current || revealing.current !== targetKey || !findRequest.current?.()) return;
     // A match in a closed group is drawn before the group opens (with no size), and it moves as the
     // opened parts and the rows above it measure, so it is kept in view for a moment once drawn.
     if (!revealWindow.current) {
@@ -3459,7 +3498,7 @@ export function VirtualTranscript({
       const tick = () => {
         if (revealWindow.current !== opened) return;
         // The reader's own scroll, click or key ends the hold: the match is theirs to leave.
-        if (readerAt.current > start) {
+        if (!findRequest.current?.()) {
           revealing.current = undefined;
           return;
         }
@@ -3478,9 +3517,9 @@ export function VirtualTranscript({
         const elapsed = performance.now() - start;
         const settled = frames >= FIND_REVEAL_FRAMES && elapsed >= FIND_REVEAL_MS && still >= FIND_REVEAL_STILL_FRAMES;
         if (settled || ++frames >= FIND_REVEAL_MAX_FRAMES) revealing.current = undefined;
-        else requestAnimationFrame(tick);
+        else findFrame.current = requestAnimationFrame(tick);
       };
-      requestAnimationFrame(tick);
+      findFrame.current = requestAnimationFrame(tick);
     }
     if (current.getBoundingClientRect().height === 0) return;
     // Inner scrollers first (a command's output scrolls on its own), then the transcript.
@@ -3627,7 +3666,7 @@ export function VirtualTranscript({
       }
       return;
     }
-    const programmatic = performance.now() - readerAt.current > READER_SCROLL_MS;
+    const programmatic = !userScrollIntent(node).isHeld();
     // ResizeObserver/layout work can emit a scroll event after the stack below the transcript
     // changes. While the reader is following, keep the viewport at the new end and do not let
     // that synthetic event clear the follow state. A real wheel/touch/key event marks itself first.
@@ -3732,12 +3771,29 @@ export function VirtualTranscript({
         scrolledTo.current = { top: node.scrollTop, atLatest: false };
         follow(false);
       },
+      { explicit: true },
     );
   };
   useEffect(() => {
     const node = ref.current;
+    if (!node) return;
+    const intent = userScrollIntent(node);
+    const detachIntent = attachUserScrollIntent(node);
     const followIntent = (next: boolean) => followRef.current(next);
-    let dragging = false;
+    const cancelProgrammatic = (event?: Event) => {
+      anchorCorrection.current = undefined;
+      revealing.current = undefined;
+      revealWindow.current = 0;
+      foldAnchor.current = undefined;
+      if (findFrame.current !== undefined) cancelAnimationFrame(findFrame.current);
+      findFrame.current = undefined;
+      if (reader(event)) followIntent(false);
+      if (jumpTarget.current !== undefined) {
+        stopJump();
+        scrolledTo.current = { top: node.scrollTop, atLatest: false };
+        followIntent(false);
+      }
+    };
     let pointerY: number | undefined;
     let touchY: number | undefined;
     const reader = (event?: Event) => {
@@ -3752,7 +3808,6 @@ export function VirtualTranscript({
             (pointer.pointerType === "touch" ? pointer.clientY > pointerY : pointer.clientY < pointerY)) ||
           (touch !== undefined && touchY !== undefined && touch.clientY > touchY));
       if (event?.type === "pointerdown") {
-        dragging = true;
         pointerY = (event as PointerEvent).clientY;
       } else if (pointer) pointerY = pointer.clientY;
       if (event?.type === "touchstart") touchY = (event as TouchEvent).touches[0]?.clientY;
@@ -3765,25 +3820,19 @@ export function VirtualTranscript({
       if (movingUp) followIntent(false);
       if (jumpTarget.current !== undefined) {
         stopJump();
-        scrolledTo.current = { top: node?.scrollTop ?? 0, atLatest: false };
+        scrolledTo.current = { top: node.scrollTop, atLatest: false };
         followIntent(false);
       }
+      return Boolean(movingUp);
     };
-    // A long scrollbar drag/touch gesture remains reader input after its initial press expires.
-    // Track a drag outside the scroller too, without treating unrelated pointer motion as input.
-    const readerMove = (event: PointerEvent) => {
-      if (!event.buttons) dragging = false;
-      if (dragging) reader(event);
-    };
-    const readerReleased = () => {
-      dragging = false;
-    };
-    const ownerDocument = node?.ownerDocument;
-    ownerDocument?.addEventListener("pointermove", readerMove, { capture: true, passive: true });
-    ownerDocument?.addEventListener("pointerup", readerReleased, { capture: true });
-    ownerDocument?.addEventListener("pointercancel", readerReleased, { capture: true });
-    const inputs = ["wheel", "pointerdown", "touchstart", "touchmove", "keydown"] as const;
-    for (const name of inputs) node?.addEventListener(name, reader, { capture: true, passive: true });
+    const unsubscribeIntent = intent.subscribe(cancelProgrammatic);
+    const unsubscribeQuiet = intent.subscribeQuiet(() => {
+      if (!followDeferred.current) return;
+      followDeferred.current = false;
+      if (followingRef.current) resumeDeferredFollow();
+    });
+    // attachUserScrollIntent captures the scroller and scrollbar inputs, then invokes this reader
+    // through the shared subscription before layout or streaming can commit.
     // A click on a disclosure line holds it where it is (foldAnchor.ts), before the row's own handler
     // opens it.
     // A turn fold still sliding rows lands first, and the offset takes up however far that moved the
@@ -3834,7 +3883,7 @@ export function VirtualTranscript({
         ? installGutterSelect(
             node,
             thread.current,
-            reader,
+            () => intent.mark(),
             (held) =>
               setHeldRows(
                 held
@@ -3853,10 +3902,11 @@ export function VirtualTranscript({
       wheelGlide.current?.remove();
       wheelGlide.current = undefined;
       stopJump();
-      for (const name of inputs) node?.removeEventListener(name, reader, { capture: true });
-      ownerDocument?.removeEventListener("pointermove", readerMove, { capture: true });
-      ownerDocument?.removeEventListener("pointerup", readerReleased, { capture: true });
-      ownerDocument?.removeEventListener("pointercancel", readerReleased, { capture: true });
+      unsubscribeIntent();
+      unsubscribeQuiet();
+      detachIntent();
+      if (findFrame.current !== undefined) cancelAnimationFrame(findFrame.current);
+      findFrame.current = undefined;
       node?.removeEventListener("click", holdClicked, { capture: true });
       node?.removeEventListener(ANCHORED_COLLAPSE_EVENT, holdAsked);
       for (const name of releases) node?.removeEventListener(name, release);

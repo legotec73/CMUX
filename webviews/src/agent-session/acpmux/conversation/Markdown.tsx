@@ -39,6 +39,8 @@ import { StartedSessionChip, useStartedMentions, type StartedMentions } from "..
 import { splitMentions } from "../started/startedSessions";
 import { entranceAllowed } from "../../shared/pageReveal";
 import { isAgentMotionOff } from "../../shared/motion";
+import { animateScroll } from "../threadMinimap/scrollMotion";
+import { JUMP_CURVE, jumpDuration } from "../threadMinimap/model";
 import { decorateTimes, splitTimeTokens, TimeHover } from "./timeHover";
 
 export type Align = "left" | "center" | "right" | null;
@@ -640,13 +642,7 @@ export function renderInline(source: string, outer: InlineOptions = {}): ReactNo
         const anchor = opts.notes.anchor(id);
         out.push(
           <sup key={k++} className="cv-fnref">
-            <button
-              type="button"
-              aria-describedby={anchor}
-              onClick={() =>
-                document.getElementById(anchor)?.scrollIntoView({ block: "nearest", behavior: noteScroll() })
-              }
-            >
+            <button type="button" aria-describedby={anchor} onClick={() => scrollNote(document.getElementById(anchor))}>
               {number}
             </button>
           </sup>,
@@ -657,6 +653,46 @@ export function renderInline(source: string, outer: InlineOptions = {}): ReactNo
   }
   if (last < text.length) out.push(...proseText(text.slice(last), `t${k++}`, opts));
   return out;
+}
+
+// Native smooth scroll can paint one queued compositor step after cancellation. Transcript
+// footnotes use the shared runner so manual input stops them before the next painted frame.
+function scrollNote(note: HTMLElement | null) {
+  if (!note) return;
+  const node = note.closest<HTMLElement>(".acpmux-scroll");
+  if (!node) return note.scrollIntoView({ block: "nearest", behavior: noteScroll() });
+  const target = () => {
+    const box = note.getBoundingClientRect();
+    const top = node.getBoundingClientRect().top + node.clientTop;
+    const paddingBottom =
+      Number.parseFloat(node.ownerDocument.defaultView?.getComputedStyle(node).scrollPaddingBottom ?? "0") || 0;
+    const bottom = top + node.clientHeight - paddingBottom;
+    const visibleHeight = Math.max(0, bottom - top);
+    const above = box.top < top;
+    const below = box.bottom > bottom;
+    const delta =
+      above && below
+        ? 0
+        : above
+          ? box.height <= visibleHeight
+            ? box.top - top
+            : box.bottom - bottom
+          : below
+            ? box.height <= visibleHeight
+              ? box.bottom - bottom
+              : box.top - top
+            : 0;
+    return Math.max(0, Math.min(node.scrollHeight - node.clientHeight, node.scrollTop + delta));
+  };
+  animateScroll(
+    node,
+    target,
+    noteScroll() === "auto" ? 0 : jumpDuration(target() - node.scrollTop),
+    JUMP_CURVE,
+    undefined,
+    undefined,
+    { explicit: true },
+  );
 }
 
 /// How a footnote reference scrolls to its note: a glide, or with cmux's animations off
