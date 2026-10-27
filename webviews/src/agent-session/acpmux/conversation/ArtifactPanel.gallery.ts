@@ -4,7 +4,7 @@
 // Preview and Code. Off the bundled pane there is no render frame, so HTML shows Code only. A document
 // the chat rewrote (same kind and title) steps between its versions in the header (cx-ncc.64).
 import { agentPaneEntry } from "../../../gallery/format";
-import { assistant, chat, summary, user } from "../../../gallery/fixtures/acpmux";
+import { activity, assistant, chat, summary, tool, user } from "../../../gallery/fixtures/acpmux";
 import type { PlayContext } from "../../../gallery/play";
 
 const fence = (lang: string, code: string) => "```" + lang + "\n" + code + "\n```";
@@ -35,6 +35,7 @@ const reply = (prompt: string, text: string) =>
   chat([user(prompt, 6), assistant(text, 5), summary(5, { status: "completed", durationMs: 21_000 })]);
 
 const open = async (ctx: PlayContext) => {
+  await ctx.waitFor(() => ctx.document.querySelector('button[aria-label="Open preview"]'));
   await ctx.click({ role: "button", name: "Open preview" });
   await ctx.waitFor(() => ctx.document.querySelector(".acpmux-artifact"));
 };
@@ -43,13 +44,194 @@ const notesV1 = `# Uploader retry
 
 Uploads now retry, doubling from 200 ms.`;
 
+const notesV2 = `# Uploader retry
+
+Uploads now retry **three times**, doubling from 200 ms.
+
+- Backoff caps at 1.6 s.`;
+
+const liveReply = (text: string, version: number, streaming = true) =>
+  chat([
+    user("Update the release notes while I read the preview", 1),
+    assistant(`${fence("markdown", text)}\n`, 0, { id: "artifact-live", version, streaming }),
+  ]);
+const liveChecks = {
+  layoutShiftMax: {
+    value: 0.3,
+    reason:
+      "Opening the shared side preview intentionally narrows and moves the transcript/composer; this fixture compares the subsequent document rewrite.",
+  },
+};
+const live = (finish = false) => ({
+  checks: liveChecks,
+  note: finish
+    ? "The preview follows the same source through turn completion."
+    : "A live rewrite updates the already-open preview; no close/reopen.",
+  snapshot: liveReply(notesV1, 1),
+  play: async (ctx: PlayContext) => {
+    await open(ctx);
+    const page = ctx.document.defaultView as Window;
+    page.cmuxAcpmuxBridge?.receive(liveReply(notesV2, 2, !finish));
+    await ctx.waitFor(() =>
+      [...ctx.document.querySelectorAll(".cv-codeblock")].some((node) => node.textContent?.includes("Backoff caps")),
+    );
+  },
+});
+
+const writtenLive = {
+  checks: liveChecks,
+  note: "A completed rewrite of the same canonical file refreshes its open preview.",
+  snapshot: chat([
+    user("Write a status page", 2),
+    activity(
+      [
+        tool("Write", "edit", "completed", {
+          diffs: [{ path: "/project/status.html", newText: "<h1>Status</h1><p>Preparing release</p>" }],
+        }),
+      ],
+      1,
+      { id: "live-write", version: 1 },
+    ),
+    assistant("Preparing release", 1, { id: "live-status", version: 1 }),
+    summary(0, { status: "completed" }),
+  ]),
+  play: async (ctx: PlayContext) => {
+    await ctx.click({ role: "button", name: /^Worked for / });
+    await open(ctx);
+    const page = ctx.document.defaultView as Window;
+    page.cmuxAcpmuxBridge?.receive(
+      chat([
+        user("Write a status page", 2),
+        activity(
+          [
+            tool("Write", "edit", "completed", {
+              diffs: [{ path: "/project/status.html", newText: "<h1>Status</h1><p>Release ready</p>" }],
+            }),
+          ],
+          0,
+          { id: "live-write", version: 2 },
+        ),
+        assistant("Release ready", 0, { id: "live-status", version: 2 }),
+        summary(0, { status: "completed" }),
+      ]),
+    );
+    await ctx.waitFor(() =>
+      ctx.document.querySelector('[data-row-id="live-status"]')?.textContent?.includes("Release ready"),
+    );
+  },
+};
+
+const counters = [1, 2, 3].map(
+  (version) => `<title>Counter</title>
+<h1>Counter</h1><p>Revision ${version}: add ${version} per click.</p>
+<button onclick="this.textContent = Number(this.textContent) + ${version}">0</button>`,
+);
+const counterChat = chat(
+  counters.flatMap((code, index) => [
+    user(`Revise the counter, version ${index + 1}`, 12 - index * 3),
+    assistant(fence("html", code), 11 - index * 3),
+    summary(11 - index * 3, { status: "completed", durationMs: 3000 }),
+  ]),
+);
+const counterVersion = (index: number) => ({
+  note: `Interactive HTML revision ${index + 1} of 3; Run explicitly enables scripts.`,
+  snapshot: counterChat,
+  play: async (ctx: PlayContext) => {
+    await open(ctx);
+    for (let step = 0; step < index; step++) await ctx.click({ role: "button", name: "Next version" });
+    await ctx.click({ role: "button", name: "Run" });
+    await ctx.waitFor(() => ctx.document.querySelector(".acpmux-artifact-frame"));
+  },
+});
+
 export default agentPaneEntry({
   id: "agent-pane.artifact-panel",
   title: "Side preview panel",
   area: "Agent pane",
   height: 640,
-  covers: ["agent-session/acpmux/conversation/ArtifactPanel.tsx", "agent-session/acpmux/conversation/OpenPreview.tsx"],
+  covers: [
+    "agent-session/acpmux/conversation/ArtifactPanel.tsx",
+    "agent-session/acpmux/conversation/OpenPreview.tsx",
+    "agent-session/acpmux/conversation/writtenArtifacts.tsx",
+  ],
   variants: {
+    "live-write": writtenLive,
+    "live-stream": live(),
+    "live-finished": live(true),
+    "live-history": {
+      ...live(),
+      note: "Three saved versions remain available while the chosen live source updates.",
+      snapshot: chat([
+        assistant(fence("markdown", notes), 4),
+        assistant(fence("markdown", notesV1), 3),
+        assistant(fence("markdown", notesV2), 0, { id: "artifact-live", version: 2, streaming: true }),
+      ]),
+      play: open,
+    },
+
+    ...Object.fromEntries(
+      [
+        ["claude", "Write"],
+        ["codex", "apply_patch"],
+        ["pi", "write"],
+        ["gemini", "write_file"],
+      ].map(([harness, name]) => [
+        `${harness}-write`,
+        {
+          snapshot: chat(
+            [
+              user("Write counter.html", 6),
+              activity(
+                [tool(name!, "edit", "completed", { diffs: [{ path: "counter.html", newText: counters[0]! }] })],
+                5,
+              ),
+              summary(5, { status: "completed" }),
+            ],
+            { harness },
+          ),
+          play: async (ctx: PlayContext) => {
+            await ctx.click({ role: "button", name: "Worked for 42s" });
+            await open(ctx);
+            await ctx.click({ role: "button", name: "Run" });
+          },
+        },
+      ]),
+    ),
+    svg: {
+      snapshot: reply(
+        "Draw a circle",
+        fence("svg", '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="seagreen"/></svg>'),
+      ),
+      play: open,
+    },
+    "interactive-v1": counterVersion(0),
+    "interactive-v2": counterVersion(1),
+    "interactive-v3": counterVersion(2),
+    "jsx-fragment": {
+      snapshot: reply(
+        "Make a counter button",
+        fence("jsx", '<button onClick={event => event.currentTarget.textContent = "1"}>0</button>'),
+      ),
+      play: async (ctx) => {
+        await open(ctx);
+        await ctx.click({ role: "button", name: "Run" });
+      },
+    },
+    jsx: {
+      note: "Offline React hooks in an isolated JSX artifact, after Run.",
+      snapshot: reply(
+        "Build a React counter",
+        fence(
+          "jsx",
+          'import { useState } from "react"; export default function Counter() { const [n, setN] = useState(0); return <button onClick={() => setN(n + 1)}>Count {n}</button>; }',
+        ),
+      ),
+      play: async (ctx) => {
+        await open(ctx);
+        await ctx.click({ role: "button", name: "Run" });
+        await ctx.waitFor(() => ctx.document.querySelector(".acpmux-artifact-frame"));
+      },
+    },
     closed: {
       note: "A reply's Markdown fence: Open preview sits in its code card header.",
       snapshot: reply("Write release notes for the retry change", `Here they are:\n\n${fence("markdown", notes)}`),
@@ -60,7 +242,7 @@ export default agentPaneEntry({
       play: open,
     },
     html: {
-      note: "An HTML page: in the bundled pane it draws in the render frame; here it shows Code only.",
+      note: "An HTML page: in the bundled pane it draws in the render frame; the gallery renders the same offline document.",
       snapshot: reply("Mock the Pro plan card", `A first pass:\n\n${fence("html", page)}`),
       play: open,
     },

@@ -326,6 +326,7 @@ import { ArtifactPanel, useArtifactCoversPane, type SaveDocument } from "./conve
 import { branchesFromKey, branchesKey, forkAnchor, messageBranches } from "./conversation/branches";
 import { ArtifactContext, type Artifact } from "./conversation/artifactPreview";
 import { artifactVersions } from "./conversation/artifactVersions";
+import { ArtifactLiveSource } from "./conversation/artifactLive";
 import { RenderPages, renderPages, renderVersions } from "./conversation/renderCall";
 import { DateLine } from "./conversation/DateLine";
 import { ShortcutsContext, readShortcuts, type ShortcutLabels } from "./shortcuts";
@@ -1024,6 +1025,8 @@ const MessageRow = memo(
         streaming={row.streaming === true}
         githubRepository={githubRepository}
         messageAt={row.at}
+        artifactIdentity={row.id}
+        artifactRevision={row.version}
       />
     );
   },
@@ -4529,22 +4532,41 @@ function AcpmuxPane() {
   const artifactSession = snapshot.sessionId;
   // Its versions (cx-ncc.64): the chat's finished replies' documents of its kind and title.
   const artifactRows = artifact ? snapshot.rows : undefined;
+  const artifactRowsRef = useRef(snapshot.rows);
+  artifactRowsRef.current = snapshot.rows;
+  const artifactLive = useRef<ArtifactLiveSource | undefined>(undefined);
+  if (!artifact) {
+    artifactLive.current?.dispose();
+    artifactLive.current = undefined;
+  }
+  useEffect(() => () => artifactLive.current?.dispose(), []);
+  const liveDocument = useMemo(
+    () =>
+      (artifact?.identity || artifact?.path) && artifactRows ? artifactLive.current?.read(artifactRows) : undefined,
+    [artifact, artifactRows],
+  );
+  const liveArtifact = liveDocument?.artifact ?? artifact;
   // Render cards by id (cx-ncc.94): a render that names an earlier one's id shows in that card.
   const pages = useMemo(() => renderPages(snapshot.rows), [snapshot.rows]);
   const artifactVersionList = useMemo(
     () =>
-      artifact && artifactRows
+      liveDocument?.versions ??
+      (artifact && artifactRows
         ? (renderVersions(pages, artifact) ??
           artifactVersions(
             artifactRows.flatMap((row) => (row.kind === "assistant" && !row.streaming && row.text ? [row.text] : [])),
             artifact,
           ))
-        : undefined,
-    [artifact, artifactRows, pages],
+        : undefined),
+    [artifact, artifactRows, pages, liveDocument],
   );
   const openArtifact = useCallback(
-    (next: Artifact) =>
-      setArtifact((current) => ({ ...next, sessionId: artifactSession, opened: (current?.opened ?? 0) + 1 })),
+    (next: Artifact) => {
+      artifactLive.current?.dispose();
+      artifactLive.current =
+        next.identity || next.path ? new ArtifactLiveSource(next, artifactRowsRef.current) : undefined;
+      setArtifact((current) => ({ ...next, sessionId: artifactSession, opened: (current?.opened ?? 0) + 1 }));
+    },
     [artifactSession],
   );
   // Repository context follows the selected session, connection origin and cwd. A reconnect
@@ -10184,10 +10206,10 @@ function AcpmuxPane() {
           summaryPanel}
         {/* Beside the chat view only: New Tab, Harnesses and a replay have no session header. */}
         {!harnessesOpen && !showNewTab && !(replaying && replaying === snapshot.sessionId) && inspector.panel}
-        {artifact && (
+        {artifact && liveArtifact && (
           <ArtifactPanel
             key={artifact.opened}
-            artifact={artifact}
+            artifact={liveArtifact}
             versions={artifactVersionList}
             onClose={() => setArtifact(undefined)}
             onSave={saveDocumentNatively}
