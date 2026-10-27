@@ -159,7 +159,7 @@ impl Hub {
                 || activity != session.activity_generation.load(Ordering::SeqCst)
                 || session.last_active.load(Ordering::Relaxed).saturating_add(idle)
                     > self.clock_now()
-                || !child.hibernate(generation).await
+                || !child.hibernate(generation, &session.closing).await
             {
                 self.touch(&session);
                 continue;

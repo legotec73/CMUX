@@ -587,6 +587,9 @@ pub struct ChildAgent {
     #[cfg(unix)]
     idle_pid_only: std::sync::atomic::AtomicBool,
     idle_uncertain: std::sync::atomic::AtomicBool,
+    /// A retired direct child's waiter that did not prove its reap in time (`agent/idle.rs`).
+    #[cfg(unix)]
+    idle_reaper: std::sync::Mutex<Option<tokio::task::JoinHandle<bool>>>,
     idle_activity: AtomicU64,
     /// The question preview format its command was pinned to, for a direct
     /// start (a host's is recorded where the host starts, `hub/hosts.rs`).
@@ -715,6 +718,8 @@ impl ChildAgent {
             #[cfg(unix)]
             idle_pid_only: std::sync::atomic::AtomicBool::new(false),
             idle_uncertain: std::sync::atomic::AtomicBool::new(false),
+            #[cfg(unix)]
+            idle_reaper: std::sync::Mutex::new(None),
             idle_activity: AtomicU64::new(0),
             generation: NEXT_GENERATION.fetch_add(1, Ordering::Relaxed),
             preview_format,
@@ -1743,6 +1748,8 @@ impl ChildAgent {
             #[cfg(unix)]
             idle_pid_only: std::sync::atomic::AtomicBool::new(false),
             idle_uncertain: std::sync::atomic::AtomicBool::new(false),
+            #[cfg(unix)]
+            idle_reaper: std::sync::Mutex::new(None),
             idle_activity: AtomicU64::new(0),
             generation: NEXT_GENERATION.fetch_add(1, Ordering::Relaxed),
             preview_format: None,

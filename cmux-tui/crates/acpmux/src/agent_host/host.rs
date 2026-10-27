@@ -175,6 +175,9 @@ enum Stdin {
     Receipt(u64),
 }
 
+/// The [`Event::DrainOver`] of a retirement's absolute drain, never a quiet period's generation.
+const ABSOLUTE_DRAIN: u64 = u64::MAX;
+
 enum Event {
     Stdout(Option<String>),
     Stderr(Option<String>),
@@ -519,10 +522,21 @@ impl Started {
                     state.leader_alive.store(false, std::sync::atomic::Ordering::SeqCst);
                     state.maybe_push_exit();
                     draining = state.exit_h.is_none();
+                    if draining && state.idle_pid_only.load(std::sync::atomic::Ordering::SeqCst) {
+                        // Spared work may keep writing: after a retirement the drain is
+                        // absolute, never a quiet period its output restarts.
+                        let tx = events_tx.clone();
+                        // task-owner: one bounded wait; the runtime ends it with the host.
+                        tokio::spawn(async move {
+                            tokio::time::sleep(DRAIN_BUDGET).await;
+                            let _ = tx.send(Event::DrainOver(ABSOLUTE_DRAIN)).await;
+                        });
+                    }
                 }
                 Event::DrainOver(generation) => {
                     let ready = permit_out || state.stdout_done;
-                    if draining && generation == drain_gen && ready && state.exit_h.is_none() {
+                    let due = generation == ABSOLUTE_DRAIN || (generation == drain_gen && ready);
+                    if draining && due && state.exit_h.is_none() {
                         tracing::warn!(
                             "harness output stays open after its exit; reporting the exit"
                         );
