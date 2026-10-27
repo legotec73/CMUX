@@ -506,10 +506,15 @@ while True:
             import subprocess, signal
             if os.environ.get("FAKE_CLAUDE_IGNORE_TERM"):
                 signal.signal(signal.SIGTERM, signal.SIG_IGN)
-            code = "import signal,socket,os,time; signal.signal(signal.SIGUSR1, lambda *_: socket.socket(socket.AF_UNIX,socket.SOCK_DGRAM).sendto(str(os.getpid()).encode(), os.environ['FAKE_CLAUDE_IDLE_PROBE_SOCKET'])); print('ready',flush=True); time.sleep(600)"
+            # FAKE_CLAUDE_IDLE_CHATTER: once the harness is gone, the children keep writing to its stdout.
+            code = ("import signal,socket,os,time; signal.signal(signal.SIGUSR1, lambda *_: socket.socket(socket.AF_UNIX,socket.SOCK_DGRAM).sendto(str(os.getpid()).encode(), os.environ['FAKE_CLAUDE_IDLE_PROBE_SOCKET'])); print('ready',flush=True)\n"
+                "p, fd = os.getppid(), int(os.environ.get('FAKE_CLAUDE_CHATTER_FD', '-1'))\n"
+                "for _ in range(6000):\n    time.sleep(0.1)\n    try: fd >= 0 and os.getppid() != p and os.write(fd, b'\\n')\n    except OSError: fd = -1\n")
+            fds = (os.dup(1),) if os.environ.get("FAKE_CLAUDE_IDLE_CHATTER") else ()
+            os.environ["FAKE_CLAUDE_CHATTER_FD"] = str(fds[0] if fds else -1)
             children = []
             for escape in (False, True):
-                child = subprocess.Popen([sys.executable, "-c", code], start_new_session=escape,
+                child = subprocess.Popen([sys.executable, "-c", code], start_new_session=escape, pass_fds=fds,
                     stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
                 child.stdout.readline()
                 children.append(child.pid)

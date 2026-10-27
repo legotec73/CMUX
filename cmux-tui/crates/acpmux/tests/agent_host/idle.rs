@@ -17,6 +17,8 @@ async fn idle_pid_only_host_query_fences_activity_and_preserves_children() {
     let probe = tokio::net::UnixDatagram::bind(dir.join("probe")).unwrap();
     let mut launch = spec(&dir, "idle");
     launch.env.push(("FAKE_CLAUDE_IGNORE_TERM".into(), "1".into()));
+    // Spared children write to the harness's stdout after it exits: the exit is still reported.
+    launch.env.push(("FAKE_CLAUDE_IDLE_CHATTER".into(), "1".into()));
     launch.env.push((
         "FAKE_CLAUDE_IDLE_PROBE_SOCKET".into(),
         dir.join("probe").to_string_lossy().into_owned(),
