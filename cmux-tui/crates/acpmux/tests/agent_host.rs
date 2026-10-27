@@ -962,5 +962,5 @@ async fn a_fenced_line_is_logged_as_queued_before_it_and_written_after() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-#[path = "agent_host_idle.rs"]
+#[path = "agent_host/idle.rs"]
 mod idle_pid_only;
