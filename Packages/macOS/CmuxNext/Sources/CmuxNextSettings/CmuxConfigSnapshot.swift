@@ -201,6 +201,8 @@ public struct CmuxConfigSnapshot: Sendable, Equatable {
     public var browserToolbarPosition: ToolbarPosition = .top
     /// `app.quitBehavior`; "ask" when unset or invalid.
     public var quitBehavior: QuitBehavior = QuitBehaviorSetting.fallback
+    /// `app.confirmQuit`; "always" when unset or invalid.
+    public var confirmQuit: ConfirmQuitMode = ConfirmQuitMode.fallback
     /// `newTerminal.opensWorkspace`; off when unset or invalid.
     public var newTerminalOpensWorkspace: Bool = NewTerminalWorkspaceSetting.fallback
     /// `tabs.cmdWClosesPinnedTabs`; on when unset or invalid.
@@ -390,6 +392,7 @@ public struct CmuxConfigSnapshot: Sendable, Equatable {
         let (quitBehavior, quitDiagnostic) = QuitBehaviorSetting.parse(root)
         snapshot.quitBehavior = quitBehavior
         if let quitDiagnostic { snapshot.diagnostics.append(quitDiagnostic) }
+        snapshot.take(ConfirmQuitMode.parse(root), \.confirmQuit)
         snapshot.diagnostics += Self.closeWarningDiagnostics(root) + Self.hideDockIconWithoutWindowsDiagnostics(root) + MachineColorsSetting().parse(root).1
         snapshot.diagnostics += Self.globalHotKeyDiagnostics(root) + Self.startAgentGlobalHotKeyDiagnostics(root) + AgentPaneReplySetting.parse(root).1
         snapshot.diagnostics += [NewTabTemplate.parse(root).1, NewTabPosition.parse(root).1].compactMap(\.self) + NewTabWidgetSettings.diagnostics(root)

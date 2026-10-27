@@ -1,530 +1,398 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "settings.agentPane.display.minimap": {
-      "comment": "Settings > Appearance > Agent Chat: what runs down the chat's edge (the prompt rail of ticks, the full map, or nothing)",
+    "settings.app.confirmQuit": {
+      "comment": "Settings, General, Quitting: title of the choice whether cmux asks before an interactive quit (Cmd-Q, Quit menu, Dock).",
       "extractionState": "manual",
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm Before Quitting"
+          }
+        },
         "ar": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "خريطة مصغّرة للمحادثة"
+            "value": "التأكيد قبل الإنهاء"
           }
         },
         "bs": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Mini mapa razgovora"
+            "value": "Potvrdi prije izlaska"
           }
         },
         "da": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Minikort over chatten"
+            "value": "Bekræft før afslutning"
           }
         },
         "de": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Chat-Minimap"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chat Minimap"
+            "value": "Vor dem Beenden bestätigen"
           }
         },
         "es": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Minimapa del chat"
+            "value": "Confirmar antes de salir"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Minicarte du chat"
+            "value": "Confirmer avant de quitter"
           }
         },
         "it": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Minimappa della chat"
+            "value": "Conferma prima di uscire"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "チャットのミニマップ"
+            "value": "終了前に確認"
           }
         },
         "km": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "ផែនទីតូចនៃការជជែក"
+            "value": "បញ្ជាក់មុនពេលចាកចេញ"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "채팅 미니맵"
+            "value": "종료 전에 확인"
           }
         },
         "nb": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Minikart for chatten"
+            "value": "Bekreft før avslutning"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Minimapa czatu"
+            "value": "Potwierdzaj przed zamknięciem"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Minimapa do chat"
+            "value": "Confirmar antes de sair"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Мини-карта чата"
+            "value": "Подтверждать выход"
           }
         },
         "th": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "มินิแมปของแชท"
+            "value": "ยืนยันก่อนออก"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Sohbet mini haritası"
+            "value": "Çıkmadan önce onayla"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Мінікарта чату"
+            "value": "Підтверджувати вихід"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Bản đồ thu nhỏ của cuộc trò chuyện"
+            "value": "Xác nhận trước khi thoát"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "聊天缩略图"
+            "value": "退出前确认"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "聊天縮圖"
+            "value": "結束前確認"
           }
         }
       }
     },
-    "settings.agentPane.display.minimap.help": {
-      "comment": "Settings > Appearance > Agent Chat > Chat Minimap: help for the choice of the rail, the full map or nothing",
+    "settings.app.confirmQuit.help": {
+      "comment": "Settings, General, Quitting: help under Confirm Before Quitting.",
       "extractionState": "manual",
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asks before Cmd-Q, the Quit menu or the Dock quits cmux."
+          }
+        },
         "ar": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "ما يظهر على حافة المحادثة: الشريط، بعلامة لكل طلب؛ أو الخريطة الكاملة، كل رسالة في مكانها مع مربع لما يظهر على الشاشة؛ أو لا شيء."
+            "value": "يسأل قبل أن يُنهي Cmd-Q أو قائمة الإنهاء أو Dock تطبيق cmux."
           }
         },
         "bs": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Šta ide uz ivicu razgovora: traka, jedna crtica po upitu; puna mapa, svaka poruka na svom mjestu s okvirom za ono što je na ekranu; ili ništa."
+            "value": "Pita prije nego što Cmd-Q, meni Izađi ili Dock zatvore cmux."
           }
         },
         "da": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Hvad der løber langs chattens kant: skinnen med én streg pr. prompt; det fulde kort med hver besked på sin plads og en boks for det, der er på skærmen; eller intet."
+            "value": "Spørger, før Cmd-Q, menuen Afslut eller Dock afslutter cmux."
           }
         },
         "de": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Was am Rand des Chats verläuft: die Leiste mit einem Strich pro Prompt; die vollständige Karte mit jeder Nachricht an ihrer Stelle und einem Rahmen für das, was zu sehen ist; oder nichts."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "What runs down the chat's edge: the rail, one tick per prompt; the full map, every message at its place with a box for what is on screen; or nothing."
+            "value": "Fragt nach, bevor Cmd-Q, das Menü „Beenden“ oder das Dock cmux beendet."
           }
         },
         "es": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Lo que recorre el borde del chat: la barra, una marca por prompt; el mapa completo, cada mensaje en su lugar con un recuadro para lo que está en pantalla; o nada."
+            "value": "Pregunta antes de que Cmd-Q, el menú Salir o el Dock cierren cmux."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Ce qui longe le bord du chat : la barre, un trait par prompt ; la carte complète, chaque message à sa place avec un cadre pour ce qui est à l'écran ; ou rien."
+            "value": "Demande avant que Cmd-Q, le menu Quitter ou le Dock ne quitte cmux."
           }
         },
         "it": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Cosa scorre lungo il bordo della chat: la barra, una tacca per prompt; la mappa completa, ogni messaggio al suo posto con un riquadro per ciò che è sullo schermo; oppure niente."
+            "value": "Chiede conferma prima che Cmd-Q, il menu Esci o il Dock chiudano cmux."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "チャットの端に表示するもの：プロンプトごとに目盛りを1つ置くレール、すべてのメッセージをその位置に並べて画面に見えている範囲を枠で示す全体マップ、または何も表示しない。"
+            "value": "Cmd-Q、終了メニュー、Dock で cmux を終了する前に確認します。"
           }
         },
         "km": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "អ្វីដែលបង្ហាញតាមគែមនៃការជជែក៖ របារ ដែលមានសញ្ញាមួយសម្រាប់សំណួរនីមួយៗ; ផែនទីពេញ ដែលសារនីមួយៗនៅកន្លែងរបស់វា ជាមួយប្រអប់សម្រាប់អ្វីដែលនៅលើអេក្រង់; ឬគ្មានអ្វីទាំងអស់។"
+            "value": "សួរមុនពេល Cmd-Q ម៉ឺនុយចាកចេញ ឬ Dock បិទ cmux។"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "채팅 가장자리에 표시할 항목: 프롬프트마다 눈금이 하나씩 있는 레일, 모든 메시지를 제자리에 두고 화면에 보이는 부분을 상자로 표시하는 전체 맵, 또는 표시 안 함."
+            "value": "Cmd-Q, 종료 메뉴 또는 Dock으로 cmux를 종료하기 전에 묻습니다."
           }
         },
         "nb": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Hva som går langs kanten av chatten: skinnen med én strek per prompt; det fulle kartet med hver melding på sin plass og en boks for det som er på skjermen; eller ingenting."
+            "value": "Spør før Cmd-Q, Avslutt-menyen eller Dock avslutter cmux."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Co biegnie wzdłuż krawędzi czatu: pasek z jedną kreską na każdy prompt; pełna mapa z każdą wiadomością na swoim miejscu i ramką dla tego, co widać na ekranie; albo nic."
+            "value": "Pyta, zanim Cmd-Q, menu Zakończ lub Dock zamknie cmux."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "O que corre pela borda do chat: o trilho, com uma marca por prompt; o mapa completo, cada mensagem no seu lugar com uma caixa para o que está na tela; ou nada."
+            "value": "Pergunta antes que Cmd-Q, o menu Sair ou o Dock encerrem o cmux."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Что идёт вдоль края чата: полоса с одной отметкой на каждый запрос; полная карта, где каждое сообщение на своём месте, а видимая часть обведена рамкой; или ничего."
+            "value": "Спрашивает, прежде чем Cmd-Q, меню «Завершить» или Dock закроют cmux."
           }
         },
         "th": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "สิ่งที่แสดงตามขอบของแชต: แถบที่มีขีดหนึ่งขีดต่อหนึ่งพรอมต์ แผนที่เต็มที่แสดงทุกข้อความในตำแหน่งของมันพร้อมกรอบสำหรับส่วนที่อยู่บนหน้าจอ หรือไม่แสดงอะไรเลย"
+            "value": "ถามก่อนที่ Cmd-Q เมนูออก หรือ Dock จะปิด cmux"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Sohbetin kenarı boyunca ne görünür: her istem için bir çentik bulunan şerit; her mesajın kendi yerinde olduğu ve ekranda görüneni bir kutuyla gösteren tam harita; ya da hiçbir şey."
+            "value": "Cmd-Q, Çık menüsü veya Dock cmux'tan çıkmadan önce sorar."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Що йде вздовж краю чату: смуга з однією позначкою на кожен запит; повна мапа, де кожне повідомлення на своєму місці, а видиму частину обведено рамкою; або нічого."
+            "value": "Запитує, перш ніж Cmd-Q, меню «Вийти» або Dock закриють cmux."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Những gì chạy dọc cạnh cuộc trò chuyện: thanh với một vạch cho mỗi lời nhắc; bản đồ đầy đủ với mọi tin nhắn ở đúng vị trí và một khung cho phần đang hiển thị trên màn hình; hoặc không có gì."
+            "value": "Hỏi trước khi Cmd-Q, menu Thoát hoặc Dock thoát cmux."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "聊天边缘显示的内容：标记条，每条提示一个刻度；完整地图，每条消息都在其位置，并用方框标出屏幕上可见的部分；或不显示。"
+            "value": "在 Cmd-Q、退出菜单或程序坞退出 cmux 之前询问。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "聊天邊緣顯示的內容：標記條，每則提示一個刻度；完整地圖，每則訊息都在其位置，並以方框標出螢幕上可見的部分；或不顯示。"
+            "value": "在 Cmd-Q、結束選單或 Dock 結束 cmux 之前詢問。"
           }
         }
       }
     },
-    "settings.choice.agentChatMinimapRail": {
-      "comment": "Settings > Agent Chat > Chat Minimap choice: the prompt rail, a narrow strip with one tick per prompt at the chat's edge",
+    "settings.choice.confirmQuitDirtyOnly": {
+      "comment": "Settings, General, Confirm Before Quitting: choice that asks only while a program runs in a terminal or an agent is working.",
       "extractionState": "manual",
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When Programs Are Running"
+          }
+        },
         "ar": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "شريط"
+            "value": "عند تشغيل برامج"
           }
         },
         "bs": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Traka"
+            "value": "Kada su programi pokrenuti"
           }
         },
         "da": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Skinne"
+            "value": "Når programmer kører"
           }
         },
         "de": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Leiste"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rail"
+            "value": "Wenn Programme laufen"
           }
         },
         "es": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Barra"
+            "value": "Cuando hay programas en ejecución"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Barre"
+            "value": "Quand des programmes tournent"
           }
         },
         "it": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Barra"
+            "value": "Quando ci sono programmi in esecuzione"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "レール"
+            "value": "プログラムの実行中"
           }
         },
         "km": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "របារ"
+            "value": "នៅពេលកម្មវិធីកំពុងដំណើរការ"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "레일"
+            "value": "프로그램이 실행 중일 때"
           }
         },
         "nb": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Skinne"
+            "value": "Når programmer kjører"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Pasek"
+            "value": "Gdy działają programy"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Trilho"
+            "value": "Quando houver programas em execução"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Полоса"
+            "value": "Когда запущены программы"
           }
         },
         "th": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "แถบ"
+            "value": "เมื่อมีโปรแกรมทำงานอยู่"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Şerit"
+            "value": "Programlar çalışırken"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Смуга"
+            "value": "Коли запущені програми"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Thanh"
+            "value": "Khi có chương trình đang chạy"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "标记条"
+            "value": "有程序运行时"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "標記條"
-          }
-        }
-      }
-    },
-    "settings.choice.agentChatMinimapFull": {
-      "comment": "Settings > Agent Chat > Chat Minimap choice: the VS Code-like map of the whole chat down its edge",
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "خريطة كاملة"
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Puna mapa"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Fuldt kort"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Vollständige Karte"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Full Map"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Mapa completo"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Carte complète"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Mappa completa"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "全体マップ"
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "ផែនទីពេញ"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "전체 맵"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Fullt kart"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Pełna mapa"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Mapa completo"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Полная карта"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "แผนที่เต็ม"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Tam Harita"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Повна мапа"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Bản đồ đầy đủ"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "完整地图"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "完整地圖"
+            "value": "有程式執行時"
           }
         }
       }
@@ -19219,138 +19087,6 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "密度預設值"
-          }
-        }
-      }
-    },
-    "settings.default.neverDiscard": {
-      "comment": "Settings > Browser > Memory > Hibernate Hidden Tabs: the value with nothing in cmux.json: hidden tabs only freeze and are never discarded (reloaded) on their own.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Never Discard"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "破棄しない"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "عدم التجاهل أبدًا"
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Nikad ne odbacuj"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Kassér aldrig"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Nie verwerfen"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "No descartar nunca"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Ne jamais décharger"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Non scartare mai"
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "កុំបោះចោលឡើយ"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "삭제 안 함"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Forkast aldri"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Nigdy nie odrzucaj"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Nunca descartar"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Не выгружать"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "ไม่ทิ้งเลย"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Asla atma"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Не вивантажувати"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Không bao giờ loại bỏ"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "从不丢弃"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "永不捨棄"
           }
         }
       }
@@ -84805,268 +84541,6 @@
         }
       }
     },
-    "settings.agentPane.scrollToBottomOnSend": {
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "التمرير إلى الأسفل عند الإرسال"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Beim Senden nach unten scrollen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Scroll to Bottom When I Send"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Desplazarse al final al enviar"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Faire défiler jusqu’en bas lors de l’envoi"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "送信時に最下部へスクロール"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "보낼 때 맨 아래로 스크롤"
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Pomjeri na dno pri slanju"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Rul til bunden ved afsendelse"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Scorri in fondo quando invio"
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "រំកិលទៅបាតពេលខ្ញុំផ្ញើ"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Rull til bunnen når jeg sender"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Przewiń na dół podczas wysyłania"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Rolar para o fim ao enviar"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Прокручивать вниз при отправке"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "เลื่อนไปด้านล่างเมื่อส่ง"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Gönderdiğimde alta kaydır"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Прокручувати донизу під час надсилання"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Cuộn xuống cuối khi tôi gửi"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "发送时滚动到底部"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "傳送時捲動到底部"
-          }
-        }
-      }
-    },
-    "settings.agentPane.scrollToBottomOnSend.help": {
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "عند إيقافه، يحافظ الإرسال على موضعك أثناء القراءة إلى الأعلى ويعرض الرسائل الجديدة أدناه."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Wenn deaktiviert, bleibt beim Senden beim Lesen weiter oben deine Position erhalten und neue Nachrichten erscheinen darunter."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "When off, sending while you are reading up keeps your place and shows new messages below."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Desactivado, al enviar se conserva tu posición mientras lees más arriba y se muestran debajo los mensajes nuevos."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Désactivé, l’envoi conserve votre position quand vous lisez plus haut et affiche les nouveaux messages en dessous."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "オフにすると、上を読んでいる間に送信しても位置を維持し、新しいメッセージを下に表示します。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "끄면 위쪽을 읽는 동안 메시지를 보내도 현재 위치가 유지되고 새 메시지가 아래에 표시됩니다."
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Kada je isključeno, slanje dok čitate iznad zadržava vaš položaj i prikazuje nove poruke ispod."
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Når den er slået fra, bevarer afsendelse din placering, mens du læser oppe, og viser nye beskeder nedenunder."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Se disattivato, l'invio mentre leggi più in alto mantiene la tua posizione e mostra i nuovi messaggi sotto."
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "នៅពេលបិទ ការផ្ញើពេលអ្នកកំពុងអានខាងលើនឹងរក្សាទីតាំងរបស់អ្នក ហើយបង្ហាញសារថ្មីខាងក្រោម។"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Når den er av, beholder sending plasseringen mens du leser oppover, og nye meldinger vises nedenfor."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Po wyłączeniu wysłanie wiadomości podczas czytania wyżej zachowuje pozycję i pokazuje nowe wiadomości poniżej."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Quando desativado, enviar enquanto você lê acima mantém sua posição e mostra novas mensagens abaixo."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Если выключено, отправка во время чтения выше сохраняет позицию и показывает новые сообщения ниже."
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "เมื่อปิด การส่งข้อความขณะอ่านด้านบนจะรักษาตำแหน่งของคุณและแสดงข้อความใหม่ด้านล่าง"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Kapalıyken, yukarıda okurken gönderim konumunuzu korur ve yeni mesajları aşağıda gösterir."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Якщо вимкнено, надсилання під час читання вище зберігає позицію та показує нові повідомлення нижче."
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Khi tắt, gửi tin nhắn khi đang đọc ở trên sẽ giữ nguyên vị trí và hiển thị tin nhắn mới bên dưới."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "关闭时，在向上阅读时发送消息会保留当前位置，并在下方显示新消息。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "關閉時，在向上閱讀期間傳送訊息會保留目前位置，並在下方顯示新訊息。"
-          }
-        }
-      }
-    },
     "settings.agentPane.showContextUsage": {
       "extractionState": "manual",
       "localizations": {
@@ -111062,138 +110536,6 @@
         }
       }
     },
-    "settings.choice.chiefPetMascot.mochi": {
-      "comment": "Chief pet character: a soft animated mochi cat (Mochi), a name.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mochi"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "موتشي"
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Mochi"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Mochi"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Mochi-Kätzchen"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Gatita Mochi"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Chaton Mochi"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Mochi"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "もち"
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "ម៉ូជិ"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "모찌"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Mochi"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Mochi"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Mochi"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Моти"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "โมจิ"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Mochi"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Моті"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Mochi"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "麻薯"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "麻糬"
-          }
-        }
-      }
-    },
     "settings.home.channelsEnabled": {
       "comment": "Settings > Appearance > Sidebar: toggle that shows the Channels entry after Home.",
       "extractionState": "manual",
@@ -119318,268 +118660,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "一個工作階段可同時開啟的子工作階段數量上限。關閉一個子工作階段會空出它的位置。"
-          }
-        }
-      }
-    },
-    "settings.agents.subsessions.maxRunning": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Running Sub-sessions per Session"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "الجلسات الفرعية العاملة لكل جلسة"
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pokrenute podsesije po sesiji"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kørende undersessioner pr. session"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Laufende Untersitzungen pro Sitzung"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Subsesiones en ejecución por sesión"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sous-sessions en cours par session"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sottosessioni in esecuzione per sessione"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "セッションごとの実行中のサブセッション"
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "វគ្គរងដែលកំពុងដំណើរការក្នុងមួយវគ្គ"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "세션당 실행 중인 하위 세션"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kjørende underøkter per økt"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Działające podsesje na sesję"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Subsessões em execução por sessão"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Работающих вложенных сеансов на сеанс"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "เซสชันย่อยที่ทำงานอยู่ต่อเซสชัน"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Oturum başına çalışan alt oturum"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Запущених вкладених сеансів на сеанс"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Số phiên con chạy cùng lúc mỗi phiên"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "每个会话同时运行的子会话"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "每個工作階段同時執行的子工作階段"
-          }
-        }
-      }
-    },
-    "settings.agents.subsessions.maxRunning.help": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The most sub-sessions one session runs at the same time. More wait their turn and start as running ones finish. Running ones are never stopped when you lower it."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "أقصى عدد من الجلسات الفرعية التي تشغّلها جلسة واحدة في الوقت نفسه. تنتظر الجلسات الأخرى دورها وتبدأ عندما تنتهي الجلسات العاملة. لا تتوقف الجلسات العاملة أبدًا عند خفض هذا العدد."
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Najveći broj podsesija koje jedna sesija pokreće u isto vrijeme. Ostale čekaju na red i pokreću se kad pokrenute završe. Pokrenute se nikad ne zaustavljaju kad smanjite broj."
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Det største antal undersessioner, én session kører på samme tid. Flere venter på tur og starter, når kørende afslutter. Kørende stoppes aldrig, når du sænker tallet."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die höchste Zahl an Untersitzungen, die eine Sitzung gleichzeitig ausführt. Weitere warten und starten, sobald laufende fertig sind. Laufende werden nie gestoppt, wenn du den Wert senkst."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El número máximo de subsesiones que una sesión ejecuta a la vez. Las demás esperan su turno y empiezan cuando terminan las que están en ejecución. Al bajarlo, las que están en ejecución nunca se detienen."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Le nombre maximal de sous-sessions qu’une session exécute en même temps. Les autres attendent leur tour et démarrent quand celles en cours se terminent. Baisser ce nombre n’arrête jamais celles en cours."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Il numero massimo di sottosessioni che una sessione esegue contemporaneamente. Le altre aspettano il loro turno e partono quando quelle in esecuzione finiscono. Abbassarlo non ferma mai quelle in esecuzione."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1 つのセッションが同時に実行するサブセッションの最大数です。それ以上は順番を待ち、実行中のものが終わると開始します。値を下げても実行中のものは停止しません。"
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ចំនួនវគ្គរងច្រើនបំផុតដែលវគ្គមួយដំណើរការក្នុងពេលតែមួយ។ វគ្គផ្សេងទៀតរង់ចាំវេន ហើយចាប់ផ្ដើមនៅពេលវគ្គដែលកំពុងដំណើរការបញ្ចប់។ វគ្គដែលកំពុងដំណើរការមិនដែលត្រូវបានបញ្ឈប់ទេ នៅពេលអ្នកបន្ថយវា។"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "한 세션이 동시에 실행하는 하위 세션의 최대 개수입니다. 나머지는 차례를 기다렸다가 실행 중인 세션이 끝나면 시작됩니다. 값을 낮춰도 실행 중인 세션은 멈추지 않습니다."
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Det største antallet underøkter én økt kjører samtidig. Flere venter på tur og starter når kjørende blir ferdige. Kjørende stoppes aldri når du senker tallet."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Największa liczba podsesji, które jedna sesja uruchamia jednocześnie. Kolejne czekają na swoją kolej i startują, gdy działające się skończą. Zmniejszenie wartości nigdy nie zatrzymuje działających."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "O número máximo de subsessões que uma sessão executa ao mesmo tempo. As demais aguardam a vez e começam quando as em execução terminam. Reduzir o valor nunca interrompe as que estão em execução."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Наибольшее число вложенных сеансов, которые один сеанс выполняет одновременно. Остальные ждут своей очереди и запускаются, когда работающие завершатся. При уменьшении значения работающие сеансы не останавливаются."
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "จำนวนเซสชันย่อยสูงสุดที่เซสชันหนึ่งทำงานพร้อมกัน ส่วนที่เกินจะรอคิวและเริ่มเมื่อเซสชันที่ทำงานอยู่เสร็จ การลดค่านี้จะไม่หยุดเซสชันที่ทำงานอยู่"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bir oturumun aynı anda çalıştırdığı en fazla alt oturum sayısı. Fazlası sırasını bekler ve çalışanlar bittikçe başlar. Değeri düşürdüğünüzde çalışanlar asla durdurulmaz."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Найбільша кількість вкладених сеансів, які один сеанс виконує одночасно. Решта чекають своєї черги й запускаються, коли запущені завершаться. Якщо зменшити значення, запущені сеанси не зупиняються."
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Số phiên con tối đa mà một phiên chạy cùng lúc. Các phiên khác chờ đến lượt và bắt đầu khi phiên đang chạy kết thúc. Giảm giá trị này không bao giờ dừng các phiên đang chạy."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "一个会话同时运行的子会话数量上限。超出的子会话排队等待，在运行中的子会话结束后开始。调低此值不会停止正在运行的子会话。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "一個工作階段同時執行的子工作階段數量上限。超出的子工作階段排隊等候，在執行中的子工作階段結束後開始。調低此值不會停止正在執行的子工作階段。"
           }
         }
       }
@@ -175269,6 +174349,1322 @@
           "stringUnit": {
             "state": "translated",
             "value": "標籤頁"
+          }
+        }
+      }
+    },
+    "settings.agentPane.display.minimap": {
+      "comment": "Settings > Appearance > Agent Chat: what runs down the chat's edge (the prompt rail of ticks, the full map, or nothing)",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "خريطة مصغّرة للمحادثة"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mini mapa razgovora"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Minikort over chatten"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Chat-Minimap"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chat Minimap"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Minimapa del chat"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Minicarte du chat"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Minimappa della chat"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "チャットのミニマップ"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ផែនទីតូចនៃការជជែក"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "채팅 미니맵"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Minikart for chatten"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Minimapa czatu"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Minimapa do chat"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Мини-карта чата"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "มินิแมปของแชท"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sohbet mini haritası"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Мінікарта чату"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bản đồ thu nhỏ của cuộc trò chuyện"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "聊天缩略图"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "聊天縮圖"
+          }
+        }
+      }
+    },
+    "settings.agentPane.display.minimap.help": {
+      "comment": "Settings > Appearance > Agent Chat > Chat Minimap: help for the choice of the rail, the full map or nothing",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ما يظهر على حافة المحادثة: الشريط، بعلامة لكل طلب؛ أو الخريطة الكاملة، كل رسالة في مكانها مع مربع لما يظهر على الشاشة؛ أو لا شيء."
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Šta ide uz ivicu razgovora: traka, jedna crtica po upitu; puna mapa, svaka poruka na svom mjestu s okvirom za ono što je na ekranu; ili ništa."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hvad der løber langs chattens kant: skinnen med én streg pr. prompt; det fulde kort med hver besked på sin plads og en boks for det, der er på skærmen; eller intet."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Was am Rand des Chats verläuft: die Leiste mit einem Strich pro Prompt; die vollständige Karte mit jeder Nachricht an ihrer Stelle und einem Rahmen für das, was zu sehen ist; oder nichts."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What runs down the chat's edge: the rail, one tick per prompt; the full map, every message at its place with a box for what is on screen; or nothing."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lo que recorre el borde del chat: la barra, una marca por prompt; el mapa completo, cada mensaje en su lugar con un recuadro para lo que está en pantalla; o nada."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ce qui longe le bord du chat : la barre, un trait par prompt ; la carte complète, chaque message à sa place avec un cadre pour ce qui est à l'écran ; ou rien."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cosa scorre lungo il bordo della chat: la barra, una tacca per prompt; la mappa completa, ogni messaggio al suo posto con un riquadro per ciò che è sullo schermo; oppure niente."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "チャットの端に表示するもの：プロンプトごとに目盛りを1つ置くレール、すべてのメッセージをその位置に並べて画面に見えている範囲を枠で示す全体マップ、または何も表示しない。"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "អ្វីដែលបង្ហាញតាមគែមនៃការជជែក៖ របារ ដែលមានសញ្ញាមួយសម្រាប់សំណួរនីមួយៗ; ផែនទីពេញ ដែលសារនីមួយៗនៅកន្លែងរបស់វា ជាមួយប្រអប់សម្រាប់អ្វីដែលនៅលើអេក្រង់; ឬគ្មានអ្វីទាំងអស់។"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "채팅 가장자리에 표시할 항목: 프롬프트마다 눈금이 하나씩 있는 레일, 모든 메시지를 제자리에 두고 화면에 보이는 부분을 상자로 표시하는 전체 맵, 또는 표시 안 함."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hva som går langs kanten av chatten: skinnen med én strek per prompt; det fulle kartet med hver melding på sin plass og en boks for det som er på skjermen; eller ingenting."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Co biegnie wzdłuż krawędzi czatu: pasek z jedną kreską na każdy prompt; pełna mapa z każdą wiadomością na swoim miejscu i ramką dla tego, co widać na ekranie; albo nic."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O que corre pela borda do chat: o trilho, com uma marca por prompt; o mapa completo, cada mensagem no seu lugar com uma caixa para o que está na tela; ou nada."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Что идёт вдоль края чата: полоса с одной отметкой на каждый запрос; полная карта, где каждое сообщение на своём месте, а видимая часть обведена рамкой; или ничего."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "สิ่งที่แสดงตามขอบของแชต: แถบที่มีขีดหนึ่งขีดต่อหนึ่งพรอมต์ แผนที่เต็มที่แสดงทุกข้อความในตำแหน่งของมันพร้อมกรอบสำหรับส่วนที่อยู่บนหน้าจอ หรือไม่แสดงอะไรเลย"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sohbetin kenarı boyunca ne görünür: her istem için bir çentik bulunan şerit; her mesajın kendi yerinde olduğu ve ekranda görüneni bir kutuyla gösteren tam harita; ya da hiçbir şey."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Що йде вздовж краю чату: смуга з однією позначкою на кожен запит; повна мапа, де кожне повідомлення на своєму місці, а видиму частину обведено рамкою; або нічого."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Những gì chạy dọc cạnh cuộc trò chuyện: thanh với một vạch cho mỗi lời nhắc; bản đồ đầy đủ với mọi tin nhắn ở đúng vị trí và một khung cho phần đang hiển thị trên màn hình; hoặc không có gì."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "聊天边缘显示的内容：标记条，每条提示一个刻度；完整地图，每条消息都在其位置，并用方框标出屏幕上可见的部分；或不显示。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "聊天邊緣顯示的內容：標記條，每則提示一個刻度；完整地圖，每則訊息都在其位置，並以方框標出螢幕上可見的部分；或不顯示。"
+          }
+        }
+      }
+    },
+    "settings.choice.agentChatMinimapRail": {
+      "comment": "Settings > Agent Chat > Chat Minimap choice: the prompt rail, a narrow strip with one tick per prompt at the chat's edge",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "شريط"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Traka"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Skinne"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Leiste"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rail"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Barra"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Barre"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Barra"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "レール"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "របារ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "레일"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Skinne"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pasek"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Trilho"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Полоса"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "แถบ"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Şerit"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Смуга"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Thanh"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "标记条"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "標記條"
+          }
+        }
+      }
+    },
+    "settings.choice.agentChatMinimapFull": {
+      "comment": "Settings > Agent Chat > Chat Minimap choice: the VS Code-like map of the whole chat down its edge",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "خريطة كاملة"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Puna mapa"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Fuldt kort"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vollständige Karte"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full Map"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mapa completo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Carte complète"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mappa completa"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "全体マップ"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ផែនទីពេញ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "전체 맵"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Fullt kart"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pełna mapa"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mapa completo"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Полная карта"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "แผนที่เต็ม"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tam Harita"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Повна мапа"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bản đồ đầy đủ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "完整地图"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "完整地圖"
+          }
+        }
+      }
+    },
+    "settings.choice.chiefPetMascot.mochi": {
+      "comment": "Chief pet character: a soft animated mochi cat (Mochi), a name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mochi"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "موتشي"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mochi"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mochi"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mochi-Kätzchen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gatita Mochi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Chaton Mochi"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mochi"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "もち"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ម៉ូជិ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "모찌"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mochi"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mochi"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mochi"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Моти"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "โมจิ"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mochi"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Моті"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mochi"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "麻薯"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "麻糬"
+          }
+        }
+      }
+    },
+    "settings.default.neverDiscard": {
+      "comment": "Settings > Browser > Memory > Hibernate Hidden Tabs: the value with nothing in cmux.json: hidden tabs only freeze and are never discarded (reloaded) on their own.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Never Discard"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "破棄しない"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "عدم التجاهل أبدًا"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nikad ne odbacuj"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kassér aldrig"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nie verwerfen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No descartar nunca"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ne jamais décharger"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Non scartare mai"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "កុំបោះចោលឡើយ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "삭제 안 함"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Forkast aldri"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nigdy nie odrzucaj"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nunca descartar"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Не выгружать"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ไม่ทิ้งเลย"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Asla atma"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Не вивантажувати"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Không bao giờ loại bỏ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "从不丢弃"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "永不捨棄"
+          }
+        }
+      }
+    },
+    "settings.agentPane.scrollToBottomOnSend": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "التمرير إلى الأسفل عند الإرسال"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Beim Senden nach unten scrollen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Scroll to Bottom When I Send"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Desplazarse al final al enviar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Faire défiler jusqu’en bas lors de l’envoi"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "送信時に最下部へスクロール"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "보낼 때 맨 아래로 스크롤"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pomjeri na dno pri slanju"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rul til bunden ved afsendelse"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Scorri in fondo quando invio"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "រំកិលទៅបាតពេលខ្ញុំផ្ញើ"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rull til bunnen når jeg sender"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Przewiń na dół podczas wysyłania"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rolar para o fim ao enviar"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Прокручивать вниз при отправке"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "เลื่อนไปด้านล่างเมื่อส่ง"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gönderdiğimde alta kaydır"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Прокручувати донизу під час надсилання"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cuộn xuống cuối khi tôi gửi"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "发送时滚动到底部"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "傳送時捲動到底部"
+          }
+        }
+      }
+    },
+    "settings.agentPane.scrollToBottomOnSend.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "عند إيقافه، يحافظ الإرسال على موضعك أثناء القراءة إلى الأعلى ويعرض الرسائل الجديدة أدناه."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wenn deaktiviert, bleibt beim Senden beim Lesen weiter oben deine Position erhalten und neue Nachrichten erscheinen darunter."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "When off, sending while you are reading up keeps your place and shows new messages below."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Desactivado, al enviar se conserva tu posición mientras lees más arriba y se muestran debajo los mensajes nuevos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Désactivé, l’envoi conserve votre position quand vous lisez plus haut et affiche les nouveaux messages en dessous."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "オフにすると、上を読んでいる間に送信しても位置を維持し、新しいメッセージを下に表示します。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "끄면 위쪽을 읽는 동안 메시지를 보내도 현재 위치가 유지되고 새 메시지가 아래에 표시됩니다."
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kada je isključeno, slanje dok čitate iznad zadržava vaš položaj i prikazuje nove poruke ispod."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Når den er slået fra, bevarer afsendelse din placering, mens du læser oppe, og viser nye beskeder nedenunder."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Se disattivato, l'invio mentre leggi più in alto mantiene la tua posizione e mostra i nuovi messaggi sotto."
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "នៅពេលបិទ ការផ្ញើពេលអ្នកកំពុងអានខាងលើនឹងរក្សាទីតាំងរបស់អ្នក ហើយបង្ហាញសារថ្មីខាងក្រោម។"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Når den er av, beholder sending plasseringen mens du leser oppover, og nye meldinger vises nedenfor."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Po wyłączeniu wysłanie wiadomości podczas czytania wyżej zachowuje pozycję i pokazuje nowe wiadomości poniżej."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quando desativado, enviar enquanto você lê acima mantém sua posição e mostra novas mensagens abaixo."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Если выключено, отправка во время чтения выше сохраняет позицию и показывает новые сообщения ниже."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "เมื่อปิด การส่งข้อความขณะอ่านด้านบนจะรักษาตำแหน่งของคุณและแสดงข้อความใหม่ด้านล่าง"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kapalıyken, yukarıda okurken gönderim konumunuzu korur ve yeni mesajları aşağıda gösterir."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Якщо вимкнено, надсилання під час читання вище зберігає позицію та показує нові повідомлення нижче."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Khi tắt, gửi tin nhắn khi đang đọc ở trên sẽ giữ nguyên vị trí và hiển thị tin nhắn mới bên dưới."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "关闭时，在向上阅读时发送消息会保留当前位置，并在下方显示新消息。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "關閉時，在向上閱讀期間傳送訊息會保留目前位置，並在下方顯示新訊息。"
+          }
+        }
+      }
+    },
+    "settings.agents.subsessions.maxRunning": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running Sub-sessions per Session"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الجلسات الفرعية العاملة لكل جلسة"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokrenute podsesije po sesiji"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kørende undersessioner pr. session"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laufende Untersitzungen pro Sitzung"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subsesiones en ejecución por sesión"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sous-sessions en cours par session"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sottosessioni in esecuzione per sessione"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "セッションごとの実行中のサブセッション"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "វគ្គរងដែលកំពុងដំណើរការក្នុងមួយវគ្គ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "세션당 실행 중인 하위 세션"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kjørende underøkter per økt"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Działające podsesje na sesję"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subsessões em execução por sessão"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Работающих вложенных сеансов на сеанс"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "เซสชันย่อยที่ทำงานอยู่ต่อเซสชัน"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oturum başına çalışan alt oturum"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запущених вкладених сеансів на сеанс"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Số phiên con chạy cùng lúc mỗi phiên"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每个会话同时运行的子会话"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每個工作階段同時執行的子工作階段"
+          }
+        }
+      }
+    },
+    "settings.agents.subsessions.maxRunning.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The most sub-sessions one session runs at the same time. More wait their turn and start as running ones finish. Running ones are never stopped when you lower it."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أقصى عدد من الجلسات الفرعية التي تشغّلها جلسة واحدة في الوقت نفسه. تنتظر الجلسات الأخرى دورها وتبدأ عندما تنتهي الجلسات العاملة. لا تتوقف الجلسات العاملة أبدًا عند خفض هذا العدد."
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najveći broj podsesija koje jedna sesija pokreće u isto vrijeme. Ostale čekaju na red i pokreću se kad pokrenute završe. Pokrenute se nikad ne zaustavljaju kad smanjite broj."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det største antal undersessioner, én session kører på samme tid. Flere venter på tur og starter, når kørende afslutter. Kørende stoppes aldrig, når du sænker tallet."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die höchste Zahl an Untersitzungen, die eine Sitzung gleichzeitig ausführt. Weitere warten und starten, sobald laufende fertig sind. Laufende werden nie gestoppt, wenn du den Wert senkst."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El número máximo de subsesiones que una sesión ejecuta a la vez. Las demás esperan su turno y empiezan cuando terminan las que están en ejecución. Al bajarlo, las que están en ejecución nunca se detienen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le nombre maximal de sous-sessions qu’une session exécute en même temps. Les autres attendent leur tour et démarrent quand celles en cours se terminent. Baisser ce nombre n’arrête jamais celles en cours."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il numero massimo di sottosessioni che una sessione esegue contemporaneamente. Le altre aspettano il loro turno e partono quando quelle in esecuzione finiscono. Abbassarlo non ferma mai quelle in esecuzione."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 つのセッションが同時に実行するサブセッションの最大数です。それ以上は順番を待ち、実行中のものが終わると開始します。値を下げても実行中のものは停止しません。"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ចំនួនវគ្គរងច្រើនបំផុតដែលវគ្គមួយដំណើរការក្នុងពេលតែមួយ។ វគ្គផ្សេងទៀតរង់ចាំវេន ហើយចាប់ផ្ដើមនៅពេលវគ្គដែលកំពុងដំណើរការបញ្ចប់។ វគ្គដែលកំពុងដំណើរការមិនដែលត្រូវបានបញ្ឈប់ទេ នៅពេលអ្នកបន្ថយវា។"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "한 세션이 동시에 실행하는 하위 세션의 최대 개수입니다. 나머지는 차례를 기다렸다가 실행 중인 세션이 끝나면 시작됩니다. 값을 낮춰도 실행 중인 세션은 멈추지 않습니다."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det største antallet underøkter én økt kjører samtidig. Flere venter på tur og starter når kjørende blir ferdige. Kjørende stoppes aldri når du senker tallet."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Największa liczba podsesji, które jedna sesja uruchamia jednocześnie. Kolejne czekają na swoją kolej i startują, gdy działające się skończą. Zmniejszenie wartości nigdy nie zatrzymuje działających."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O número máximo de subsessões que uma sessão executa ao mesmo tempo. As demais aguardam a vez e começam quando as em execução terminam. Reduzir o valor nunca interrompe as que estão em execução."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Наибольшее число вложенных сеансов, которые один сеанс выполняет одновременно. Остальные ждут своей очереди и запускаются, когда работающие завершатся. При уменьшении значения работающие сеансы не останавливаются."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "จำนวนเซสชันย่อยสูงสุดที่เซสชันหนึ่งทำงานพร้อมกัน ส่วนที่เกินจะรอคิวและเริ่มเมื่อเซสชันที่ทำงานอยู่เสร็จ การลดค่านี้จะไม่หยุดเซสชันที่ทำงานอยู่"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir oturumun aynı anda çalıştırdığı en fazla alt oturum sayısı. Fazlası sırasını bekler ve çalışanlar bittikçe başlar. Değeri düşürdüğünüzde çalışanlar asla durdurulmaz."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Найбільша кількість вкладених сеансів, які один сеанс виконує одночасно. Решта чекають своєї черги й запускаються, коли запущені завершаться. Якщо зменшити значення, запущені сеанси не зупиняються."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Số phiên con tối đa mà một phiên chạy cùng lúc. Các phiên khác chờ đến lượt và bắt đầu khi phiên đang chạy kết thúc. Giảm giá trị này không bao giờ dừng các phiên đang chạy."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一个会话同时运行的子会话数量上限。超出的子会话排队等待，在运行中的子会话结束后开始。调低此值不会停止正在运行的子会话。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一個工作階段同時執行的子工作階段數量上限。超出的子工作階段排隊等候，在執行中的子工作階段結束後開始。調低此值不會停止正在執行的子工作階段。"
           }
         }
       }
