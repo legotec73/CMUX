@@ -36,6 +36,34 @@ pub(crate) mod scope;
 pub mod sweep;
 #[cfg(unix)]
 pub(crate) mod tree;
+
+/// A process an idle retirement spared, by pid and start time (`tree.rs`); Windows never retires.
+#[cfg(unix)]
+pub(crate) type Spared = tree::Started;
+#[cfg(not(unix))]
+pub(crate) type Spared = ();
+
+/// The processes under `pid` now, so a later stop can end the ones a retirement spared.
+pub(crate) async fn spared_under(pid: Option<u32>) -> Vec<Spared> {
+    #[cfg(unix)]
+    if let Some(pid) = pid {
+        return tokio::task::spawn_blocking(move || tree::descendants(&[pid]))
+            .await
+            .unwrap_or_default();
+    }
+    let _ = pid;
+    Vec::new()
+}
+
+/// SIGKILL each of `procs` that still runs as the same process (a reused pid is never signalled).
+pub(crate) async fn end_spared(procs: Vec<Spared>) {
+    #[cfg(unix)]
+    if !procs.is_empty() {
+        let _ = tokio::task::spawn_blocking(move || tree::kill_still_running(&procs)).await;
+    }
+    #[cfg(not(unix))]
+    let _ = procs;
+}
 pub(crate) mod unresolved;
 mod wait;
 pub use wait::{

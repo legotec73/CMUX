@@ -6,9 +6,11 @@ sets two-minute defaults, pressure policy, click wake and combined loading. The
 session record and conversation ID survive. Send resumes/loads and replays config
 before delivery. One-second wake remains a measurement target.
 Retirement sends TERM, then KILL after 300 ms only to the same held, unreaped
-harness child. It never scans, signals a group or kills descendants. Both exit
-watchers spare the group; explicit Stop keeps its separate cleanup. Detached work
-that escaped, including setsid servers, is out of scope and receives no signal.
+harness child. It never signals a group or kills descendants. Both exit watchers
+spare the group. Detached work that escaped, including setsid servers, receives no
+signal at retirement. It records what ran under the harness (pid and start time),
+and an explicit Stop, close or ending shutdown ends what still runs as the same
+process, as Stop's group and tree cleanup would have.
 Running turns, queues, permissions/secret questions, in-flight requests, reported
 background tasks/subagents veto retirement. Older/unknown hosts, opaque harnesses,
 lost links and Windows jobs stay awake. Session leases and activity generations

@@ -154,6 +154,8 @@ impl Hub {
                 self.touch(&session);
                 continue;
             };
+            // What runs under the harness now: retirement spares it, a later stop ends it.
+            let spared = crate::agent_host::spared_under(child.pid).await;
             if !self.idle_eligible(&session)
                 || child.idle_has_pending()
                 || activity != session.activity_generation.load(Ordering::SeqCst)
@@ -166,6 +168,9 @@ impl Hub {
             }
             // Clear only after the same held child has exited. A send waits on our spawn lease.
             slot.take();
+            let hosted = child.host_record().is_some();
+            let spared = spared.into_iter().map(|p| (hosted, p));
+            session.idle_spared.lock().unwrap_or_else(|e| e.into_inner()).extend(spared);
             self.set_status(&session, SessionStatus::Idle);
             self.append(&session, "mux", "hibernated", json!({}));
         }
