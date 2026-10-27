@@ -7,6 +7,11 @@ impl ChildAgent {
         !self.is_retired() && !self.idle_uncertain.load(Ordering::SeqCst)
     }
 
+    /// An idle retirement whose outcome is not proven yet (`reconcile_idle` settles it).
+    pub(crate) fn idle_uncertain(&self) -> bool {
+        self.idle_uncertain.load(Ordering::SeqCst)
+    }
+
     pub(crate) fn idle_has_pending(&self) -> bool {
         self.pending.try_lock().map_or(true, |p| !p.map.is_empty())
     }

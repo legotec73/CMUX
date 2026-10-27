@@ -561,12 +561,20 @@ impl Hub {
             Self::starting(session, stops);
             // A stopped session whose host outlived the stop reopens, as a cold start does.
             self.reopen_to_start(session, stops)?;
-            match self.readopt(session).await {
-                Some(child) if child.is_alive().await => {
-                    // A retirement left uncertain behind a stopped reader settles on the new link.
-                    if child.reconcile_idle().await? {
+            let readopted = match self.readopt(session).await {
+                // A retirement left uncertain behind a stopped reader settles on the new link:
+                // still unresolved, the request is refused; its exit proven, a fresh agent starts.
+                Some(child) if child.is_alive().await => match child.reconcile_idle().await? {
+                    false => Some(child),
+                    true if child.idle_uncertain() => {
                         return Err(RpcError::internal("agent is still hibernating"));
                     }
+                    true => None,
+                },
+                other => other,
+            };
+            match readopted {
+                Some(child) if child.is_alive().await => {
                     // Reached again, not started: no start below decides its Ctrl-B.
                     self.note_host_kind(session, &child, Some(profile.kind)).await;
                     return Ok(child);

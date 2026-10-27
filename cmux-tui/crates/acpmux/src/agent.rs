@@ -1073,6 +1073,9 @@ impl ChildAgent {
             self.terminate(KILL_GRACE).await;
             return;
         }
+        // A child an idle retirement still owns is gone only once its waiter reaped it: no
+        // replacement starts before that (`agent/idle.rs`).
+        self.idle_reaped().await;
         let mut guard = self.child.lock().await;
         #[cfg(unix)]
         let under = under_unreaped(guard.as_ref()).await;
