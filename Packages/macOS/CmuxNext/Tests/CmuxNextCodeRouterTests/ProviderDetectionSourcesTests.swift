@@ -93,6 +93,19 @@ struct ProviderDetectionSourcesTests {
         #expect(Self.detector(files: [Self.codexConfig: config]).detectCodex().status == .signedIn)
     }
 
+    @Test(arguments: ["short", "contains\nnewline"])
+    func malformedAPIKeyIsUnknownBeforeTheFirstPrompt(key: String) {
+        let detection = Self.detector(env: ["OPENAI_API_KEY": key]).detectLocal(.openAI)
+        #expect(detection.status == .unknown)
+        #expect(detection.sources == [.environment("OPENAI_API_KEY")])
+    }
+
+    @Test func emptyAPIKeyUsesMissingStateBecauseConnectIgnoresIt() {
+        let detection = Self.detector(env: ["OPENAI_API_KEY": ""]).detectLocal(.openAI)
+        #expect(detection.status == .missing)
+        #expect(detection.sources.isEmpty)
+    }
+
     @Test(arguments: [
         "model = \"gpt-5\"",
         "model_provider = \"openai\"",
