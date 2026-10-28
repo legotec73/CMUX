@@ -1333,7 +1333,7 @@ async fn dispatch_request(
                     _ => unreachable!("tailnet method matched above"),
                 }
                 .map_err(RpcError::internal)?;
-                return Ok(snapshot.to_json(true));
+                Ok(snapshot.to_json(true))
             }
             #[cfg(not(feature = "tailnet"))]
             {
