@@ -110,6 +110,7 @@ public final class MobileSSHComputers {
     @ObservationIgnored weak var sink: (any MobileSSHComputersSink)?
     @ObservationIgnored private var connections: [UUID: SSHConnection] = [:]
     @ObservationIgnored private var connectTasks: [UUID: Task<SSHConnection, any Error>] = [:]
+    @ObservationIgnored private var connectionAttempts = MobileSSHConnectionAttemptRegistry()
     @ObservationIgnored private var providers: [UUID: MobileSSHHostProviders] = [:]
     @ObservationIgnored private var workspacesByHost: [UUID: [MobileSSHWorkspace]] = [:]
     /// Bumped per listing started, so only the newest listing publishes.
@@ -549,6 +550,7 @@ public final class MobileSSHComputers {
             await stopBrowser(panelID: panelID)
         }
         providers[hostID] = nil
+        connectionAttempts.invalidate(for: hostID)
         connectTasks[hostID]?.cancel()
         connectTasks[hostID] = nil
         stopAllPortForwards(hostID: hostID)
@@ -867,6 +869,7 @@ public final class MobileSSHComputers {
         guard let host = hosts.first(where: { $0.id == hostID }) else { throw SSHConnectionError.closed }
         statusByHost[hostID] = .connecting
         publish(host: host)
+        let generation = connectionAttempts.begin(for: hostID)
         let task = Task { () throws -> SSHConnection in
             guard let keyID = host.keyID else { throw MobileSSHRuntimeError.noKey }
             let key = try await keyStore.privateKey(for: keyID)
@@ -879,16 +882,27 @@ public final class MobileSSHComputers {
             )
         }
         connectTasks[hostID] = task
-        defer { connectTasks[hostID] = nil }
+        defer {
+            if connectionAttempts.clearIfCurrent(generation, for: hostID) {
+                connectTasks[hostID] = nil
+            }
+        }
         let connection: SSHConnection
         do {
             connection = try await task.value
         } catch {
+            guard connectionAttempts.isCurrent(generation, for: hostID) else {
+                throw MobileSSHConnectionAttemptSuperseded()
+            }
             // Record the failure on THIS host too: when it is a jump host,
             // the caller only reports the host it was asked to open, and
             // this one would otherwise stay "connecting" forever.
             fail(hostID: hostID, error)
             throw error
+        }
+        guard connectionAttempts.isCurrent(generation, for: hostID) else {
+            await connection.close()
+            throw MobileSSHConnectionAttemptSuperseded()
         }
         connections[hostID] = connection
         statusByHost[hostID] = .connected
@@ -1007,6 +1021,7 @@ public final class MobileSSHComputers {
     }
 
     private func fail(hostID: UUID, _ error: any Error) {
+        if error is MobileSSHConnectionAttemptSuperseded { return }
         if error is CancellationError {
             // A declined question: stay manual rather than asking again.
             autoConnectSuppressed.insert(hostID)
