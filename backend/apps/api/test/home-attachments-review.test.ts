@@ -226,6 +226,35 @@ describe("Home attachments: re-check blockers (sweep cursor, orphan slots, requi
   }
   const keyOfPresigned = (uploadUrl: string) => decodeURIComponent(new URL(uploadUrl).pathname).split("/").slice(2).join("/")
 
+  it("expired multipart slots delete pieces, abort interrupted assembly and refund the reservation", async () => {
+    const alice = await signIn("att-expire-multipart")
+    const g = await group(alice)
+    const stub = testEnv.CONVERSATION_DO.get(testEnv.CONVERSATION_DO.idFromName(g.id))
+    const tail = new Uint8Array(17).fill(3)
+    const r = await intent(alice, g.id, tail, { multipart: true, byte_count: 32 * 1024 * 1024 + tail.byteLength })
+    expect(r.json.value.mode).toBe("multipart")
+    // A long-running upload remains live when each next piece arrives before
+    // the idle lease ends; expiry is not a fixed deadline from the intent.
+    await runInDurableObject(stub, async (_i, state) => void state.storage.sql.exec("UPDATE home_attachment_slots SET expires_at = ?", Date.now() + 60_000))
+    expect((await worker.fetch(r.json.value.upload_url, { method: "PUT", body: tail, headers: { "content-length": String(tail.byteLength), "x-cmux-part-number": "2" } })).status).toBe(200)
+    const renewed = await runInDurableObject(stub, async (_i, state) => state.storage.sql.exec("SELECT expires_at FROM home_attachment_slots").toArray()[0] as { expires_at: number })
+    expect(renewed.expires_at).toBeGreaterThan(Date.now() + 14 * 60_000)
+    const conv = stub as unknown as {
+      uploadSlot(e: string, id: string, mode: string, consume: boolean): Promise<{ object_key: string }>
+      setMultipartUpload(e: string, id: string, uploadId: string): Promise<boolean>
+    }
+    const slot = await conv.uploadSlot(g.id, r.json.value.slot, "multipart", true)
+    const assembly = await testEnv.HOME_ATTACHMENTS.createMultipartUpload(slot.object_key)
+    await assembly.uploadPart(1, tail)
+    expect(await conv.setMultipartUpload(g.id, r.json.value.slot, assembly.uploadId)).toBe(true)
+    await expireSlots(stub)
+    await drainAlarms(stub)
+    expect((await testEnv.HOME_ATTACHMENTS.list({ prefix: `home/v1/${g.id}/` })).objects).toEqual([])
+    expect(await slotRows(stub)).toEqual([])
+    expect(await usageRows(alice.user)).toEqual([])
+    await expect(assembly.uploadPart(2, tail)).rejects.toThrow()
+  })
+
   it("P1: the sweep keeps a cursor past 500 referenced old records, collects the unreferenced ones after them, and stops rescheduling", async () => {
     const alice = await signIn("att-cursor-alice")
     const g = await group(alice)
