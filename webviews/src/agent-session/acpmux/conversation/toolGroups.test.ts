@@ -6,6 +6,7 @@ import { expect, test } from "bun:test";
 import type { AcpmuxActivity } from "../model";
 import { mcpCall } from "./mcpCalls";
 import { toolGroups } from "./toolGroups";
+import { recordedMessageBodyParseCountForTests, resetRecordedMessageBodyCacheForTests } from "./acpmuxSends";
 
 type Tool = NonNullable<AcpmuxActivity["tool"]>;
 
@@ -97,4 +98,160 @@ test("the other calls still draw as ToolRows around them", () => {
   expect(drawn.map((entry) => entry.tool!.title).sort()).toEqual(
     ["Fetch", "Fetch", "Read a.ts", "Read a.ts", "ls", "ls"].sort(),
   );
+});
+
+test("a later Bash send resolves only a prior same-turn recorded message write", () => {
+  const writer = item({
+    title: "Bash",
+    kind: "execute",
+    command: "cat > /tmp/review.md <<'EOF'\n## Ready\n\n- checks pass\nEOF",
+    startedAt: 1,
+    endedAt: 2,
+  });
+  const send = item({
+    title: "Bash",
+    kind: "execute",
+    command: "acpmux send --no-wait coord-deputy - < /tmp/review.md",
+    output: "queued",
+    startedAt: 3,
+    endedAt: 4,
+  });
+  const group = toolGroups([writer, send]).find((entry) => entry.type === "send");
+  expect(group?.type).toBe("send");
+  if (group?.type === "send") {
+    expect(group.send.text).toBe("## Ready\n\n- checks pass\n");
+    expect(group.send.others).toBeUndefined();
+  }
+  const standalone = toolGroups([send]).find((entry) => entry.type === "send");
+  expect(standalone?.type).toBe("send");
+  if (standalone?.type === "send") expect(standalone.send.text).toBeUndefined();
+});
+
+test("a later accepted writer replaces all prior path spellings, and unknown timing drops bodies", () => {
+  const first = item({
+    title: "Bash",
+    kind: "execute",
+    command: "cat > /tmp/a <<'EOF'\nOLD\nEOF",
+    startedAt: 1,
+    endedAt: 2,
+  });
+  const alias = item({
+    title: "Bash",
+    kind: "execute",
+    command: "cat > /private/tmp/a <<'EOF'\nNEW\nEOF",
+    startedAt: 3,
+    endedAt: 4,
+  });
+  const send = item({ title: "Bash", kind: "execute", command: "acpmux send lane - < /tmp/a", startedAt: 5 });
+  const body = toolGroups([first, alias, send]).find((entry) => entry.type === "send");
+  expect(body?.type).toBe("send");
+  if (body?.type === "send") expect(body.send.text).toBeUndefined();
+  const unknownOrder = toolGroups([first, { ...send, tool: { ...send.tool!, startedAt: undefined } }]).find(
+    (entry) => entry.type === "send",
+  );
+  expect(unknownOrder?.type).toBe("send");
+  if (unknownOrder?.type === "send") expect(unknownOrder.send.text).toBeUndefined();
+
+  const overlap = toolGroups([
+    first,
+    { ...alias, tool: { ...alias.tool!, endedAt: 8 } },
+    { ...send, tool: { ...send.tool!, startedAt: 5 } },
+  ]).find((entry) => entry.type === "send");
+  expect(overlap?.type).toBe("send");
+  if (overlap?.type === "send") expect(overlap.send.text).toBeUndefined();
+});
+
+test("background writers use their completion time for send provenance", () => {
+  const writer = item({
+    title: "Bash",
+    kind: "execute",
+    command: "cat > /tmp/background.md <<'EOF'\nfinished later\nEOF",
+    startedAt: 1,
+    // The foreground call ended before the background shell did.
+    endedAt: 2,
+    background: { state: "completed", endedAt: 10 },
+  });
+  const beforeBackgroundEnds = item({
+    title: "Bash",
+    kind: "execute",
+    command: "acpmux send lane - < /tmp/background.md",
+    startedAt: 5,
+  });
+  const unresolved = toolGroups([writer, beforeBackgroundEnds]).find((entry) => entry.type === "send");
+  expect(unresolved?.type).toBe("send");
+  if (unresolved?.type === "send") expect(unresolved.send.text).toBeUndefined();
+
+  const afterBackgroundEnds = item({
+    title: "Bash",
+    kind: "execute",
+    command: "acpmux send lane - < /tmp/background.md",
+    startedAt: 11,
+  });
+  const resolved = toolGroups([writer, afterBackgroundEnds]).find((entry) => entry.type === "send");
+  expect(resolved?.type).toBe("send");
+  if (resolved?.type === "send") expect(resolved.send.text).toBe("finished later\n");
+});
+
+test("producer cache remains bounded across many completed writer replays", () => {
+  resetRecordedMessageBodyCacheForTests();
+  const rows = Array.from({ length: 65 }, (_, index) =>
+    item({
+      title: "Bash",
+      kind: "execute",
+      command: `cat > /tmp/message-${index}.md <<'EOF'\nbody ${index}\nEOF`,
+      startedAt: index * 2 + 1,
+      endedAt: index * 2 + 2,
+    }),
+  );
+  toolGroups(rows);
+  expect(recordedMessageBodyParseCountForTests()).toBe(65);
+  toolGroups(rows.slice(1));
+  // WeakMap parsing by immutable tool object keeps all unchanged revisions from replaying.
+  expect(recordedMessageBodyParseCountForTests()).toBe(65);
+});
+
+test("unchanged streamed tool revisions reuse the bounded body parser cache", () => {
+  resetRecordedMessageBodyCacheForTests();
+  const writer = item({
+    title: "Bash",
+    kind: "execute",
+    command: "cat > /tmp/review.md <<'EOF'\nready\nEOF",
+    startedAt: 1,
+    endedAt: 2,
+  });
+  const send = item({
+    title: "Bash",
+    kind: "execute",
+    command: "acpmux send lane - < /tmp/review.md",
+    startedAt: 3,
+    endedAt: 4,
+  });
+  toolGroups([writer, send]);
+  expect(recordedMessageBodyParseCountForTests()).toBe(2);
+  // Streaming appends a new tool but keeps the prior tool snapshots unchanged.
+  const later = item({ title: "Bash", kind: "execute", command: "echo done", startedAt: 5, endedAt: 6 });
+  toolGroups([writer, send, later]);
+  expect(recordedMessageBodyParseCountForTests()).toBe(3);
+  toolGroups([writer, send, later]);
+  expect(recordedMessageBodyParseCountForTests()).toBe(3);
+  // A same-id command revision is a new cache key, so stale content cannot survive an overwrite.
+  const changedWriter = { ...writer, tool: { ...writer.tool!, command: "echo replacement > /tmp/review.md" } };
+  const changed = toolGroups([changedWriter, send]);
+  expect(recordedMessageBodyParseCountForTests()).toBe(4);
+  const changedSend = changed.find((entry) => entry.type === "send");
+  expect(changedSend?.type).toBe("send");
+  if (changedSend?.type === "send") expect(changedSend.send.text).toBeUndefined();
+
+  const skippedWriter = {
+    ...writer,
+    tool: { ...writer.tool!, command: "true || cat > /tmp/review.md <<'EOF'\nskipped\nEOF" },
+  };
+  const skipped = toolGroups([writer, skippedWriter, send]).find((entry) => entry.type === "send");
+  expect(skipped?.type).toBe("send");
+  if (skipped?.type === "send") expect(skipped.send.text).toBeUndefined();
+
+  const failedWriter = { ...writer, tool: { ...writer.tool!, status: "failed" } };
+  const failed = toolGroups([writer, failedWriter, send]).find((entry) => entry.type === "send");
+  expect(failed?.type).toBe("send");
+  if (failed?.type === "send") expect(failed.send.text).toBeUndefined();
 });
