@@ -1,8 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { GENERIC_FILE_TYPE, looksLikeText, refusal, resolvedType } from "../src/pages/home-channels/attachmentService";
+import {
+  AttachmentService,
+  GENERIC_FILE_TYPE,
+  hashFile,
+  looksLikeText,
+  refusal,
+  resolvedType,
+} from "../src/pages/home-channels/attachmentService";
 
 // Any file attaches (Lawrence 2026-10-20, "“index.html” can't be attached ... need to fix this"):
-// UTF-8 text of any name goes as text/plain, other bytes as a generic file; only size refuses.
+// UTF-8 text of any name goes as text/plain, other bytes as a generic file; only empty files refuse.
 const bytes = (text: string) => new TextEncoder().encode(text);
 
 describe("Channels attachments: any file", () => {
@@ -38,7 +45,105 @@ describe("Channels attachments: any file", () => {
     expect(looksLikeText(text.subarray(0, text.length - 1), true)).toBe(false);
   });
 
-  test("only an empty file or one over 100 MB is refused", () => {
+  test("an empty file is refused but a file beyond the former cap is accepted", () => {
     expect(refusal(new File([], "empty.txt"))).toBe("size");
+    expect(refusal({ size: 100 * 1024 * 1024 + 1 } as File)).toBeUndefined();
+  });
+
+  test("streamed hashes match SHA-256 across padding boundaries", async () => {
+    const vectors = [...Array.from({ length: 129 }, (_, n) => "a".repeat(n)), "a".repeat(3 * 1024 * 1024 + 127)];
+    // The two boundary cases exercise one and two padding blocks; expected values are checked
+    // against the platform digest implementation below so this test never embeds a hand-rolled hash.
+    for (const text of vectors) {
+      const file = new File([text], "vector.txt");
+      expect(await hashFile(file)).toBe(
+        [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)))]
+          .map((byte) => byte.toString(16).padStart(2, "0"))
+          .join(""),
+      );
+    }
+  });
+
+  test("upload reads an oversized file only through bounded slices", async () => {
+    const size = 10 * 1024 * 1024 + 5;
+    let wholeRead = false;
+    const file = {
+      name: "large.txt",
+      type: "text/plain",
+      size,
+      arrayBuffer: async () => {
+        wholeRead = true;
+        throw new Error("whole-file read");
+      },
+      slice: (start: number, end: number) =>
+        new Blob([new Uint8Array(Math.max(0, Math.min(size, end) - start)).fill(97)], {
+          type: "text/plain",
+        }),
+    } as unknown as File;
+    let received = 0;
+    let chunks = 0;
+    const client = {
+      call: async (method: string, params: Record<string, unknown>) => {
+        if (method !== "cmux.home.attachmentUpload") throw new Error(`unexpected ${method}`);
+        if (params.op === "begin") return { upload: "u1", needs: ["original"] };
+        if (params.op === "chunk") {
+          const decoded = atob(params.data as string);
+          expect(params.offset).toBe(received);
+          expect(decoded.length).toBe(Math.min(1024 * 1024, size - received));
+          expect(decoded).toBe("a".repeat(decoded.length));
+          received += decoded.length;
+          chunks += 1;
+          return null;
+        }
+        if (params.op === "commit") return { stored: undefined };
+        throw new Error(`unexpected op ${String(params.op)}`);
+      },
+    };
+    const progress: number[] = [];
+    await new AttachmentService(client as never).upload("conversation", file, (next) => progress.push(next.sent));
+    expect(wholeRead).toBe(false);
+    expect(chunks).toBe(11);
+    expect(received).toBe(size);
+    expect(progress.at(-1)).toBe(size);
+  });
+
+  test("hash cancellation during a read stops before the next slice", async () => {
+    const controller = new AbortController();
+    let reads = 0;
+    const file = {
+      size: 2 ** 40,
+      slice: (_start: number, end: number) => ({
+        arrayBuffer: async () => {
+          reads += 1;
+          expect(end).toBeLessThanOrEqual(64 * 1024);
+          controller.abort();
+          return new ArrayBuffer(64 * 1024);
+        },
+      }),
+    } as unknown as File;
+    await expect(hashFile(file, controller.signal)).rejects.toThrow();
+    expect(reads).toBe(1);
+  });
+
+  test("upload cancellation releases its slot before sending another chunk", async () => {
+    const controller = new AbortController();
+    const operations: string[] = [];
+    const client = {
+      call: async (_method: string, params: Record<string, unknown>) => {
+        operations.push(params.op as string);
+        if (params.op === "begin") return { upload: "u1", needs: ["original"] };
+        if (params.op === "chunk") controller.abort();
+        return null;
+      },
+    };
+    await expect(
+      new AttachmentService(client as never).upload(
+        "conversation",
+        new File([new Uint8Array(1024 * 1024 + 1)], "binary"),
+        () => {},
+        controller.signal,
+      ),
+    ).rejects.toThrow();
+    expect(operations).toEqual(["begin", "chunk", "cancel"]);
   });
 });

@@ -37,11 +37,9 @@ enum AttachmentMedia {
         return root.appendingPathComponent(hash, isDirectory: true).appendingPathComponent(name)
     }
 
-    /// Hashes and copies a file into the cache in one streamed pass. Stops
-    /// one byte past `maxBytes` (the file grew after its size was read) and
-    /// throws `tooLarge`, leaving nothing in the cache.
-    static func ingest(fileURL: URL, root: URL,
-                       maxBytes: Int = HomeAttachmentPolicy.maxBytes) throws -> (hash: String, url: URL, byteCount: Int) {
+    /// Hashes and copies a file into the cache in one streamed pass without
+    /// loading the source into memory.
+    static func ingest(fileURL: URL, root: URL) throws -> (hash: String, url: URL, byteCount: Int) {
         let fm = FileManager.default
         try fm.createDirectory(at: root, withIntermediateDirectories: true)
         let temp = root.appendingPathComponent(".incoming-\(UUID().uuidString)")
@@ -54,12 +52,11 @@ enum AttachmentMedia {
         var hasher = SHA256()
         var count = 0
         do {
-            while let chunk = try input.read(upToCount: min(chunkSize, maxBytes + 1 - count)), !chunk.isEmpty {
+            while let chunk = try input.read(upToCount: chunkSize), !chunk.isEmpty {
                 try Task.checkCancellation()
                 hasher.update(data: chunk)
                 try output.write(contentsOf: chunk)
                 count += chunk.count
-                if count > maxBytes { throw HomeAttachmentError.tooLarge(byteCount: count, limit: maxBytes) }
             }
             try output.close()
         } catch {

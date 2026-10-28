@@ -7,6 +7,7 @@
 // show under any page policy (the app's page scheme allows `img-src data:` only). A video plays
 // from a short-lived URL on the daemon's listener, which answers byte ranges (seeking); a page
 // whose policy has no `media-src` for that origin (the app's page scheme today) cannot play it.
+import { sha256 as incrementalSha256 } from "@noble/hashes/sha2.js";
 import type { PageClient } from "../shared/pageClient";
 import { HomeOps, type HomeAttachment, type HomeAttachmentSupport, type HomeDerivedImage } from "./types";
 
@@ -51,10 +52,9 @@ const BY_EXTENSION: Readonly<Record<string, string>> = {
   heic: "image/heic",
 };
 
-export const MAX_ATTACHMENT_BYTES = 100_000_000;
 export const MAX_ATTACHMENTS = 10;
-const PREVIEW_MAX_BYTES = 512_000;
-const POSTER_MAX_BYTES = 2_000_000;
+const PREVIEW_BYTES_LIMIT = 512_000;
+const POSTER_BYTES_LIMIT = 2_000_000;
 const PREVIEW_EDGE = 720;
 const POSTER_EDGE = 1280;
 /** Upload chunk (decoded): about 1.4 MB of base64 per frame. */
@@ -62,7 +62,7 @@ const CHUNK_BYTES = 1024 * 1024;
 /** Read chunk: a multiple of 3, so base64 pieces join into one string. */
 const READ_BYTES = 3 * 1024 * 1024;
 /** Images up to this size come back as data URLs; a larger one shows from its URL. */
-const DATA_URL_MAX_BYTES = 16_000_000;
+const DATA_URL_BYTES_LIMIT = 16_000_000;
 /** Image data URLs kept (least recently used goes first). */
 const IMAGE_CACHE_ENTRIES = 64;
 /** The longest wait for the browser to read a video's first frame. */
@@ -113,15 +113,14 @@ export function resolvedType(file: File, bytes: Uint8Array): string {
   const listed = attachmentType(file);
   if (listed) return listed;
   const prefix = bytes.subarray(0, SNIFF_BYTES);
-  return looksLikeText(prefix, prefix.length === bytes.length) ? "text/plain" : GENERIC_FILE_TYPE;
+  return looksLikeText(prefix, prefix.length === file.size) ? "text/plain" : GENERIC_FILE_TYPE;
 }
 
 export type Refusal = "size";
 
-/** Why the owner would refuse `file`, before any byte moves: only an empty file or one over the
- * size cap (any type attaches). */
+/** Why the owner would refuse `file`, before any byte moves: only an empty file is refused. */
 export function refusal(file: File): Refusal | undefined {
-  if (file.size <= 0 || file.size > MAX_ATTACHMENT_BYTES) return "size";
+  if (file.size <= 0) return "size";
   return undefined;
 }
 
@@ -139,6 +138,25 @@ export function formatBytes(bytes: number): string {
 async function sha256(bytes: ArrayBuffer | Uint8Array): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", bytes as BufferSource);
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+/** Hash bounded slices, yielding at each Blob read so cancellation can interrupt large originals. */
+export async function hashFile(file: File, signal?: AbortSignal): Promise<string> {
+  const hash = incrementalSha256.create();
+  const hashChunkBytes = 64 * 1024;
+  try {
+    for (let offset = 0; offset < file.size; offset += hashChunkBytes) {
+      signal?.throwIfAborted();
+      const chunk = new Uint8Array(await file.slice(offset, offset + hashChunkBytes).arrayBuffer());
+      signal?.throwIfAborted();
+      if (chunk.length !== Math.min(hashChunkBytes, file.size - offset)) throw new Error("short file read");
+      hash.update(chunk);
+    }
+    signal?.throwIfAborted();
+    return Array.from(hash.digest(), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  } finally {
+    hash.destroy();
+  }
 }
 
 function base64(bytes: Uint8Array): string {
@@ -186,11 +204,11 @@ async function imageFacts(file: File): Promise<Facts> {
   const bitmap = await createImageBitmap(file).catch(() => undefined);
   if (!bitmap) return {};
   const facts = { width: bitmap.width, height: bitmap.height };
-  const small = file.size <= PREVIEW_MAX_BYTES && Math.max(bitmap.width, bitmap.height) <= PREVIEW_EDGE;
+  const small = file.size <= PREVIEW_BYTES_LIMIT && Math.max(bitmap.width, bitmap.height) <= PREVIEW_EDGE;
   const preview =
     file.type === "image/gif" || small
       ? undefined
-      : await jpeg(bitmap, bitmap.width, bitmap.height, PREVIEW_EDGE, PREVIEW_MAX_BYTES).catch(() => undefined);
+      : await jpeg(bitmap, bitmap.width, bitmap.height, PREVIEW_EDGE, PREVIEW_BYTES_LIMIT).catch(() => undefined);
   bitmap.close();
   return preview ? { ...facts, preview } : facts;
 }
@@ -225,7 +243,7 @@ async function videoFacts(file: File): Promise<Facts> {
     const seeked = once("seeked");
     video.currentTime = Math.min(1, (video.duration || 0) / 10);
     if (!(await seeked) || !video.videoWidth) return facts;
-    const poster = await jpeg(video, video.videoWidth, video.videoHeight, POSTER_EDGE, POSTER_MAX_BYTES).catch(
+    const poster = await jpeg(video, video.videoWidth, video.videoHeight, POSTER_EDGE, POSTER_BYTES_LIMIT).catch(
       () => undefined,
     );
     return poster ? { ...facts, poster } : facts;
@@ -241,7 +259,12 @@ export interface UploadProgress {
   total: number;
 }
 
-type UploadReply = { upload?: string | null; needs?: string[]; stored?: unknown; received?: number };
+type UploadReply = {
+  upload?: string | null;
+  needs?: string[];
+  stored?: unknown;
+  received?: number;
+};
 
 /** The page's attachment work against one host: upload, read, link. One per page client. */
 export class AttachmentService {
@@ -267,31 +290,41 @@ export class AttachmentService {
     onProgress: (progress: UploadProgress) => void,
     signal?: AbortSignal,
   ): Promise<HomeAttachment> {
+    signal?.throwIfAborted();
     if (refusal(file)) throw new Error("refused");
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    const mimeType = resolvedType(file, bytes);
+    const prefix = new Uint8Array(await file.slice(0, Math.min(SNIFF_BYTES, file.size)).arrayBuffer());
+    const mimeType = resolvedType(file, prefix);
     const kind = attachmentClass(mimeType);
     const facts: Facts = kind === "image" ? await imageFacts(file) : kind === "video" ? await videoFacts(file) : {};
     const derived = facts.preview ?? facts.poster;
     const part: HomeAttachment = {
       type: "attachment",
-      hash: await sha256(bytes),
+      hash: await hashFile(file, signal),
       name: file.name,
       mimeType,
-      byteCount: bytes.length,
+      byteCount: file.size,
     };
     if (facts.width) part.width = facts.width;
     if (facts.height) part.height = facts.height;
     if (facts.durationMs !== undefined) part.durationMs = facts.durationMs;
     let derivedImage: HomeDerivedImage | undefined;
     if (derived) {
-      derivedImage = { hash: await sha256(derived.bytes), mimeType: derived.mimeType, byteCount: derived.bytes.length };
+      derivedImage = {
+        hash: await sha256(derived.bytes),
+        mimeType: derived.mimeType,
+        byteCount: derived.bytes.length,
+      };
       if (kind === "video") part.poster = derivedImage;
       else part.preview = derivedImage;
     }
     const declared = derivedImage
-      ? { sha256: derivedImage.hash, byte_count: derivedImage.byteCount, mime_type: derivedImage.mimeType }
+      ? {
+          sha256: derivedImage.hash,
+          byte_count: derivedImage.byteCount,
+          mime_type: derivedImage.mimeType,
+        }
       : undefined;
+    signal?.throwIfAborted();
     const begun = await this.client.call<UploadReply>(HomeOps.attachmentUpload, {
       op: "begin",
       conversation,
@@ -304,7 +337,7 @@ export class AttachmentService {
       ...(part.durationMs !== undefined ? { duration_ms: part.durationMs } : {}),
       ...(declared ? { [kind === "video" ? "poster" : "preview"]: declared } : {}),
     });
-    const total = bytes.length + (derived?.bytes.length ?? 0);
+    const total = file.size + (derived?.bytes.length ?? 0);
     // The conversation already holds these bytes (the first record of a hash wins: send what it kept).
     if (!begun.upload) {
       onProgress({ sent: total, total });
@@ -314,17 +347,33 @@ export class AttachmentService {
     let sent = 0;
     try {
       for (const piece of begun.needs ?? []) {
-        const data = piece === "original" ? bytes : derived?.bytes;
-        if (!data) throw new Error(`no bytes for ${piece}`);
-        for (let offset = 0; offset < data.length; offset += CHUNK_BYTES) {
+        const data = piece === "original" ? undefined : derived?.bytes;
+        if (piece !== "original" && !data) throw new Error(`no bytes for ${piece}`);
+        const size = piece === "original" ? file.size : data!.length;
+        for (let offset = 0; offset < size; offset += CHUNK_BYTES) {
           if (signal?.aborted) throw new DOMException("cancelled", "AbortError");
-          const chunk = data.subarray(offset, offset + CHUNK_BYTES);
-          await this.client.call(HomeOps.attachmentUpload, { op: "chunk", upload, piece, offset, data: base64(chunk) });
+          const chunk =
+            piece === "original"
+              ? new Uint8Array(await file.slice(offset, offset + CHUNK_BYTES).arrayBuffer())
+              : data!.subarray(offset, offset + CHUNK_BYTES);
+          signal?.throwIfAborted();
+          if (chunk.length !== Math.min(CHUNK_BYTES, size - offset)) throw new Error("short file read");
+          await this.client.call(HomeOps.attachmentUpload, {
+            op: "chunk",
+            upload,
+            piece,
+            offset,
+            data: base64(chunk),
+          });
           sent += chunk.length;
           onProgress({ sent, total });
         }
       }
-      const committed = await this.client.call<UploadReply>(HomeOps.attachmentUpload, { op: "commit", upload });
+      signal?.throwIfAborted();
+      const committed = await this.client.call<UploadReply>(HomeOps.attachmentUpload, {
+        op: "commit",
+        upload,
+      });
       onProgress({ sent: total, total });
       return kept(part, committed.stored);
     } catch (error) {
@@ -380,7 +429,7 @@ export class AttachmentService {
 
   /** Whether an image of this size comes back as a data URL (else from its URL). */
   static inline(byteCount: number): boolean {
-    return byteCount <= DATA_URL_MAX_BYTES;
+    return byteCount <= DATA_URL_BYTES_LIMIT;
   }
 
   private async readDataUrl(conversation: string, hash: string, variant: string): Promise<string> {
@@ -388,10 +437,12 @@ export class AttachmentService {
     let data = "";
     let mimeType = "application/octet-stream";
     for (;;) {
-      const read = await this.client.call<{ mimeType: string; data: string; eof: boolean; byteCount: number }>(
-        HomeOps.attachmentRead,
-        { conversation, hash, variant, offset, length: READ_BYTES },
-      );
+      const read = await this.client.call<{
+        mimeType: string;
+        data: string;
+        eof: boolean;
+        byteCount: number;
+      }>(HomeOps.attachmentRead, { conversation, hash, variant, offset, length: READ_BYTES });
       mimeType = read.mimeType || mimeType;
       // Whole base64 quanta only join: every read but the last is a multiple of 3 bytes.
       const padding = read.data.endsWith("==") ? 2 : read.data.endsWith("=") ? 1 : 0;
@@ -412,7 +463,13 @@ function kept(part: HomeAttachment, stored: unknown): HomeAttachment {
   if (!stored || typeof stored !== "object") return part;
   const record = stored as { poster?: Record<string, unknown>; preview?: Record<string, unknown> };
   const image = (raw?: Record<string, unknown>): HomeDerivedImage | undefined =>
-    raw ? { hash: String(raw.hash), mimeType: String(raw.mime_type), byteCount: Number(raw.byte_count) } : undefined;
+    raw
+      ? {
+          hash: String(raw.hash),
+          mimeType: String(raw.mime_type),
+          byteCount: Number(raw.byte_count),
+        }
+      : undefined;
   const { poster: _poster, preview: _preview, ...rest } = part;
   const result: HomeAttachment = { ...rest };
   const poster = image(record.poster);
