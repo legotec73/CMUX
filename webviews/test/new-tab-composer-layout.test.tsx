@@ -1,7 +1,7 @@
 // The New Tab composer and the agent composer are one card (Leo 2026-10-13: the field, its
 // selection and the project and model pickers under it read as illogical). As in the agent
-// composer (Composer.tsx): the field on top, then the bar with the agent's model chip and Send,
-// then the location row with the project, inside the same card. The project is never in the bar.
+// composer (Composer.tsx): the field and Send sit in the box, the model picker in the quiet
+// footer, and the location row above the box. The project is never in the action row.
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { JSDOM } from "jsdom";
 import { act } from "react";
@@ -21,6 +21,8 @@ const keys = [
   "getComputedStyle",
   "requestAnimationFrame",
   "cancelAnimationFrame",
+  "ResizeObserver",
+  "MutationObserver",
 ] as const;
 const saved = keys.map((key) => [key, key in scope, scope[key]] as const);
 let root: Root | undefined;
@@ -47,6 +49,8 @@ beforeAll(() => {
     getComputedStyle: window.getComputedStyle.bind(window),
     requestAnimationFrame: (run: (time: number) => void) => setTimeout(() => run(0), 0),
     cancelAnimationFrame: (id: number) => clearTimeout(id),
+    ResizeObserver: window.ResizeObserver,
+    MutationObserver: window.MutationObserver,
   });
   host = window.document.getElementById("root")!;
 });
@@ -117,7 +121,7 @@ test("Codex slash commands are available before the first message and selecting 
   expect(requests).toEqual(["codex"]);
 });
 
-test("the New Tab card is the composer's: the project strip on its top edge, then field, model and Send", async () => {
+test("the New Tab card keeps Send in the box and the model in the footer", async () => {
   await mount();
   const composer = host.querySelector<HTMLElement>(".nt-composer")!;
   const card = composer.querySelector<HTMLElement>(".nt-box")!;
@@ -127,14 +131,15 @@ test("the New Tab card is the composer's: the project strip on its top edge, the
   expect(parts.map((part) => part.className.split(" ")[0])).toEqual([
     "acpmux-composer-strip",
     "nt-field",
-    "acpmux-chips",
     "acpmux-send",
+    "acpmux-chips",
   ]);
   // The project is the location strip's (hq#1957 composer location strip), as in the agent
-  // composer: never in the card or its bar.
+  // composer. The model picker is below the card, and the location strip stays above it.
   const row = composer.querySelector<HTMLElement>(".acpmux-composer-strip .acpmux-composer-context")!;
   expect(row.textContent).toContain("app");
-  expect(card.querySelector(".acpmux-composer-context, .acpmux-location-button")).toBeNull();
+  expect(card.querySelector(".acpmux-composer-context, .acpmux-location-button, .acpmux-chips")).toBeNull();
+  expect(composer.querySelector(".acpmux-composer-foot .acpmux-chips")).not.toBeNull();
 });
 
 // Review (#20148): the composer's Computer menu listed a remote chat's machine, so the row could

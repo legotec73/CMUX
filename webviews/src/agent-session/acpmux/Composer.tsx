@@ -66,7 +66,7 @@ import { useComposerChrome } from "./composerChrome";
 import { useQueueing } from "./queueing";
 import { useMenuPressGuard } from "./menuPressGuard";
 import { useComposerSettings } from "./composerSettings";
-import { useComposerLook, useQuietRow } from "./composerLook";
+import { useComposerLook } from "./composerLook";
 import { LookSwitch } from "./LookSwitch";
 import { useEscapeStop } from "./escapeStop";
 import { usePromptHistory } from "./composer/promptHistory";
@@ -451,11 +451,11 @@ export function Composer({
   const locationSlotWasShown = useRef(false);
   const sendButton = useRef<HTMLButtonElement>(null);
   // Whether Esc stops a turn on a double press (escapeStop.ts).
-  const { showContextUsage, spellChecking, escapeDoublePress } = useComposerSettings();
-  // The composer's look (composerLook.ts): with Claude's, the default, and the plain footer the mode,
-  // model and effort sit in the quiet row and Send waits for a draft; Codex's keeps the box's one row.
+  const { showContextUsage, spellChecking, escapeDoublePress, plainFooter } = useComposerSettings();
+  // The model stays in the footer for both looks. Claude's action layout still waits for a draft;
+  // Codex's action layout keeps its existing Send and Stop behavior.
   const look = useComposerLook();
-  const quietRow = useQuietRow();
+  const quietActions = plainFooter && look === "claude";
   const usage = snapshot.summary?.usage;
   /// Set while the host has not yet taken a prompt the composer still holds: Enter sends no copy.
   const sending = useRef(false);
@@ -1824,14 +1824,14 @@ export function Composer({
                 <ReturnIcon />
               </button>
             )}
-            {quietRow && stopButton}
+            {quietActions && stopButton}
           </>
         }
         accessory={accessory}
         trailing={
-          !quietRow && stop ? (
+          !quietActions && stop ? (
             stopButton
-          ) : remote.canSend && (!quietRow || shell || (hasDraft && !(running && steerable))) ? (
+          ) : remote.canSend && (!quietActions || shell || (hasDraft && !(running && steerable))) ? (
             // Claude desktop's box (Leo 2026-10-20): no Send until there is a draft, the mic
             // alone on the right; Send comes in after it with the first letter. Mid-turn it
             // queues the draft, unless the ↵ control is there to put it into the turn.

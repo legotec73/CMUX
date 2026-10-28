@@ -503,16 +503,10 @@ export function NewTabScreen(props: Props) {
   const { plainFooter, spellChecking } = useComposerSettings();
   // The quiet row's labels step down with the composer's width, as the chat's (composerRowFit.ts).
   const foot = useRef<HTMLDivElement>(null);
-  // Claude Code's split (Leo 2026-10-19, "the claude code style composer on the first dot ... the
-  // existing composer on the second one"): with the plain footer on, every template but Default
-  // (the page's second dot) draws the chat composer's split, the mode, model and effort in a quiet
-  // row under the box. Default keeps the chips in the box, as before the split.
-  // Codex's look (the page's second dot, composerLook.ts) keeps them in the box's row too.
+  // The model picker keeps one place under the box, whether this is a fresh chat, a started chat,
+  // Claude's look or Codex's. The rest of each look still comes from composerLook.ts.
   const look = useComposerLook();
-  // Either look draws the chat composer's box (Cards too, its strip Codex's tray); only the plain
-  // footer off keeps Cards' pill.
-  const chatBox = plainFooter && props.chips !== undefined && template !== "default";
-  const split = chatBox && look === "claude";
+  const split = props.chips !== undefined;
   useRowFit(foot, split);
   // A press outside an open chip menu only closes it (menuPressGuard.ts).
   useMenuPressGuard();
@@ -1009,7 +1003,7 @@ export function NewTabScreen(props: Props) {
   const Chips = props.chips;
   /// The Cards template (u2851): the field is a pill of its own and the chips sit under it. The
   /// split draws the chat composer's box instead.
-  const pill = template === "cards" && !chatBox;
+  const pill = template === "cards" && !split;
   // Where the chat starts: the folder Enter asks in (askFolder), picked as in the agent composer's
   // location strip; never the home ~ the tab inherited (cx-7fje0).
   const folderStrip = (
@@ -1255,7 +1249,7 @@ export function NewTabScreen(props: Props) {
             a quiet row under the box; the box keeps the prompt, the mic and Send. */}
         {split && Chips && (
           <div className="nt-foot" onPointerDownCapture={touch}>
-            <ComposerFoot ref={foot}>
+            <ComposerFoot ref={foot} plain={plainFooter}>
               <Chips snapshot={chipSnapshot} {...(chatFolder ? { cwd: chatFolder } : {})} />
             </ComposerFoot>
           </div>

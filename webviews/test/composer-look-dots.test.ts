@@ -6,15 +6,15 @@
 // - The New Tab page shows three dots under it (Leo 2026-10-23: "1 CLAUDE MINIMAL / 2 CLAUDE MINIMAL
 //   + NEW TAB/TERMINAL/WHATEVER / 3 CODEX MINIMAL"; newtab/tabDots.ts): Claude Minimal checked by
 //   default; the second adds the quick action pills under Claude's composer; the third gives the
-//   composer Codex's look (data-composer-look="codex"): the model sits in the box's own row, no
-//   quiet row under it, and no pills. Arrow keys move across the three. The pick is remembered
+//   composer Codex's look (data-composer-look="codex"): the model stays in the shared footer,
+//   and the quick action pills go away. Arrow keys move across the three. The pick is remembered
 //   across a reload.
 // - On another page style (Classic) the dots switch the look only: the page keeps its style, whose
 //   own dot (Minimal among them) stays marked, and draws the look; Cards draws Codex's tray.
 // - In a chat the same two dots sit in the composer's bottom area, unseen until the pointer is over
 //   that area. The second dot switches the chat composer's look: the form takes
-//   data-composer-look="codex", the mode and model move into the box, and the quiet row goes; the
-//   dots then sit in the band under the box and the first dot brings Claude's look back.
+//   data-composer-look="codex", while the mode and model keep their place in the shared footer;
+//   the first dot brings Claude's look back.
 //
 // Real Chromium on the gallery stage. CI fails the file when it cannot launch it
 // (requireBrowserLane). Locally: CMUX_BROWSER_TESTS=1 bun test test/composer-look-dots.test.ts
@@ -176,13 +176,13 @@ await requireBrowserLane("composer-look-dots.test.ts", async () => {
     expect(await page.$(".nt-style:not(.nt-look-dots) input[value=minimal]")).not.toBeNull();
 
     // The saved look holds when Classic opens again, and on Cards: the strip is Codex's tray over
-    // the box, the model in the box's row, not Cards' pill.
+    // the box, while the model stays in the footer.
     await page.reload();
     await ready(page);
     await page.waitForSelector('.acpmux-newtab[data-composer-look="codex"]');
     await open(page, "agent-pane.new-tab", "template-cards");
-    await page.waitForSelector('.nt-composer[data-composer-look="codex"] > .nt-above');
-    expect(await page.$(".nt-composer .nt-toolbar")).toBeNull();
+    await page.waitForSelector('.nt-composer[data-composer-look="codex"] .acpmux-composer-foot .acpmux-model');
+    expect(await page.$(".nt-composer .acpmux-composer-foot .acpmux-model")).not.toBeNull();
     expect(await page.$(".nt-composer .nt-box .acpmux-model")).toBeNull();
     expect(await page.$(".nt-composer .acpmux-composer-foot .acpmux-model")).not.toBeNull();
     await context.close();
@@ -216,11 +216,11 @@ await requireBrowserLane("composer-look-dots.test.ts", async () => {
     expect(await page.$(`${form} .acpmux-composer-foot .acpmux-model`)).not.toBeNull();
     expect(await page.$(`${form} .acpmux-composer-foot .acpmux-access`)).not.toBeNull();
 
-    // Codex's look: the dots in the band under the box, shown on hover there; the first dot goes back.
+    // The same footer remains under Codex's look, so its hover target stays in one place.
     await page.mouse.move(1, 1);
     expect(await shown(page, form)).toBe(false);
-    const under = (await (await page.$(`${form} .acpmux-composer-under`))!.boundingBox())!;
-    await page.mouse.move(under.x + under.width * 0.35, under.y + under.height / 2);
+    const codexFoot = (await (await page.$(`${form} .acpmux-composer-foot`))!.boundingBox())!;
+    await page.mouse.move(codexFoot.x + codexFoot.width * 0.35, codexFoot.y + codexFoot.height / 2);
     expect(await shown(page, form)).toBe(true);
     await pickDot(page, form, "claude");
     await page.waitForFunction((selector) => !document.querySelector(`${selector}[data-composer-look]`), form);
