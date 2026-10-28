@@ -157,7 +157,7 @@ export function Combobox({
   const enabledSuggestions = suggestions.filter(
     (item) => !isItemDisabled?.(item) && !pinnedSuggestions?.includes(item),
   );
-  const disabledSuggestions = suggestions.filter((item) => isItemDisabled?.(item));
+  const disabledSuggestions = suggestions.filter((item) => isItemDisabled?.(item) && !pinnedSuggestions?.includes(item));
   const update = (next: string) => {
     setValue(next);
     onQuery(next);
