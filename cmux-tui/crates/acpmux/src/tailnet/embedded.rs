@@ -50,6 +50,23 @@ impl Snapshot {
     }
 
     fn apply_notify(&mut self, notify: &Notify, node: Option<&Node>) {
+        let needs_live_identity =
+            self.running() || notify.backend_state() == Some(BackendState::Running);
+        let live_identity = if needs_live_identity {
+            node.and_then(|node| {
+                let status = node.status().ok()?;
+                let dns_name = status.dns_name();
+                let ips =
+                    if dns_name.is_some() { node.ips().unwrap_or_default() } else { Vec::new() };
+                Some(LiveIdentity { state: status.state(), dns_name, ips })
+            })
+        } else {
+            None
+        };
+        self.apply_notify_with_status(notify, live_identity);
+    }
+
+    fn apply_notify_with_status(&mut self, notify: &Notify, live_identity: Option<LiveIdentity>) {
         if let Some(url) = notify.browse_to_url.as_deref().filter(|url| !url.is_empty()) {
             self.browse_to_url = Some(url.to_owned());
         }
@@ -70,12 +87,9 @@ impl Snapshot {
         // BackendState. Refresh while already running so ingress follows a
         // renamed node instead of retaining an unusable old certificate name.
         if self.running()
-            && let Some(node) = node
-            && let Ok(status) = node.status()
+            && let Some(LiveIdentity { state, dns_name, ips }) = live_identity
         {
-            let dns_name = status.dns_name();
-            let ips = if dns_name.is_some() { node.ips().unwrap_or_default() } else { Vec::new() };
-            self.apply_live_identity(status.state(), dns_name, ips);
+            self.apply_live_identity(state, dns_name, ips);
         }
     }
 
@@ -97,6 +111,13 @@ impl Snapshot {
             self.error = None;
         }
     }
+}
+
+#[derive(Debug)]
+struct LiveIdentity {
+    state: BackendState,
+    dns_name: Option<String>,
+    ips: Vec<String>,
 }
 
 fn state_name(state: BackendState) -> &'static str {
@@ -392,15 +413,29 @@ mod tests {
     #[test]
     fn a_running_name_notification_refresh_clears_a_stale_identity() {
         // NetMap rename notifications have no BackendState. The watcher
-        // supplies the live status separately, so a missing name must stop
-        // ingress from using the old certificate/SNI identity.
+        // supplies the live status separately, so the actual notification
+        // path must replace the old certificate/SNI identity.
         let mut snapshot = Snapshot {
             state: "running",
             dns_name: Some("old.example.ts.net".into()),
             ips: vec!["100.64.0.1".into()],
             ..Snapshot::default()
         };
-        snapshot.apply_live_identity(BackendState::Running, None, vec![]);
+        snapshot.apply_notify_with_status(
+            &Notify::default(),
+            Some(LiveIdentity {
+                state: BackendState::Running,
+                dns_name: Some("new.example.ts.net".into()),
+                ips: vec!["100.64.0.2".into()],
+            }),
+        );
+        assert_eq!(snapshot.dns_name.as_deref(), Some("new.example.ts.net"));
+        assert_eq!(snapshot.ips, ["100.64.0.2"]);
+
+        snapshot.apply_notify_with_status(
+            &Notify::default(),
+            Some(LiveIdentity { state: BackendState::Running, dns_name: None, ips: vec![] }),
+        );
         assert_eq!(snapshot.state, "running");
         assert!(snapshot.dns_name.is_none());
         assert!(snapshot.ips.is_empty());
