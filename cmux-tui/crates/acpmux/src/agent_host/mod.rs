@@ -53,7 +53,8 @@ pub(crate) async fn spared_under(pid: Option<u32>, hosted: bool) -> Vec<SparedPr
         let found = tokio::task::spawn_blocking(move || tree::descendants(&[pid]))
             .await
             .unwrap_or_default();
-        let spared = |p: tree::Started| SparedProcess { pid: p.pid, start: p.start().into(), hosted };
+        let spared =
+            |p: tree::Started| SparedProcess { pid: p.pid, start: p.start().into(), hosted };
         return found.into_iter().map(spared).collect();
     }
     let _ = (pid, hosted);
