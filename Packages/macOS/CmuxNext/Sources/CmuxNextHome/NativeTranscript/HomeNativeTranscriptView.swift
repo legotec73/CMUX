@@ -182,6 +182,7 @@ public final class HomeNativeTranscriptView: NSView {
         followBubbleStyle()
         followHeroTunable()
         followChiefPet()
+        followPresence()
         applyTheme()
         followTopFadeStyle()
         updateFirstRun()
