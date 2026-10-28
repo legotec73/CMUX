@@ -43,5 +43,35 @@ struct KeychainStackTokenStoreTests {
         )
         #expect(result as? Data == unrelatedToken)
     }
+
+    /// https://github.com/manaflow-ai/cmux/issues/25628: a Keychain read that
+    /// A status other than success or item-not-found is not an empty store, so
+    /// session restore must preserve the cached session until the Keychain can
+    /// answer definitively. This includes a missing entitlement: the file
+    /// fallback may contain the only copy of the session.
+    @Test func onlyDefinitiveReadStatusesCountAsReadable() {
+        #expect(KeychainStackTokenStore.isDefinitiveReadStatus(errSecSuccess))
+        #expect(KeychainStackTokenStore.isDefinitiveReadStatus(errSecItemNotFound))
+        #expect(!KeychainStackTokenStore.isDefinitiveReadStatus(errSecInteractionNotAllowed))
+        #expect(!KeychainStackTokenStore.isDefinitiveReadStatus(errSecNotAvailable))
+        #expect(!KeychainStackTokenStore.isDefinitiveReadStatus(errSecMissingEntitlement))
+        #expect(!KeychainStackTokenStore.isDefinitiveReadStatus(errSecDecode))
+        #expect(!KeychainStackTokenStore.isDefinitiveReadStatus(errSecParam))
+    }
+
+    @Test func fileFallbackStoreIsAlwaysReadable() async {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cmux-fallback-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = FileStackTokenStore(directory: directory)
+        await file.setTokens(accessToken: "access", refreshToken: "refresh")
+        let store = FallbackTokenStore(
+            primary: KeychainStackTokenStore(service: "cmux-test-empty-\(UUID().uuidString)"),
+            fallback: file
+        )
+        // The Keychain has nothing, so the read routes to the file store.
+        #expect(await store.getStoredRefreshToken() == "refresh")
+        #expect(await store.isTokenStorageAvailable())
+    }
     #endif
 }
