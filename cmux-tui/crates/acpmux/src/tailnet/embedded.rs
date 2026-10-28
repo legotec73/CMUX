@@ -6,6 +6,7 @@
 //! acpmux pairing store.
 
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use cmux_tailnet::{BackendState, Node, NodeConfig, Notify};
@@ -106,6 +107,7 @@ pub struct Controller {
     inner: Mutex<Inner>,
     changes: broadcast::Sender<Snapshot>,
     lifecycle: tokio::sync::Mutex<()>,
+    stopping: Arc<AtomicBool>,
 }
 
 impl Controller {
@@ -122,6 +124,7 @@ impl Controller {
             }),
             changes,
             lifecycle: tokio::sync::Mutex::new(()),
+            stopping: Arc::new(AtomicBool::new(false)),
         })
     }
 
@@ -139,10 +142,72 @@ impl Controller {
         self.inner.lock().unwrap_or_else(PoisonError::into_inner).node.clone()
     }
 
+    /// Resume only a saved explicit opt-in; an untouched installation creates nothing.
+    pub async fn resume(self: &Arc<Self>) -> Result<(), String> {
+        let controller = self.clone();
+        tokio::spawn(async move { controller.resume_serialized().await })
+            .await
+            .map_err(|error| error.to_string())?
+    }
+
+    async fn resume_serialized(self: &Arc<Self>) -> Result<(), String> {
+        let _lifecycle = self.lifecycle.lock().await;
+        let path = self.state_dir.join("enabled");
+        let enabled = tokio::task::spawn_blocking(move || saved_opt_in(&path))
+            .await
+            .map_err(|e| e.to_string())??;
+        if enabled {
+            self.start_locked().await?;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn note_listener_error(&self) {
+        let mut inner = self.inner.lock().unwrap_or_else(PoisonError::into_inner);
+        if self.stopping.load(Ordering::Acquire) {
+            return;
+        }
+        inner.snapshot.state = "error";
+        inner.snapshot.error =
+            Some("The tailnet listener stopped. Start it again to retry.".into());
+        self.publish_locked(&inner.snapshot);
+    }
+
+    pub(crate) fn begin_shutdown(&self) {
+        let mut inner = self.inner.lock().unwrap_or_else(PoisonError::into_inner);
+        self.stopping.store(true, Ordering::Release);
+        inner.generation = inner.generation.wrapping_add(1);
+        inner.snapshot.state = "stopped";
+        self.publish_locked(&inner.snapshot);
+    }
+
+    pub(crate) async fn listener_failed(&self, failed: &Arc<Node>) {
+        let _lifecycle = self.lifecycle.lock().await;
+        if !self.node().is_some_and(|node| Arc::ptr_eq(&node, failed)) {
+            return;
+        }
+        let _ = self.shutdown_locked().await;
+        self.note_listener_error();
+    }
+
     /// Start the node without waiting for login. A saved login resumes; an
     /// unsigned node reports `needs_login` and its URL through `state`.
     pub async fn start(self: &Arc<Self>) -> Result<Snapshot, String> {
-        let _lifecycle = self.lifecycle.lock().await;
+        // Complete the state transition even when a requesting connection goes
+        // away. Dropping spawn_blocking's waiter cannot cancel node creation.
+        let controller = self.clone();
+        tokio::spawn(async move {
+            let _lifecycle = controller.lifecycle.lock().await;
+            controller.start_locked().await
+        })
+        .await
+        .map_err(|error| error.to_string())?
+    }
+
+    async fn start_locked(self: &Arc<Self>) -> Result<Snapshot, String> {
+        if self.stopping.load(Ordering::Acquire) {
+            return Err("tailnet service is stopping".into());
+        }
         let generation;
         {
             let mut inner = self.inner.lock().unwrap_or_else(PoisonError::into_inner);
@@ -157,24 +222,41 @@ impl Controller {
         }
         let state_dir = self.state_dir.clone();
         let hostname = self.hostname.clone();
+        let stopping = self.stopping.clone();
         let node = match tokio::task::spawn_blocking(move || {
+            if stopping.load(Ordering::Acquire) {
+                return Err("tailnet service is stopping".to_owned());
+            }
+            crate::config::private_state_dir(&state_dir).map_err(|e| e.to_string())?;
+            let enabled = state_dir.join("enabled");
             let config = NodeConfig::new(state_dir, hostname);
             let node = Node::new(&config).map_err(|error| error.0)?;
             node.start().map_err(|error| error.0)?;
+            crate::config::write_atomic(&enabled, b"1\n").map_err(|e| e.to_string())?;
+            if stopping.load(Ordering::Acquire) {
+                let _ = node.close();
+                return Err("tailnet service is stopping".to_owned());
+            }
             Ok::<_, String>(Arc::new(node))
         })
         .await
-        .map_err(|error| error.to_string())?
+        .unwrap_or_else(|error| Err(error.to_string()))
         {
             Ok(node) => node,
             Err(error) => {
-                self.clear_node("error");
-                self.update(|snapshot| snapshot.error = Some(error.clone()));
+                self.start_failed(generation, &error);
                 return Err(error);
             }
         };
         {
             let mut inner = self.inner.lock().unwrap_or_else(PoisonError::into_inner);
+            if self.stopping.load(Ordering::Acquire) {
+                inner.starting = false;
+                tokio::task::spawn_blocking(move || {
+                    let _ = node.close();
+                });
+                return Err("tailnet service is stopping".into());
+            }
             inner.starting = false;
             inner.node = Some(node.clone());
         }
@@ -192,6 +274,17 @@ impl Controller {
         Ok(self.snapshot())
     }
 
+    fn start_failed(&self, generation: u64, error: &str) {
+        let mut inner = self.inner.lock().unwrap_or_else(PoisonError::into_inner);
+        if inner.generation != generation || self.stopping.load(Ordering::Acquire) {
+            return;
+        }
+        inner.starting = false;
+        inner.snapshot =
+            Snapshot { state: "error", error: Some(error.to_owned()), ..Snapshot::default() };
+        self.publish_locked(&inner.snapshot);
+    }
+
     /// Request an explicit browser sign-in URL for a running unsigned node.
     pub async fn login(&self) -> Result<Snapshot, String> {
         let _lifecycle = self.lifecycle.lock().await;
@@ -206,15 +299,15 @@ impl Controller {
     /// Sign out and close all ingress listeners that hold this node.
     pub async fn logout(&self) -> Result<Snapshot, String> {
         let _lifecycle = self.lifecycle.lock().await;
-        {
-            let mut inner = self.inner.lock().unwrap_or_else(PoisonError::into_inner);
-            inner.generation = inner.generation.wrapping_add(1);
-        }
-        let node = self.node();
-        if let Some(node) = node {
+        let path = self.state_dir.join("enabled");
+        tokio::task::spawn_blocking(move || clear_opt_in(&path))
+            .await
+            .map_err(|e| e.to_string())??;
+        if let Some(node) = self.retire_node() {
             let result = tokio::task::spawn_blocking(move || {
-                node.logout().map_err(|e| e.0)?;
-                node.close().map_err(|e| e.0)
+                let logout = node.logout().map_err(|e| e.0);
+                let close = node.close().map_err(|e| e.0);
+                logout.and(close)
             })
             .await
             .map_err(|error| error.to_string())?;
@@ -231,11 +324,11 @@ impl Controller {
     /// Close without deleting the saved login, used by daemon shutdown.
     pub async fn shutdown(&self) -> Result<(), String> {
         let _lifecycle = self.lifecycle.lock().await;
-        {
-            let mut inner = self.inner.lock().unwrap_or_else(PoisonError::into_inner);
-            inner.generation = inner.generation.wrapping_add(1);
-        }
-        if let Some(node) = self.node() {
+        self.shutdown_locked().await
+    }
+
+    async fn shutdown_locked(&self) -> Result<(), String> {
+        if let Some(node) = self.retire_node() {
             let result = tokio::task::spawn_blocking(move || node.close().map_err(|e| e.0))
                 .await
                 .map_err(|error| error.to_string())?;
@@ -247,6 +340,18 @@ impl Controller {
         }
         self.clear_node("stopped");
         Ok(())
+    }
+
+    // Publish stop before awaiting network work. Cancelling the caller must
+    // never leave a closed node registered or its listener advertised as live.
+    fn retire_node(&self) -> Option<Arc<Node>> {
+        let mut inner = self.inner.lock().unwrap_or_else(PoisonError::into_inner);
+        inner.generation = inner.generation.wrapping_add(1);
+        inner.starting = false;
+        inner.snapshot = Snapshot { state: "stopped", ..Snapshot::default() };
+        let node = inner.node.take();
+        self.publish_locked(&inner.snapshot);
+        node
     }
 
     fn watch(self: Arc<Self>, node: Arc<Node>, generation: u64) {
@@ -336,9 +441,95 @@ pub fn state_dir(home: &Path) -> PathBuf {
     home.join("tailnet")
 }
 
+fn saved_opt_in(path: &Path) -> Result<bool, String> {
+    match std::fs::read(path) {
+        Ok(value) => Ok(value == b"1\n"),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(error.to_string()),
+    }
+}
+
+fn clear_opt_in(path: &Path) -> Result<(), String> {
+    match std::fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error.to_string()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tailnet_late_start_failure_cannot_replace_shutdown_state() {
+        let temporary = tempfile::tempdir().unwrap();
+        let controller = Controller::new(temporary.path(), "test");
+        let generation = controller.inner.lock().unwrap().generation;
+        controller.start_failed(generation, "start failed");
+        assert_eq!(controller.snapshot().state, "error");
+        controller.begin_shutdown();
+        controller.start_failed(generation, "late start failed");
+        assert_eq!(controller.snapshot().state, "stopped");
+    }
+
+    #[tokio::test]
+    async fn tailnet_shutdown_fences_a_queued_start_before_node_creation() {
+        let temporary = tempfile::tempdir().unwrap();
+        let path = temporary.path().join("tailnet");
+        let controller = Controller::new(&path, "test");
+        let lock = controller.lifecycle.lock().await;
+        let queued = controller.clone();
+        let start = tokio::spawn(async move { queued.start().await });
+        tokio::task::yield_now().await;
+        controller.begin_shutdown();
+        controller.note_listener_error();
+        assert_eq!(controller.snapshot().state, "stopped");
+        drop(lock);
+        assert!(start.await.unwrap().is_err());
+        assert!(controller.node().is_none());
+        assert!(!path.exists());
+    }
+
+    #[tokio::test]
+    async fn tailnet_resume_does_not_create_state_without_opt_in() {
+        let temporary = tempfile::tempdir().unwrap();
+        let path = temporary.path().join("tailnet");
+        let controller = Controller::new(&path, "test");
+        controller.resume().await.unwrap();
+        assert!(controller.node().is_none());
+        assert!(!path.exists());
+    }
+
+    #[tokio::test]
+    async fn tailnet_logout_clears_opt_in_before_any_later_resume() {
+        let temporary = tempfile::tempdir().unwrap();
+        let marker = temporary.path().join("enabled");
+        std::fs::write(&marker, b"1\n").unwrap();
+        let controller = Controller::new(temporary.path(), "test");
+        controller.shutdown().await.unwrap();
+        assert!(saved_opt_in(&marker).unwrap());
+        controller.logout().await.unwrap();
+        assert!(!saved_opt_in(&marker).unwrap());
+        controller.resume().await.unwrap();
+        assert!(controller.node().is_none());
+    }
+
+    #[tokio::test]
+    async fn tailnet_resume_rechecks_opt_in_after_waiting_for_lifecycle() {
+        let temporary = tempfile::tempdir().unwrap();
+        let marker = temporary.path().join("enabled");
+        std::fs::write(&marker, b"1\n").unwrap();
+        let controller = Controller::new(temporary.path(), "test");
+        let lock = controller.lifecycle.lock().await;
+        let queued = controller.clone();
+        let resume = tokio::spawn(async move { queued.resume().await });
+        tokio::task::yield_now().await;
+        clear_opt_in(&marker).unwrap();
+        drop(lock);
+        resume.await.unwrap().unwrap();
+        assert!(controller.node().is_none());
+    }
 
     #[test]
     fn sign_in_url_is_redacted_for_non_person_consumers() {
