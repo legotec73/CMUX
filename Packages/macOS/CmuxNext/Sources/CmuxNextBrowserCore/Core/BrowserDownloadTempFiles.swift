@@ -104,7 +104,6 @@ public final class BrowserDownloadTempFiles {
         }
 
         private func write(_ paths: Set<String>) {
-            let manager = FileManager.default
             if paths.isEmpty {
                 try? manager.removeItem(at: recordURL)
                 return
@@ -119,7 +118,7 @@ public final class BrowserDownloadTempFiles {
         private static func deleteLeftover(_ path: String) {
             guard path.hasPrefix("/"), path.hasSuffix(".cmuxdownload") else { return }
             for candidate in [path, path + ".crdownload"] where isRegularFile(candidate) {
-                unlink(candidate)
+                _ = blockingUnlink(candidate)
             }
         }
 
@@ -127,7 +126,7 @@ public final class BrowserDownloadTempFiles {
         /// symlink (to anything), a directory or a missing path.
         private static func isRegularFile(_ path: String) -> Bool {
             var info = stat()
-            return lstat(path, &info) == 0 && (info.st_mode & S_IFMT) == S_IFREG
+            return blockingLstat(path, &info) == 0 && (info.st_mode & S_IFMT) == S_IFREG
         }
     }
 

@@ -1,4 +1,5 @@
 public import Foundation
+import CmuxNextCompat
 
 /// Finder's rule for what a drop does: on the same volume it moves, onto
 /// another it copies; holding Option copies, holding Command moves.
@@ -11,7 +12,7 @@ public struct DropPolicy: Sendable {
         var info = stat()
         // SAFETY: stat reads the NUL-terminated copy of the path made for the call and writes one struct stat into
         // `info`, a local live for the call.
-        return unsafe stat(url.path, &info) == 0 ? Int(info.st_dev) : nil
+        return unsafe blockingStat(url.path, &info) == 0 ? Int(info.st_dev) : nil
     }) {
         self.volumeOf = volumeOf
     }
