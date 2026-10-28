@@ -179,6 +179,81 @@ ${css}
         await page.close();
       });
 
+      test("the horizontal harness strip snaps whole items for 3, 8 and 15 entries", async () => {
+        for (const count of [3, 8, 15]) {
+          const page = await open(200);
+          await page.$eval(
+            ".acpmux-mp-rail-list",
+            (list, total) => {
+              list.innerHTML = Array.from(
+                { length: total as number },
+                (_, index) =>
+                  '<button class="acpmux-mp-rail-tab grid size-8 flex-none" data-tab-index="' +
+                  index +
+                  '" style="width:32px;height:32px;flex:none">Harness ' +
+                  (index + 1) +
+                  "</button>",
+              ).join("");
+            },
+            count,
+          );
+          const geometry = await page.$eval(".acpmux-mp-rail-viewport", (node) => {
+            const viewport = node as HTMLElement;
+            const tabs = [...viewport.querySelectorAll<HTMLElement>(".acpmux-mp-rail-tab")];
+            const viewportBox = viewport.getBoundingClientRect();
+            const visible = tabs.filter((tab) => {
+              const box = tab.getBoundingClientRect();
+              return box.right > viewportBox.left && box.left < viewportBox.right;
+            });
+            const gaps = tabs.slice(1).map((tab, index) => {
+              const previous = tabs[index]!.getBoundingClientRect();
+              return tab.getBoundingClientRect().left - previous.right;
+            });
+            return {
+              count: tabs.length,
+              clientWidth: viewport.clientWidth,
+              scrollWidth: viewport.scrollWidth,
+              visible: visible.map((tab) => {
+                const box = tab.getBoundingClientRect();
+                return { left: box.left, right: box.right };
+              }),
+              viewport: { left: viewportBox.left, right: viewportBox.right },
+              gaps,
+              snapType: getComputedStyle(viewport).scrollSnapType,
+              snapPadding: getComputedStyle(viewport).scrollPaddingInlineStart,
+              tabSnap: getComputedStyle(tabs[0]!).scrollSnapAlign,
+              maskImage: getComputedStyle(viewport).maskImage,
+            };
+          });
+          expect(geometry.count).toBe(count);
+          expect(geometry.snapType).toContain("mandatory");
+          expect(geometry.snapPadding).toBe("6px");
+          expect(geometry.tabSnap).toContain("start");
+          expect(geometry.maskImage).toContain("linear-gradient");
+          expect(new Set(geometry.gaps.map((gap) => Math.round(gap))).size).toBe(1);
+          expect(geometry.visible.every((tab) => tab.right - tab.left >= 31.5)).toBe(true);
+          await page.$eval(".acpmux-mp-rail-viewport", (node) => {
+            const viewport = node as HTMLElement;
+            viewport.scrollLeft = viewport.scrollWidth;
+          });
+          const end = await page.$eval(".acpmux-mp-rail-viewport", (node) => {
+            const viewport = node as HTMLElement;
+            const viewportBox = viewport.getBoundingClientRect();
+            return [...viewport.querySelectorAll<HTMLElement>(".acpmux-mp-rail-tab")]
+              .filter((tab) => {
+                const box = tab.getBoundingClientRect();
+                return box.right > viewportBox.left && box.left < viewportBox.right;
+              })
+              .map((tab) => {
+                const box = tab.getBoundingClientRect();
+                return { left: box.left, right: box.right };
+              });
+          });
+          expect(end.every((tab) => tab.right - tab.left >= 31.5)).toBe(true);
+          await page.close();
+        }
+      });
+
       test("the portaled location menu gets the pane's menu surface, not a clear background", async () => {
         const page = await open(1000);
         const background = await page.$eval(

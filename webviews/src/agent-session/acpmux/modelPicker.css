@@ -68,12 +68,29 @@
     border-inline-end: 0;
     border-block-end: 0.5px solid var(--ui-line, color-mix(in srgb, var(--agent-text) 12%, transparent));
   }
+  /* The narrow picker is a horizontal harness strip. Each release must settle on a
+     whole item so an icon is never stranded halfway through either edge. */
+  .acpmux-mp-rail-viewport {
+    scroll-snap-type: inline mandatory;
+    scroll-snap-stop: always;
+    scroll-padding-inline: 6px;
+    /* A partially visible edge item is an intentional peek, softened at both edges. */
+    mask-image: linear-gradient(to right, transparent 0, #000 10px, #000 calc(100% - 10px), transparent 100%);
+  }
   .acpmux-mp-rail-list {
     width: max-content;
     min-width: 100%;
     flex-direction: row !important;
     align-items: center;
     padding: 6px;
+    gap: 4px;
+  }
+  .acpmux-mp-rail-list > .acpmux-mp-rail-tab {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    inline-size: 32px;
+    min-inline-size: 32px;
+    max-inline-size: 32px;
   }
   .acpmux-mp-content {
     width: 100%;
