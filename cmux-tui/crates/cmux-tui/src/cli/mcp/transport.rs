@@ -107,6 +107,14 @@ pub(super) fn resource(
         })?;
     let _ = stream.set_read_timeout(Some(wire::SERVER_PREFLIGHT_TIMEOUT));
     let mut reader = BufReader::new(stream);
+    super::super::tab_capabilities::negotiate(&mut reader).map_err(|failure| match failure {
+        resolve::Failure::Resource(error) => {
+            CallFailure { kind: NotRun, error, idempotency_key: key.clone() }
+        }
+        resolve::Failure::Transport(message) => fail(NotRun, "transport.failed", message),
+        resolve::Failure::Refused => fail(NotRun, "session.busy", "session is busy".into()),
+        _ => fail(NotRun, "transport.failed", "client capability negotiation failed".into()),
+    })?;
     if !prefixes.is_empty() {
         let params = plan.params.as_object_mut().expect("validated params object");
         let route = ["machine", "session"]
@@ -133,6 +141,7 @@ pub(super) fn resource(
                 resolve::Failure::Resource(error) => {
                     CallFailure { kind: NotRun, error, idempotency_key: key.clone() }
                 }
+                resolve::Failure::Refused => fail(NotRun, "session.busy", "session is busy".into()),
                 _ => fail(NotRun, "transport.failed", "lookup failed".into()),
             })?;
             let id = unique_prefix(&prefix.field, &value, &records).map_err(|error| {
@@ -223,7 +232,24 @@ pub(super) fn session_events(
             let message = format!("cannot connect to session socket {}: {error}", socket.display());
             local("transport.unavailable", message)
         })?;
+    let left = deadline.saturating_duration_since(Instant::now());
+    if left.is_zero() {
+        return Ok(());
+    }
+    let _ = stream.set_read_timeout(Some(left.min(wire::SERVER_PREFLIGHT_TIMEOUT)));
     let mut reader = BufReader::new(stream);
+    let negotiated = super::super::tab_capabilities::negotiate(&mut reader);
+    if Instant::now() >= deadline {
+        return Ok(());
+    }
+    negotiated.map_err(|failure| match failure {
+        resolve::Failure::Resource(error) => {
+            CallFailure { kind: NotRun, error, idempotency_key: None }
+        }
+        resolve::Failure::Transport(message) => local("transport.failed", message),
+        resolve::Failure::Refused => local("session.busy", "session is busy".into()),
+        _ => local("transport.failed", "client capability negotiation failed".into()),
+    })?;
     let encoded = resolve::encode_request_bytes(&request)
         .map_err(|message| local("validation.invalid", message))?;
     resolve::send(&mut reader, &encoded).map_err(|message| local("transport.failed", message))?;
@@ -294,6 +320,10 @@ fn app_open_failure(failure: resolve::Failure, key: Option<&str>) -> CallFailure
         resolve::Failure::Transport(message) => (
             InProgress,
             json!({"code": "transport.failed", "message": message, "details": {}, "retryable": true}),
+        ),
+        resolve::Failure::Refused => (
+            NotRun,
+            json!({"code": "session.busy", "message": "session is busy", "details": {}, "retryable": true}),
         ),
         resolve::Failure::AppAction { action, .. } => (
             NotRun,
@@ -517,3 +547,7 @@ mod tests {
         assert!(!is_partial_id("ws_XY", "ws"));
     }
 }
+
+#[cfg(all(test, unix))]
+#[path = "transport_capabilities_tests.rs"]
+mod capabilities_tests;
