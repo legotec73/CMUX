@@ -11,6 +11,24 @@ pub struct Started {
     start: String,
 }
 
+impl Started {
+    /// Its start time, as `ps` printed it.
+    pub fn start(&self) -> &str {
+        &self.start
+    }
+
+    /// A process by pid and start time; ending it needs no parent.
+    pub fn of(pid: u32, start: String) -> Self {
+        Started { pid, ppid: 0, start }
+    }
+}
+
+/// Whether each of `procs` still runs as the same process.
+pub fn still_running(procs: &[Started]) -> Vec<bool> {
+    let table = process_table();
+    procs.iter().map(|p| table.iter().any(|now| now.pid == p.pid && now.start == p.start)).collect()
+}
+
 /// Every process, from `ps`; empty when `ps` fails.
 fn process_table() -> Vec<Started> {
     let Ok(out) =

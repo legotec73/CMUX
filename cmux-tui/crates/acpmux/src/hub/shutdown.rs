@@ -77,13 +77,11 @@ impl Hub {
         // proof, the same fallback as closing the session.
         let mut host_fallback = Vec::new();
         let mut unreached = 0;
-        let mut spared = Vec::new();
         for s in &sessions {
             let ends = end_agents && !keep.contains(&s.id);
-            {
-                let mut own = s.idle_spared.lock().unwrap_or_else(|e| e.into_inner());
-                spared.extend(own.extract_if(.., |(hosted, _)| ends || !*hosted).map(|(_, p)| p));
-            }
+            // What retirements spared ends as its agent would: a direct one's always, a hosted
+            // one's when agents end (else it stays on the record for the next daemon's stop).
+            self.end_spared(s, |p| ends || !p.hosted).await;
             let Ok(mut slot) = tokio::time::timeout(LOCK, s.child.lock()).await else {
                 // The child cannot be reached here. Detach mode leaves it and
                 // its permission prompts alone for the next daemon.
@@ -126,7 +124,6 @@ impl Hub {
         if tokio::time::timeout(SHUTDOWN_GRACE + LOCK * 2, stop).await.is_err() {
             tracing::warn!("agents did not stop within {SHUTDOWN_GRACE:?}");
         }
-        crate::agent_host::end_spared(spared).await;
         let fallback =
             futures::future::join_all(host_fallback.iter().map(|s| self.end_unadopted_host(s)));
         if tokio::time::timeout(SHUTDOWN_GRACE + LOCK * 2, fallback).await.is_err() {

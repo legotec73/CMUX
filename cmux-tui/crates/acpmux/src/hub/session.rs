@@ -20,10 +20,6 @@ pub struct Session {
     /// requests for a stopped session start one agent, not several.
     pub(super) spawn_lock: Mutex<()>,
     pub(super) harness_use: tokio::sync::RwLock<()>,
-    /// What ran under harnesses an idle retirement spared (`hub/idle.rs`), each marked hosted or
-    /// not: a stop or close ends those still running as the same process, and a shutdown the ones
-    /// it would have ended with their agent (a direct one always, a hosted one when agents end).
-    pub(super) idle_spared: StdMutex<Vec<(bool, crate::agent_host::Spared)>>,
     pub(super) activity_generation: AtomicU64,
     pub(super) seq: AtomicU64,
     /// Held from sequence allocation until the record is stored and sent,

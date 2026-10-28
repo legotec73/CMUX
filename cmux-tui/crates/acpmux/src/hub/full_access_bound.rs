@@ -830,6 +830,8 @@ impl Hub {
             child.fail_pending().await;
             self.cancel_pending_permissions(session);
         }
+        // What an idle retirement spared ran under the full-access agent: it ends too.
+        self.end_spared(session, |_| true).await;
         if !Self::host_record_gone(&session.id) {
             self.end_unadopted_host(session).await;
             if !Self::host_record_gone(&session.id) {

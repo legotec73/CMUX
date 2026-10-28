@@ -335,6 +335,10 @@ pub struct SessionMeta {
     /// that retry. Never copied to a fork.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub subagent_retry_open: bool,
+    /// What idle retirements spared under its harnesses (`hub/idle.rs`), kept across restarts:
+    /// a stop ends those still running as the same process. Never copied to a fork.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub idle_spared: Vec<crate::agent_host::SparedProcess>,
 }
 
 /// Where a session sits in the tree of sessions that started each other

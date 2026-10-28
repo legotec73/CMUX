@@ -8,9 +8,10 @@ before delivery. One-second wake remains a measurement target.
 Retirement sends TERM, then KILL after 300 ms only to the same held, unreaped
 harness child. It never signals a group or kills descendants. Both exit watchers
 spare the group. Detached work that escaped, including setsid servers, receives no
-signal at retirement. It records what ran under the harness (pid and start time),
-and an explicit Stop, close or ending shutdown ends what still runs as the same
-process, as Stop's group and tree cleanup would have.
+signal at retirement. It records what ran under the harness (pid and start time)
+on the session's record, kept across restarts, whenever the retirement took or may
+have taken the harness. An explicit Stop, close, MDM's full-access end or an ending
+shutdown ends what still runs as the same process, as Stop's cleanup would have.
 Running turns, queues, permissions/secret questions, in-flight requests, reported
 background tasks/subagents veto retirement. Older/unknown hosts, opaque harnesses,
 lost links and Windows jobs stay awake. Session leases and activity generations

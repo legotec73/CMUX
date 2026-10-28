@@ -107,6 +107,31 @@ impl Hub {
         }
     }
 
+    /// Keeps what a retirement spared on the session's record, without what already ended.
+    async fn note_spared(&self, session: &Session, spared: Vec<crate::agent_host::SparedProcess>) {
+        let mut all = session.meta().idle_spared;
+        all.extend(spared);
+        let all = crate::agent_host::still_running(all).await;
+        session.meta.lock().unwrap_or_else(|e| e.into_inner()).idle_spared = all;
+        self.save_meta(session);
+    }
+
+    /// Ends what retirements spared that `which` picks (a stop: all of it) and forgets it.
+    pub(super) async fn end_spared(
+        &self,
+        session: &Session,
+        which: impl Fn(&crate::agent_host::SparedProcess) -> bool,
+    ) {
+        let ended: Vec<_> = {
+            let mut m = session.meta.lock().unwrap_or_else(|e| e.into_inner());
+            m.idle_spared.extract_if(.., |p| which(p)).collect()
+        };
+        if !ended.is_empty() {
+            self.save_meta(session);
+            crate::agent_host::end_spared(ended).await;
+        }
+    }
+
     /// When the first live child's idle period ends, on the hub clock.
     fn next_idle_deadline(&self) -> Option<std::time::Duration> {
         let idle = (*self.idle_child.lock().unwrap())?;
@@ -155,22 +180,24 @@ impl Hub {
                 continue;
             };
             // What runs under the harness now: retirement spares it, a later stop ends it.
-            let spared = crate::agent_host::spared_under(child.pid).await;
-            if !self.idle_eligible(&session)
-                || child.idle_has_pending()
-                || activity != session.activity_generation.load(Ordering::SeqCst)
-                || session.last_active.load(Ordering::Relaxed).saturating_add(idle)
-                    > self.clock_now()
-                || !child.hibernate(generation, &session.closing).await
-            {
+            let hosted = child.host_record().is_some();
+            let spared = crate::agent_host::spared_under(child.pid, hosted).await;
+            let ready = self.idle_eligible(&session)
+                && !child.idle_has_pending()
+                && activity == session.activity_generation.load(Ordering::SeqCst)
+                && session.last_active.load(Ordering::Relaxed).saturating_add(idle)
+                    <= self.clock_now();
+            let retired = ready && child.hibernate(generation, &session.closing).await;
+            // Taken, or perhaps taken (an uncertain end): what ran under it is a stop's to end.
+            if retired || child.idle_uncertain() {
+                self.note_spared(&session, spared).await;
+            }
+            if !retired {
                 self.touch(&session);
                 continue;
             }
             // Clear only after the same held child has exited. A send waits on our spawn lease.
             slot.take();
-            let hosted = child.host_record().is_some();
-            let spared = spared.into_iter().map(|p| (hosted, p));
-            session.idle_spared.lock().unwrap_or_else(|e| e.into_inner()).extend(spared);
             self.set_status(&session, SessionStatus::Idle);
             self.append(&session, "mux", "hibernated", json!({}));
         }
