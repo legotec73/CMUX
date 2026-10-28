@@ -172,7 +172,7 @@ export function ProjectChooser({
           <Combobox
             inputRef={search}
             suggestions={suggestions}
-            pinnedSuggestions={pinned}
+            pinnedSuggestions={pinned.length ? pinned : undefined}
             onQuery={setQuery}
             onSubmit={(key) => {
               if (key === ADD_PROJECT_KEY) {

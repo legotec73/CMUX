@@ -558,5 +558,4 @@ await requireBrowserLane("composer-location-strip.test.ts", async () => {
     expect(await popup.locator(".ui-combobox-viewport").evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
     await page.close();
   });
-
 });

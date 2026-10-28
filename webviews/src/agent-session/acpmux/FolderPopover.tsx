@@ -274,7 +274,7 @@ export function FolderPopover({
       >
         <Combobox
           suggestions={suggestions}
-          pinnedSuggestions={pinned}
+          pinnedSuggestions={pinned.length ? pinned : undefined}
           cancelOnBlur={false}
           onQuery={setQuery}
           onSubmit={submit}

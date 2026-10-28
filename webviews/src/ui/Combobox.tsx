@@ -118,12 +118,15 @@ export function Combobox({
   const completionRef = useRef<{ text: string; key: string } | undefined>(undefined);
   const pressActivatedRef = useRef<string | undefined>(undefined);
   const listRef = useRef<HTMLDivElement>(null);
+  const pinnedRef = useRef<HTMLDivElement>(null);
   const pressingList = useRef(false);
   useEffect(() => {
     // Native scrollbar presses may blur the input with no relatedTarget. Treat that gesture as
     // inside the list, just like an option press; a real outside press or Tab still closes it.
     const press = (event: PointerEvent) => {
-      pressingList.current = !!listRef.current?.contains(event.target as Node);
+      pressingList.current = !!(
+        listRef.current?.contains(event.target as Node) || pinnedRef.current?.contains(event.target as Node)
+      );
     };
     const end = () => {
       pressingList.current = false;
@@ -157,7 +160,9 @@ export function Combobox({
   const enabledSuggestions = suggestions.filter(
     (item) => !isItemDisabled?.(item) && !pinnedSuggestions?.includes(item),
   );
-  const disabledSuggestions = suggestions.filter((item) => isItemDisabled?.(item) && !pinnedSuggestions?.includes(item));
+  const disabledSuggestions = suggestions.filter(
+    (item) => isItemDisabled?.(item) && !pinnedSuggestions?.includes(item),
+  );
   const update = (next: string) => {
     setValue(next);
     onQuery(next);
@@ -297,12 +302,17 @@ export function Combobox({
         onKeyDown={onKeyDown}
         // A press on a suggestion keeps focus in the field (Base UI items are not focusable).
         onBlur={(event) => {
-          if (cancelOnBlur && !pressingList.current && !listRef.current?.contains(event.relatedTarget as Node | null))
+          if (
+            cancelOnBlur &&
+            !pressingList.current &&
+            !listRef.current?.contains(event.relatedTarget as Node | null) &&
+            !pinnedRef.current?.contains(event.relatedTarget as Node | null)
+          )
             onCancel();
         }}
       />
       {pinnedSuggestions && (
-        <div className="ui-combobox-pinned">
+        <div ref={pinnedRef} className="ui-combobox-pinned">
           {pinnedSuggestions.map((item) => (
             <button
               key={item}
