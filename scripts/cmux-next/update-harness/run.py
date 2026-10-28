@@ -419,6 +419,8 @@ def main():
                     help="give v2's cmux-tui and acpmux another build commit, so the update takes the daemon handoff")
     ap.add_argument("--sessions", action="store_true",
                     help="run a terminal counter and an agent turn across the update and check they survive")
+    ap.add_argument("--agent-count", type=int, default=1, help="active FIFO-gated turns with --sessions (default: 1)")
+    ap.add_argument("--terminal-count", type=int, default=1, help="running counters with --sessions (default: 1)")
     ap.add_argument("--required-update", action="store_true",
                     help="turn automatic downloads off (cmux.json) and require v2 (managed MinimumVersion): "
                          "the update must still download and stage with no click")
@@ -460,6 +462,10 @@ def main():
                          "download-error (the archive is missing) -> the check failed card and the failure sheet "
                          "content with Download Manually")
     a = ap.parse_args()
+    if not 1 <= a.agent_count <= 32 or not 1 <= a.terminal_count <= 32:
+        ap.error("session counts must be between 1 and 32")
+    if not a.sessions and (a.agent_count != 1 or a.terminal_count != 1):
+        ap.error("session counts need --sessions")
     if a.island_lifecycle and not (a.surface_shots and a.notes):
         ap.error("--island-lifecycle needs --surface-shots and --notes")
     if a.changelog_shots and not (a.surface_shots and a.notes):
@@ -483,11 +489,18 @@ def main():
     feed_url = f"http://127.0.0.1:{a.port}/appcast.xml"
     sock = f"/tmp/cmux-debug-{a.tag}.sock"
     server = app = None
+    owned_apps = {}
+    def remember_app(pid):
+        row = TagTeardown._table().get(pid)
+        if row and any(TagTeardown(copy).in_bundle(row[2]) for copy in (v1, v2)):
+            owned_apps[pid] = row[1:]  # start time and command; the Sparkle parent may exit
     result = {"tag": a.tag, "app": name}
     slug = "-".join(filter(None, "".join(c if c.isalnum() else " " for c in a.tag.lower()).split()))
     acp_home = os.path.join(os.environ["HOME"], ".acpmux/builds", "com.cmuxterm.app.debug." + re.sub(r"[^a-z0-9]+", ".", slug.lower()).strip("."))
-    terminal = agent = None
+    terminals, agents = [], []
     try:
+        # A CI timeout or cancellation must enter the same ownership-scoped teardown.
+        TagTeardown(v1, acpmux_home=acp_home, log=log).install()
         public_key = run(["swift", os.path.join(HERE, "keys.swift"), "generate", keys])
         run(["/usr/bin/ditto", a.app, v1])
         run(["/usr/bin/ditto", a.app, v2])
@@ -498,8 +511,14 @@ def main():
             log("v2 daemons stamped", json.dumps(result["handoff_patch"]))
         if a.sessions:
             fake = os.path.abspath(os.path.join(HERE, "../../../cmux-tui/crates/acpmux/tests/fake_agent.py"))
-            agent = Agent(acp_home, fake, work, log)
-            terminal = Terminal(v1, work, log, f"cmux-app-{slug}")
+            for i in range(a.agent_count):
+                directory = os.path.join(work, f"agent-{i + 1}")
+                os.makedirs(directory)
+                agents.append(Agent(acp_home, fake, directory, log, configure=i == 0))
+            for i in range(a.terminal_count):
+                directory = os.path.join(work, f"terminal-{i + 1}")
+                os.makedirs(directory)
+                terminals.append(Terminal(v1, directory, log, f"cmux-app-{slug}"))
         harness = {"feed": feed_url, "marks": marks_path}
         base = int(time.time())
         v1_harness = dict(harness)
@@ -594,6 +613,7 @@ def main():
         app = subprocess.Popen([binary, *arguments], env=env, cwd=os.path.join(work, "cwd"), stdin=subprocess.DEVNULL,
                                stdout=open(os.path.join(out, "v1.log"), "w"), stderr=subprocess.STDOUT, start_new_session=True)
         v1_pid = app.pid
+        remember_app(v1_pid)
         result["v1_pid"] = v1_pid
         log("v1 pid", v1_pid, "build", i1["CFBundleVersion"])
         if not marks.wait(lambda rows: first(rows, "launch.first_window_frame_committed", pid=v1_pid), 120):
@@ -670,9 +690,25 @@ def main():
                          card="true", highlights="true", items=3, popoverShown="true")
         if a.changelog_shots:
             result["ready_changelog_shots"] = changelog_shots(sock, out, "ready", log, "open-changes", popover=True)
-        if terminal:
-            terminal.start(v1)
-            agent.start()
+        if terminals:
+            for terminal in terminals:
+                terminal.start(v1)
+            for agent in agents:
+                agent.start()
+            result["busy_before_install"] = {
+                "agents": [{"session": agent.session, "host": agent.identity(), "daemon": agent.daemon_pid,
+                            "turn_results": sum(e.get("kind") == "turn_result" for e in agent.events())}
+                           for agent in agents],
+                "commands": [{"terminal": terminal.term, "pid": terminal.pid} for terminal in terminals],
+            }
+            if any(row["turn_results"] or not row["host"]["harness_pid"]
+                   or not sessions_alive(row["host"]["harness_pid"])
+                   for row in result["busy_before_install"]["agents"]):
+                raise SystemExit("an agent turn is not running before the install")
+            if any(not terminal.pid or not sessions_alive(terminal.pid) for terminal in terminals):
+                raise SystemExit("a terminal counter is not running before the install")
+            result["busy_snapshot"] = rpc(sock, "debug.window_snapshot", {"path": os.path.join(out, "busy-before-install.png")})
+            log("busy before install", json.dumps(result["busy_before_install"]))
         if a.readonly_install:
             os.chmod(os.path.dirname(v1), 0o555)
         if a.break_staged:
@@ -744,6 +780,7 @@ def main():
         marks.wait(lambda rows: all(first(rows, m, not_pid=v1_pid) for m in RESTORED_MARKS), 20)
         rows = marks.read()
         v2_pid = next(r["pid"] for r in rows if r["pid"] != v1_pid)
+        remember_app(v2_pid)
         result["v2_pid"] = v2_pid
         with open(os.path.join(v1, "Contents/Info.plist"), "rb") as f:
             result["installed_build"] = plistlib.load(f)["CFBundleVersion"]
@@ -751,12 +788,33 @@ def main():
         if a.handoff:
             handed = marks.wait(lambda rows: first(rows, "launch.daemon_version_handoff", not_pid=v1_pid), 60)
             result["daemon_handoff_mark"] = bool(handed)
-        if terminal:
+        if terminals:
             relaunched = first(rows, "launch.first_window_frame_committed", not_pid=v1_pid)["unix_ms"] / 1000
-            result["terminal_survival"] = terminal.check(v1, click / 1000, relaunched)
-            result["agent_survival"] = agent.check()
-            log("terminal", json.dumps(result["terminal_survival"]))
-            log("agent", json.dumps(result["agent_survival"]))
+            # Capture the relaunched app while every agent is still blocked on its FIFO.
+            wait_socket(sock, 30)
+            result["busy_relaunched_snapshot"] = rpc(sock, "debug.window_snapshot",
+                {"path": os.path.join(out, "busy-after-relaunch.png")})
+            result["terminal_survivals"] = [terminal.check(v1, click / 1000, relaunched, handoff=a.handoff)
+                                            for terminal in terminals]
+            result["agent_survivals"] = [agent.check(handoff=a.handoff) for agent in agents]
+            # Keep the original single-session keys for existing receipt consumers.
+            result["terminal_survival"] = result["terminal_survivals"][0]
+            result["agent_survival"] = result["agent_survivals"][0]
+            terminal_ok = all(r["same_terminal_listed"] and r["pid_alive"] and r["pid_before"] == r["pid_after"]
+                              and r["last_sample_after_relaunch"] and r["samples_during_swap"] > 0
+                              and (a.handoff or r["daemons_before"] == r["daemons_after"])
+                              for r in result["terminal_survivals"])
+            agent_ok = all(r["harness_alive_after_swap"] and r["same_host"] and r["transcript_prefix_preserved"]
+                           and r["gate_released"] and r["turn_results"] == 1 and r["turn_status"] == "completed"
+                           and not r["outcome_unknown"]
+                           and r["before_gate_chunks"] == 1 and r["after_gate_chunks"] == 1
+                           and (r["host_adopted"] if a.handoff else r["daemon_before"] == r["daemon_after"])
+                           for r in result["agent_survivals"])
+            result["session_survival_passed"] = terminal_ok and agent_ok
+            log("session survival", json.dumps({k: result[k] for k in
+                ("terminal_survivals", "agent_survivals", "session_survival_passed")}))
+            if not result["session_survival_passed"]:
+                raise SystemExit("sessions did not survive the update; inspect timeline.json")
 
         def at(name, pid):
             r = first(rows, name, pid=pid)
@@ -804,8 +862,9 @@ def main():
             os.chmod(os.path.dirname(v1), 0o755)
         with open(os.path.join(out, "timeline.json"), "w") as f:
             json.dump(result, f, indent=1)
-        for pid in [result.get("v2_pid"), result.get("v1_pid")]:
-            if pid:
+        for pid, identity in owned_apps.items():
+            current = TagTeardown._table().get(pid)
+            if current and current[1:] == identity:
                 try:
                     os.kill(pid, signal.SIGTERM)
                     wait_exit(pid, 20)
@@ -824,9 +883,6 @@ def main():
         log("LEFTOVERS", result["leftovers"])
         with open(os.path.join(out, "timeline.json"), "w") as f:
             json.dump(result, f, indent=1)
-        if agent and agent.harness_pid and sessions_alive(agent.harness_pid):
-            log("stopping the test agent", agent.harness_pid)
-            os.kill(agent.harness_pid, signal.SIGTERM)
         if a.sessions:
             shutil.rmtree(acp_home, ignore_errors=True)
         if server:
