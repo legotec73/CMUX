@@ -65,15 +65,36 @@ impl Snapshot {
                 self.dns_name = None;
                 self.ips.clear();
             }
-            if state == BackendState::Running
-                && let Some(node) = node
-            {
-                if let Ok(status) = node.status() {
-                    self.dns_name = status.dns_name();
-                }
-                self.ips = node.ips().unwrap_or_default();
-                self.error = None;
-            }
+        }
+        // NetMap/name changes are delivered as IPN notifications without a
+        // BackendState. Refresh while already running so ingress follows a
+        // renamed node instead of retaining an unusable old certificate name.
+        if self.running()
+            && let Some(node) = node
+            && let Ok(status) = node.status()
+        {
+            let dns_name = status.dns_name();
+            let ips = if dns_name.is_some() { node.ips().unwrap_or_default() } else { Vec::new() };
+            self.apply_live_identity(status.state(), dns_name, ips);
+        }
+    }
+
+    fn apply_live_identity(
+        &mut self,
+        state: BackendState,
+        dns_name: Option<String>,
+        ips: Vec<String>,
+    ) {
+        if state != BackendState::Running {
+            self.state = state_name(state);
+            self.dns_name = None;
+            self.ips.clear();
+            return;
+        }
+        self.dns_name = dns_name;
+        self.ips = if self.dns_name.is_some() { ips } else { Vec::new() };
+        if self.dns_name.is_some() {
+            self.error = None;
         }
     }
 }
@@ -364,6 +385,23 @@ mod tests {
         snapshot.apply_notify(&notify, None);
         assert_eq!(snapshot.state, "starting");
         assert!(snapshot.browse_to_url.is_none());
+        assert!(snapshot.dns_name.is_none());
+        assert!(snapshot.ips.is_empty());
+    }
+
+    #[test]
+    fn a_running_name_notification_refresh_clears_a_stale_identity() {
+        // NetMap rename notifications have no BackendState. The watcher
+        // supplies the live status separately, so a missing name must stop
+        // ingress from using the old certificate/SNI identity.
+        let mut snapshot = Snapshot {
+            state: "running",
+            dns_name: Some("old.example.ts.net".into()),
+            ips: vec!["100.64.0.1".into()],
+            ..Snapshot::default()
+        };
+        snapshot.apply_live_identity(BackendState::Running, None, vec![]);
+        assert_eq!(snapshot.state, "running");
         assert!(snapshot.dns_name.is_none());
         assert!(snapshot.ips.is_empty());
     }
