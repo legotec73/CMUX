@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import socket
 import threading
 from concurrent.futures import ThreadPoolExecutor
 import time
@@ -107,6 +108,125 @@ def canceled_end(connection, stream_id, **fields):
 
 
 class ResourceApiTests(unittest.TestCase):
+    def _assert_request_deadline_bounds_socket_dispatch(self, asynchronous):
+        accepted = threading.Event()
+        release = threading.Event()
+        finished = threading.Event()
+        errors = []
+
+        def handler(connection, _index):
+            connection.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 4096)
+            accepted.set()
+            release.wait(3)
+
+        def write(path):
+            try:
+                if asynchronous:
+                    async def exercise():
+                        async with cmux.aio.Client(path, timeout=0.1) as client:
+                            try:
+                                await client.session(SESSION).terminal(TERMINAL).write(
+                                    "x" * (1024 * 1024),
+                                    request_options=RequestOptions(timeout=0.05),
+                                )
+                            finally:
+                                finished.set()
+                    asyncio.run(exercise())
+                else:
+                    with Client(path, timeout=0.1) as client:
+                        try:
+                            client.with_request_options(
+                                RequestOptions(timeout=0.05),
+                                client.session(SESSION).terminal(TERMINAL).write,
+                                "x" * (1024 * 1024),
+                            )
+                        finally:
+                            finished.set()
+            except BaseException as error:
+                errors.append(error)
+
+        with UnixJsonServer(handler) as server:
+            worker = threading.Thread(target=write, args=(server.path,))
+            worker.start()
+            try:
+                self.assertTrue(accepted.wait(1), "server did not accept the SDK client")
+                self.assertTrue(
+                    finished.wait(1),
+                    "request deadline did not bound blocked socket dispatch",
+                )
+            finally:
+                release.set()
+                worker.join(timeout=3)
+            self.assertFalse(worker.is_alive(), "SDK request worker was not released")
+            self.assertEqual(len(errors), 1)
+            self.assertIsInstance(errors[0], MutationTransportError)
+            self.assertIsInstance(errors[0].__cause__, cmux.TimeoutError)
+
+    def test_request_deadline_bounds_socket_dispatch(self) -> None:
+        self._assert_request_deadline_bounds_socket_dispatch(False)
+
+    def test_aio_request_deadline_bounds_socket_dispatch(self) -> None:
+        self._assert_request_deadline_bounds_socket_dispatch(True)
+
+    def test_pre_write_dispatch_timeout_keeps_connection_reusable(self) -> None:
+        observed = []
+        finished = threading.Event()
+        errors = []
+
+        def handler(connection, _index):
+            request = next(frames(connection))
+            observed.append(request)
+            ok(
+                connection,
+                request,
+                {
+                    "alive": True,
+                    "cursor": {
+                        "generation": "generation-a",
+                        "revision": "1",
+                    },
+                },
+            )
+
+        def timed_out_request(client):
+            try:
+                client.with_request_options(
+                    RequestOptions(timeout=0.05),
+                    client.session(SESSION).ping,
+                )
+            except BaseException as error:
+                errors.append(error)
+            finally:
+                finished.set()
+
+        with UnixJsonServer(handler) as server:
+            with Client(server.path, timeout=0.2) as client:
+                send_lock = client._connection._wire._send_lock
+                self.assertTrue(send_lock.acquire())
+                worker = threading.Thread(
+                    target=timed_out_request,
+                    args=(client,),
+                )
+                worker.start()
+                try:
+                    self.assertTrue(
+                        finished.wait(1),
+                        "request did not time out while waiting for send lock",
+                    )
+                finally:
+                    send_lock.release()
+                    worker.join(timeout=1)
+                self.assertFalse(worker.is_alive())
+                self.assertEqual(len(errors), 1)
+                self.assertIsInstance(errors[0], cmux.TimeoutError)
+                self.assertFalse(client.closed)
+                self.assertTrue(client.session(SESSION).ping().alive)
+
+        self.assertEqual(
+            [request["operation"] for request in observed],
+            ["session.ping"],
+        )
+
     def test_public_models_export_journal_append_result(self) -> None:
         self.assertIn("JournalAppendResult", cmux.__all__)
 
@@ -2580,17 +2700,17 @@ class ResourceApiTests(unittest.TestCase):
         with UnixJsonServer(handler) as server:
             with Client(server.path, timeout=0.2) as client:
                 session = client.session(SESSION)
-                send_encoded = client._connection._wire._send_encoded
+                send_encoded = client._connection._wire._send_encoded_bounded
 
-                def deliver_then_fail(encoded):
-                    send_encoded(encoded)
+                def deliver_then_fail(encoded, dispatch_deadline):
+                    send_encoded(encoded, dispatch_deadline)
                     if not open_seen.wait(1):
                         raise AssertionError("server did not receive stream open")
                     raise expected
 
                 with patch.object(
                     client._connection._wire,
-                    "_send_encoded",
+                    "_send_encoded_bounded",
                     side_effect=deliver_then_fail,
                 ):
                     with self.assertRaises(CmuxConnectionError) as raised:
@@ -2698,10 +2818,10 @@ class ResourceApiTests(unittest.TestCase):
 
         with UnixJsonServer(handler) as server:
             with Client(server.path, timeout=0.2) as client:
-                send_encoded = client._connection._wire._send_encoded
+                send_encoded = client._connection._wire._send_encoded_bounded
 
-                def wait_for_reader_failure(encoded):
-                    send_encoded(encoded)
+                def wait_for_reader_failure(encoded, dispatch_deadline):
+                    send_encoded(encoded, dispatch_deadline)
                     if not failure_sent.wait(1):
                         raise AssertionError("server did not send protocol failure")
                     deadline = time.monotonic() + 1
@@ -2712,7 +2832,7 @@ class ResourceApiTests(unittest.TestCase):
 
                 with patch.object(
                     client._connection._wire,
-                    "_send_encoded",
+                    "_send_encoded_bounded",
                     side_effect=wait_for_reader_failure,
                 ):
                     with self.assertRaises(cmux.ProtocolError) as raised:
@@ -3686,14 +3806,14 @@ class ResourceApiTests(unittest.TestCase):
         with UnixJsonServer(handler) as server:
             with Client(server.path, timeout=2) as client:
                 session = client.session(SESSION)
-                send_encoded = client._connection._wire._send_encoded
+                send_encoded = client._connection._wire._send_encoded_bounded
                 send_count = 0
 
-                def fail_second_write(encoded):
+                def fail_second_write(encoded, dispatch_deadline):
                     nonlocal send_count
                     send_count += 1
                     if send_count == 1:
-                        send_encoded(encoded)
+                        send_encoded(encoded, dispatch_deadline)
                         return
                     partial = encoded[: max(1, len(encoded) // 2)]
                     client._connection._wire._socket.sendall(partial)
@@ -3712,7 +3832,7 @@ class ResourceApiTests(unittest.TestCase):
 
                 with patch.object(
                     client._connection._wire,
-                    "_send_encoded",
+                    "_send_encoded_bounded",
                     side_effect=fail_second_write,
                 ):
                     open_thread = threading.Thread(target=open_stream)
