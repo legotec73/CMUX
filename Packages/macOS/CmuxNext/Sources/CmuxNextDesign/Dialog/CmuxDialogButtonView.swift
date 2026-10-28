@@ -11,6 +11,10 @@ public final class CmuxDialogButtonView: NSButton {
     private var isHovering = false { didSet { refresh() } }
     private var tracking: NSTrackingArea?
     private var hasFocus = false { didSet { refresh() } }
+    /// When the button came on screen (`systemUptime`): a click-only button takes no click
+    /// before ``armDelay`` has passed, so a click aimed at what was there before cannot land on it.
+    private(set) var shownAt: TimeInterval?
+    static let armDelay: TimeInterval = 0.5
 
     /// A button drawing `hint` after its title. The hint only labels the key: the host
     /// answers it (``CmuxDialogView`` through ``CmuxDialogKeys``), so pass the hint that
@@ -61,8 +65,8 @@ public final class CmuxDialogButtonView: NSButton {
         refresh()
     }
 
-    public override var acceptsFirstResponder: Bool { true }
-    public override var canBecomeKeyView: Bool { true }
+    public override var acceptsFirstResponder: Bool { !button.clickOnly }
+    public override var canBecomeKeyView: Bool { !button.clickOnly }
     public override var isHighlighted: Bool { didSet { refresh() } }
 
     public override func becomeFirstResponder() -> Bool {
@@ -77,9 +81,10 @@ public final class CmuxDialogButtonView: NSButton {
         return resigned
     }
 
-    /// Space presses the focused button (Return always presses the default).
+    /// Space presses the focused button (Return always presses the default);
+    /// a click-only button never takes a key.
     public override func keyDown(with event: NSEvent) {
-        if event.charactersIgnoringModifiers == " " { performClick(nil) } else { super.keyDown(with: event) }
+        if event.charactersIgnoringModifiers == " ", !button.clickOnly { performClick(nil) } else { super.keyDown(with: event) }
     }
 
     public override var intrinsicContentSize: NSSize {
@@ -106,7 +111,27 @@ public final class CmuxDialogButtonView: NSButton {
 
     public override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        shownAt = window == nil ? nil : ProcessInfo.processInfo.systemUptime
         refresh()
+    }
+
+    /// A click-only button takes no click that only brings its window forward: the person sees
+    /// the dialog before a click can press it, however long it waited behind another window or app.
+    public override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        button.clickOnly ? false : super.acceptsFirstMouse(for: event)
+    }
+
+    public override func mouseDown(with event: NSEvent) {
+        guard takesClick(at: event.timestamp) else { return }
+        super.mouseDown(with: event)
+    }
+
+    /// Whether a click at `uptime` presses it: a click-only button only once it has been on
+    /// screen for ``armDelay``.
+    func takesClick(at uptime: TimeInterval) -> Bool {
+        guard button.clickOnly else { return true }
+        guard let shownAt else { return false }
+        return uptime - shownAt >= Self.armDelay
     }
 
     private func refresh() {
