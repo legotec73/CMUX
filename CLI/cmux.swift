@@ -6902,6 +6902,9 @@ struct CMUXCLI {
             commandArgs: commandArgs
         )
         try validateWorkspaceLoadingCommandBeforeSocket(command: command, commandArgs: commandArgs)
+        if command == "new-surface" {
+            try validateNewSurfaceArguments(commandArgs)
+        }
         if command == "vpn" {
             _ = try Self.validatedVPNSubcommand(commandArgs)
         }
