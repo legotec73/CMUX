@@ -368,8 +368,9 @@ final class GroupHeaderRowView: SidebarRowView {
         setHoverShown(addButton, offersAdd && showsActions, fades: fades, token: .hoverReveal)
         addButton.setAccessibilityElement(offersAdd && showsActions)
         // Lawrence 2026-10-20: at rest a loading spinner takes the chevron's place, on the trailing
-        // column every row's dot and spinner share (a296); a hover brings the chevron back and
-        // slides the spinner left beside the + and more (a translation, instant under Reduce Motion).
+        // column every row's dot and spinner share (a296). Leo 2026-10-28: "If you're hovering over a
+        // workspace or whatever, just don't show the spinner": a hover hides it at once and brings the
+        // chevron back on the column, with the + and more left of it; never the spinner beside them.
         let loading = activity.showsGlyph && !activityEnding && !renaming
         let onColumn = loading && !showsActions
         setHoverShown(chevron, !onColumn, fades: fades || fadesNextActivity, token: .hoverReveal)
@@ -385,14 +386,12 @@ final class GroupHeaderRowView: SidebarRowView {
         // The spinner fades and its slot collapses as loading stops (grows as it starts): the
         // items around it close up with no hole (`setHoverSlotShown`, instant under Reduce Motion).
         let ind = SidebarStyle.indicatorSize
-        let slotFrame = onColumn ? SidebarStyle.trailingColumnFrame(rowWidth: b.width, centerY: b.height / 2, side: ind)
-            : NSRect(x: trailing - ind, y: (b.height - ind) / 2, width: ind, height: ind)
-        setHoverSlotShown(activitySlot, loading, frame: slotFrame, fades: fadesNextActivity || fades) { [weak self] in
+        let slotFrame = SidebarStyle.trailingColumnFrame(rowWidth: b.width, centerY: b.height / 2, side: ind)
+        setHoverSlotShown(activitySlot, onColumn, frame: slotFrame, fades: (fadesNextActivity || fades) && !showsActions) { [weak self] in
             guard let self, self.activityEnding else { return }
             self.activityEnding = false
             self.activity.configure(.idle)
         }
-        if loading, !onColumn { trailing -= ind + Metrics.space2 }
         let glyphSide = min(SidebarStyle.iconBox, barHeight)
         glyph.isHidden = !hasIcon
         // A pinned group's pin leads the bar, before its icon and name.
