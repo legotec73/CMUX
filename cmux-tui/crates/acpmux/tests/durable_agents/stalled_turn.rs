@@ -16,8 +16,8 @@ async fn listed(daemon: &Daemon, session: &str) -> Value {
 /// request, never heard back and lived on with the turn open, ignoring the cancel; each daemon
 /// restart adopted its host and rebuilt the turn as just started. The adopted turn keeps its
 /// logged start, and once its model has said nothing for `stalledTurnEndMs` (counted from the log,
-/// not from the restart) acpmux ends it as failed, `stalled`; the idle harness exit then stops
-/// the agent, so it no longer holds a slot.
+/// not from the restart) acpmux ends it as failed, `stalled`. The opaque harness stays: it
+/// cannot report background work, so the idle harness exit never retires it.
 #[tokio::test]
 async fn an_adopted_turn_whose_model_went_quiet_ends_as_stalled_and_frees_its_agent() {
     let mut daemon = Daemon::with_env("stalled", "approve-all", &[("ACPMUX_IDLE_CHILD_SECS", "1")]);
@@ -73,7 +73,7 @@ async fn an_adopted_turn_whose_model_went_quiet_ends_as_stalled_and_frees_its_ag
     assert_ne!(row["status"], "running", "{row}");
     assert!(row["turn"].is_null(), "{row}");
     assert_eq!(row["lastTurn"]["detail"], "stalled", "{row}");
-    assert!(gone_within(harness_pid, Duration::from_secs(20)), "the stalled agent still runs");
+    assert!(alive(harness_pid), "an opaque harness was retired");
 }
 
 /// An adopted turn quiet inside a tool call that had not ended when the daemon restarted still

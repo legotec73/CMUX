@@ -175,6 +175,9 @@ enum Stdin {
     Receipt(u64),
 }
 
+/// The [`Event::DrainOver`] of a retirement's absolute drain, never a quiet period's generation.
+const ABSOLUTE_DRAIN: u64 = u64::MAX;
+
 enum Event {
     Stdout(Option<String>),
     Stderr(Option<String>),
@@ -262,6 +265,9 @@ struct State {
     pgid: Option<i32>,
     /// The harness leader has not been reaped: its group id is still ours.
     leader_alive: Arc<std::sync::atomic::AtomicBool>,
+    idle_pid_only: Arc<std::sync::atomic::AtomicBool>,
+    idle_stop: mpsc::Sender<super::hibernate::Request>,
+    activity: Arc<std::sync::atomic::AtomicU64>,
     /// Stderr lines not kept while over the buffer cap.
     stderr_dropped: u64,
     /// No daemon can adopt this host any more: end like SIGTERM.
@@ -343,14 +349,17 @@ impl Started {
         });
         // stdout reader: one line per permit, so the loop stops reading (and
         // the harness blocks on its pipe) while the buffer is over its cap.
+        let activity = Arc::new(std::sync::atomic::AtomicU64::new(0));
         let (pace_tx, mut pace_rx) = mpsc::channel::<()>(1);
         {
             let tx = events_tx.clone();
+            let activity = activity.clone();
             tokio::spawn(async move {
                 let mut lines = BufReader::new(stdout).lines();
                 while pace_rx.recv().await.is_some() {
                     let next = lines.next_line().await.ok().flatten();
                     let done = next.is_none();
+                    activity.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                     if tx.send(Event::Stdout(next)).await.is_err() || done {
                         break;
                     }
@@ -371,22 +380,15 @@ impl Started {
             });
         }
         let leader_alive = Arc::new(std::sync::atomic::AtomicBool::new(true));
+        let idle_pid_only = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let (idle_stop, idle_rx) = mpsc::channel(1);
         {
             let tx = events_tx.clone();
             let alive = leader_alive.clone();
+            let pid_only = idle_pid_only.clone();
+            let activity = activity.clone();
             tokio::spawn(async move {
-                // End what the agent left running while the exited leader is
-                // still a zombie: its group id cannot be reused yet, so the
-                // kill reaches only this harness's group. Then reap it.
-                if let Some(pg) = pgid
-                    && tokio::task::spawn_blocking(move || wait_exit_unreaped(pg))
-                        .await
-                        .is_ok_and(|ok| ok)
-                {
-                    // SAFETY: the unreaped leader keeps this group id ours.
-                    unsafe { libc::killpg(pg, libc::SIGKILL) };
-                }
-                let code = child.wait().await.ok().and_then(|s| s.code());
+                let code = super::hibernate::wait(child, pid_only, activity, idle_rx).await;
                 // Reaped: from here the group id may be freed; nobody may
                 // signal it on the strength of the leader being alive.
                 alive.store(false, std::sync::atomic::Ordering::SeqCst);
@@ -454,6 +456,9 @@ impl Started {
             codex,
             pgid,
             leader_alive,
+            idle_pid_only,
+            idle_stop,
+            activity,
             stderr_dropped: 0,
             unadoptable: false,
             under: Vec::new(),
@@ -517,10 +522,21 @@ impl Started {
                     state.leader_alive.store(false, std::sync::atomic::Ordering::SeqCst);
                     state.maybe_push_exit();
                     draining = state.exit_h.is_none();
+                    if draining && state.idle_pid_only.load(std::sync::atomic::Ordering::SeqCst) {
+                        // Spared work may keep writing: after a retirement the drain is
+                        // absolute, never a quiet period its output restarts.
+                        let tx = events_tx.clone();
+                        // task-owner: one bounded wait; the runtime ends it with the host.
+                        tokio::spawn(async move {
+                            tokio::time::sleep(DRAIN_BUDGET).await;
+                            let _ = tx.send(Event::DrainOver(ABSOLUTE_DRAIN)).await;
+                        });
+                    }
                 }
                 Event::DrainOver(generation) => {
                     let ready = permit_out || state.stdout_done;
-                    if draining && generation == drain_gen && ready && state.exit_h.is_none() {
+                    let due = generation == ABSOLUTE_DRAIN || (generation == drain_gen && ready);
+                    if draining && due && state.exit_h.is_none() {
                         tracing::warn!(
                             "harness output stays open after its exit; reporting the exit"
                         );
@@ -540,6 +556,9 @@ impl Started {
                 Event::Term => {
                     // The frozen end path (`terminate_unadoptable`): end the
                     // harness while its group is still ours, then the host.
+                    if state.idle_pid_only.load(std::sync::atomic::Ordering::SeqCst) {
+                        continue; // The child owner's bounded grace must finish before runtime exit.
+                    }
                     state.note_under();
                     if state.leader_alive.load(std::sync::atomic::Ordering::SeqCst)
                         && let Some(pg) = state.pgid
@@ -579,7 +598,7 @@ impl Started {
                 Event::Frame(id, frame) => state.on_frame(id, frame).await,
                 Event::Written(receipt, written) => state.receipt(receipt, written),
             }
-            if state.unadoptable {
+            if state.unadoptable && !state.idle_pid_only.load(std::sync::atomic::Ordering::SeqCst) {
                 // As SIGTERM: end the harness while its group is ours, then the host.
                 state.note_under();
                 if state.leader_alive.load(std::sync::atomic::Ordering::SeqCst)
@@ -590,7 +609,9 @@ impl Started {
                 }
                 break;
             }
-            if state.finished() {
+            if state.finished()
+                || (state.unadoptable && state.controller.is_none() && state.exit_h.is_some())
+            {
                 break;
             }
             let wanted = !state.stdout_done && state.weight <= state.spec.buffer_cap;
@@ -623,6 +644,20 @@ impl Started {
 }
 
 impl State {
+    async fn idle_generation(&self) -> Option<u64> {
+        if self.idle_pid_only.load(std::sync::atomic::Ordering::SeqCst)
+            || !self.leader_alive.load(std::sync::atomic::Ordering::SeqCst)
+        {
+            return None;
+        }
+        let reported = match (&self.translator, &self.codex) {
+            (Some(tr), _) => !tr.has_background_work().await,
+            (_, Some(cx)) => !cx.has_background_work(),
+            _ => false,
+        };
+        reported.then_some(self.activity.load(std::sync::atomic::Ordering::SeqCst))
+    }
+
     /// Note the processes under this host before its harness group is
     /// ended, while the harness still parents what it moved out of it.
     fn note_under(&mut self) {
@@ -954,22 +989,31 @@ impl State {
                 c.resumed = true;
             }
             ControllerFrame::Line { msg, receipt } => {
-                // Logged before any line of it is queued, so a log that has one of its lines has
-                // this too, and a next daemon knows the line is fenced (`QUEUED_METHOD`).
-                if let Some(receipt) = receipt {
-                    let note = serde_json::json!({"receipt": receipt});
-                    self.push(Entry::Tap {
-                        dir: TapDir::Out,
-                        msg: Message::notification(super::QUEUED_METHOD, note).to_value(),
-                    });
-                }
-                self.on_line(msg).await;
-                // Behind every line of it: the writer answers once they are written.
-                // Its stdin writer stopped (the harness's stdin closed): never written.
-                if let Some(receipt) = receipt
-                    && self.stdin_tx.send(Stdin::Receipt(receipt)).is_err()
-                {
-                    self.receipt(receipt, false);
+                // A retirement under way drops the line whole: no queued note, no line, and its
+                // receipt says never written.
+                if self.idle_pid_only.load(std::sync::atomic::Ordering::SeqCst) {
+                    if let Some(receipt) = receipt {
+                        self.receipt(receipt, false);
+                    }
+                } else {
+                    self.activity.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                    // Logged before any line of it is queued, so a log that has one of its lines
+                    // has this too, and a next daemon knows the line is fenced (`QUEUED_METHOD`).
+                    if let Some(receipt) = receipt {
+                        let note = serde_json::json!({"receipt": receipt});
+                        self.push(Entry::Tap {
+                            dir: TapDir::Out,
+                            msg: Message::notification(super::QUEUED_METHOD, note).to_value(),
+                        });
+                    }
+                    self.on_line(msg).await;
+                    // Behind every line of it: the writer answers once they are written.
+                    // Its stdin writer stopped (the harness's stdin closed): never written.
+                    if let Some(receipt) = receipt
+                        && self.stdin_tx.send(Stdin::Receipt(receipt)).is_err()
+                    {
+                        self.receipt(receipt, false);
+                    }
                 }
             }
             ControllerFrame::Ack { h } => self.drop_through(h),
@@ -1001,7 +1045,41 @@ impl State {
                     let _ = c.tx.send(HostFrame::TerminateAck);
                 }
             }
+            ControllerFrame::Hibernate { id, generation, grace_ms, expires_ms } => {
+                let mut accepted = false;
+                if crate::store::now_ms() < expires_ms
+                    && self.idle_generation().await == Some(generation)
+                {
+                    let (tx, rx) = tokio::sync::oneshot::channel();
+                    let expires = tokio::time::Instant::now()
+                        + std::time::Duration::from_millis(
+                            100.min(expires_ms.saturating_sub(crate::store::now_ms())),
+                        );
+                    let request = super::hibernate::Request {
+                        generation,
+                        expires,
+                        grace: std::time::Duration::from_millis(grace_ms),
+                        accepted: tx,
+                    };
+                    if self.idle_stop.try_send(request).is_ok() {
+                        accepted = tokio::time::timeout(std::time::Duration::from_millis(500), rx)
+                            .await
+                            .is_ok_and(|r| r == Ok(true));
+                    }
+                }
+                if let Some(c) = self.controller.as_ref() {
+                    let _ = c.tx.send(HostFrame::QueryReply {
+                        id,
+                        claude_session_id: None,
+                        modes: None,
+                        config_options: None,
+                        idle_generation: accepted.then_some(generation),
+                        idle_retiring: self.idle_pid_only.load(std::sync::atomic::Ordering::SeqCst),
+                    });
+                }
+            }
             ControllerFrame::Query { id } => {
+                let idle_generation = self.idle_generation().await;
                 let (claude_session_id, modes, config_options) = match self.translator.clone() {
                     Some(tr) => (
                         tr.session_id.lock().await.clone(),
@@ -1016,6 +1094,8 @@ impl State {
                         claude_session_id,
                         modes,
                         config_options,
+                        idle_generation,
+                        idle_retiring: self.idle_pid_only.load(std::sync::atomic::Ordering::SeqCst),
                     });
                 }
             }
@@ -1036,7 +1116,7 @@ fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
 /// reaping it: the zombie keeps its process group id from being reused.
 /// Call it off the async runtime. False when the wait failed (for example
 /// another reaper took the child): the group id is then not proven ours.
-fn wait_exit_unreaped(pid: i32) -> bool {
+pub(super) fn wait_exit_unreaped(pid: i32) -> bool {
     loop {
         // SAFETY: a zeroed siginfo_t is a valid out-parameter for waitid.
         let mut info: libc::siginfo_t = unsafe { std::mem::zeroed() };

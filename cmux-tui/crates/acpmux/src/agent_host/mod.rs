@@ -18,6 +18,8 @@
 //! lock file the host holds for its whole life.
 
 #[cfg(unix)]
+mod hibernate;
+#[cfg(unix)]
 pub mod host;
 /// Windows port: the agent host process comes in a later landing.
 #[cfg(not(unix))]
@@ -34,6 +36,63 @@ pub(crate) mod scope;
 pub mod sweep;
 #[cfg(unix)]
 pub(crate) mod tree;
+
+/// A process an idle retirement spared, by pid and start time (`tree.rs`): a later stop ends it
+/// only while it still runs as the same process. `hosted`: its harness ran under a host.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct SparedProcess {
+    pub pid: u32,
+    pub start: String,
+    pub hosted: bool,
+}
+
+/// The processes under `pid` now, so a later stop can end the ones a retirement spared.
+pub(crate) async fn spared_under(pid: Option<u32>, hosted: bool) -> Vec<SparedProcess> {
+    #[cfg(unix)]
+    if let Some(pid) = pid {
+        let found = tokio::task::spawn_blocking(move || tree::descendants(&[pid]))
+            .await
+            .unwrap_or_default();
+        let spared =
+            |p: tree::Started| SparedProcess { pid: p.pid, start: p.start().into(), hosted };
+        return found.into_iter().map(spared).collect();
+    }
+    let _ = (pid, hosted);
+    Vec::new()
+}
+
+/// `procs` without the ones that ended or repeat.
+pub(crate) async fn still_running(procs: Vec<SparedProcess>) -> Vec<SparedProcess> {
+    #[cfg(unix)]
+    {
+        let started: Vec<_> =
+            procs.iter().map(|p| tree::Started::of(p.pid, p.start.clone())).collect();
+        let n = started.len();
+        let alive = tokio::task::spawn_blocking(move || tree::still_running(&started))
+            .await
+            .unwrap_or_else(|_| vec![true; n]);
+        let mut kept: Vec<SparedProcess> = Vec::new();
+        for (p, alive) in procs.into_iter().zip(alive) {
+            if alive && !kept.contains(&p) {
+                kept.push(p);
+            }
+        }
+        kept
+    }
+    #[cfg(not(unix))]
+    procs
+}
+
+/// SIGKILL each of `procs` that still runs as the same process (a reused pid is never signalled).
+pub(crate) async fn end_spared(procs: Vec<SparedProcess>) {
+    #[cfg(unix)]
+    if !procs.is_empty() {
+        let procs: Vec<_> = procs.into_iter().map(|p| tree::Started::of(p.pid, p.start)).collect();
+        let _ = tokio::task::spawn_blocking(move || tree::kill_still_running(&procs)).await;
+    }
+    #[cfg(not(unix))]
+    let _ = procs;
+}
 pub(crate) mod unresolved;
 mod wait;
 pub use wait::{
@@ -101,6 +160,8 @@ pub enum ControllerFrame {
     Ack { h: u64 },
     /// End the harness process group: SIGTERM, then SIGKILL after `grace_ms`.
     Terminate { grace_ms: u64 },
+    /// Optional query capability: only the held leader, fenced by the output watermark.
+    Hibernate { id: u64, generation: u64, grace_ms: u64, expires_ms: u64 },
     /// The controller is going away; the host answers `detach_ack` after
     /// every prior frame and keeps the harness running.
     Detach,
@@ -146,6 +207,11 @@ pub enum HostFrame {
         claude_session_id: Option<String>,
         modes: Option<Value>,
         config_options: Option<Value>,
+        /// Absent on older hosts and unsupported harness reporters.
+        #[serde(default)]
+        idle_generation: Option<u64>,
+        #[serde(default)]
+        idle_retiring: bool,
     },
 }
 

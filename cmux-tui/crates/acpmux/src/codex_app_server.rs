@@ -205,6 +205,11 @@ impl AuthGate {
 }
 
 impl Translator {
+    #[cfg(unix)]
+    pub(crate) fn has_background_work(&self) -> bool {
+        self.background().has_work()
+    }
+
     fn background(&self) -> std::sync::MutexGuard<'_, background::Background> {
         self.background.lock().unwrap_or_else(|e| e.into_inner())
     }

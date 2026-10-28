@@ -1,0 +1,172 @@
+//! Idle retirement never enters Stop's group/job/descendant cleanup.
+use super::*;
+use std::sync::atomic::AtomicBool;
+
+impl ChildAgent {
+    pub(crate) fn idle_reusable(&self) -> bool {
+        !self.is_retired() && !self.idle_uncertain.load(Ordering::SeqCst)
+    }
+
+    /// An idle retirement whose outcome is not proven yet (`reconcile_idle` settles it).
+    pub(crate) fn idle_uncertain(&self) -> bool {
+        self.idle_uncertain.load(Ordering::SeqCst)
+    }
+
+    pub(crate) fn idle_has_pending(&self) -> bool {
+        self.pending.try_lock().map_or(true, |p| !p.map.is_empty())
+    }
+
+    pub(crate) async fn idle_generation(&self) -> Option<u64> {
+        #[cfg(windows)]
+        return None; // Closing a Windows job would end its descendants.
+        #[cfg(unix)]
+        {
+            if let Some(hosted) = &self.hosted {
+                // A reader that stopped would never hear the exit: never retire through it.
+                if self.is_broken() || self.is_stopped() || !self.is_alive().await {
+                    return None;
+                }
+                return hosted.link().query().await.ok()?.idle_generation;
+            }
+            let reported = match (&self.translator, &self.codex) {
+                (Some(tr), _) => !tr.has_background_work().await,
+                (_, Some(cx)) => !cx.tr.has_background_work(),
+                _ => false,
+            };
+            (reported && !self.idle_has_pending())
+                .then_some(self.idle_activity.load(Ordering::SeqCst))
+        }
+    }
+
+    /// Called under the session spawn lease before a wake reuses a live process. True when an
+    /// idle retirement makes this agent unusable: it retired, or it is still uncertain.
+    pub(crate) async fn reconcile_idle(&self) -> Result<bool, RpcError> {
+        #[cfg(unix)]
+        if self.idle_uncertain.load(Ordering::SeqCst) && self.hosted.is_none() {
+            // A direct child whose exit was not proven: only its waiter's reap clears it.
+            tokio::time::timeout(std::time::Duration::from_secs(5), self.idle_reaped())
+                .await
+                .map_err(|_| RpcError::internal("agent is still hibernating"))?;
+            self.idle_uncertain.store(false, Ordering::SeqCst);
+        }
+        #[cfg(unix)]
+        if self.idle_uncertain.load(Ordering::SeqCst)
+            && let Some(hosted) = &self.hosted
+        {
+            // A reader that stopped hears no exit: the caller reconnects (`readopt`), which
+            // reconciles again on the new link. The agent stays unusable until then.
+            if self.is_broken() || self.is_stopped() {
+                return Ok(true);
+            }
+            if hosted.exit_seen.load(Ordering::SeqCst) {
+                self.retire();
+                self.idle_uncertain.store(false, Ordering::SeqCst);
+                return Ok(true);
+            }
+            // Query is ordered behind any delayed Hibernate. Its sender expiry was fixed
+            // before enqueue, so an older frame cannot commit after this rejection proof.
+            let reply =
+                hosted.link().query().await.map_err(|e| RpcError::internal(e.to_string()))?;
+            if reply.idle_retiring {
+                let exited = hosted.exit.notified();
+                if !hosted.exited.load(Ordering::SeqCst) {
+                    tokio::time::timeout(std::time::Duration::from_secs(5), exited)
+                        .await
+                        .map_err(|_| RpcError::internal("agent is still hibernating"))?;
+                }
+                self.retire();
+                self.idle_uncertain.store(false, Ordering::SeqCst);
+                return Ok(true);
+            }
+            self.idle_uncertain.store(false, Ordering::SeqCst);
+        }
+        Ok(false)
+    }
+
+    /// Resolves once a retired direct child's waiter reaped it (at once when none ran).
+    pub(crate) async fn idle_reaped(&self) {
+        #[cfg(unix)]
+        {
+            let reaped = self.idle_reaper.lock().unwrap_or_else(|e| e.into_inner()).clone();
+            if let Some(mut reaped) = reaped {
+                // A waiter that ended without a reap dropped the child: nothing is left to wait on.
+                let _ = reaped.wait_for(|done| *done).await;
+            }
+        }
+    }
+
+    /// True only after the exact held child exited. Lost/old hosts are retained. A close that
+    /// started (`closing`) keeps the agent for its own cleanup.
+    pub(crate) async fn hibernate(&self, generation: u64, closing: &AtomicBool) -> bool {
+        #[cfg(windows)]
+        {
+            let _ = (generation, closing);
+            return false;
+        }
+        #[cfg(unix)]
+        {
+            if let Some(hosted) = &self.hosted {
+                if closing.load(Ordering::SeqCst) {
+                    return false;
+                }
+                // Cancellation or timeout leaves this flag set until a later ordered Query
+                // proves rejection or terminal exit. A wake may not reuse an uncertain child.
+                self.idle_uncertain.store(true, Ordering::SeqCst);
+                match hosted.link().hibernate(generation, KILL_GRACE).await {
+                    Ok(false) => {
+                        self.idle_uncertain.store(false, Ordering::SeqCst);
+                        return false;
+                    }
+                    Err(_) => return false,
+                    Ok(true) => {}
+                }
+                let exited = hosted.exit.notified();
+                return tokio::time::timeout(std::time::Duration::from_secs(5), async {
+                    if !hosted.exited.load(Ordering::SeqCst) {
+                        exited.await;
+                    }
+                    self.retire();
+                    true
+                })
+                .await
+                .unwrap_or(false);
+            }
+            let mut slot = self.child.lock().await;
+            if closing.load(Ordering::SeqCst)
+                || generation != self.idle_activity.load(Ordering::SeqCst)
+                || self.idle_has_pending()
+            {
+                return false;
+            }
+            let Some(mut child) = slot.take() else { return false };
+            let Some(pid) = child.id() else { return false };
+            self.idle_pid_only.store(true, Ordering::SeqCst);
+            self.retire();
+            // Commit before scheduling another task: no activity gap after the fence.
+            // SAFETY: our held, unreaped child, never a group or cached PID after reap.
+            unsafe {
+                libc::kill(pid as i32, libc::SIGTERM);
+            }
+            // The exit watcher and every wake wait on this until the child is reaped.
+            let (reaped, rx) = tokio::sync::watch::channel(false);
+            *self.idle_reaper.lock().unwrap_or_else(|e| e.into_inner()) = Some(rx);
+            // task-owner: holds the child until it is reaped, so no timeout drops it unproven.
+            tokio::spawn(async move {
+                if tokio::time::timeout(KILL_GRACE, child.wait()).await.is_err() {
+                    let _ = child.start_kill();
+                }
+                let _ = child.wait().await;
+                let _ = reaped.send(true);
+            });
+            if tokio::time::timeout(std::time::Duration::from_secs(5), self.idle_reaped())
+                .await
+                .is_err()
+            {
+                // Not proven exited: no wake reuses or replaces it before the reap.
+                self.idle_uncertain.store(true, Ordering::SeqCst);
+                return false;
+            }
+            true
+        }
+    }
+}

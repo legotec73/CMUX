@@ -79,6 +79,9 @@ impl Hub {
         let mut unreached = 0;
         for s in &sessions {
             let ends = end_agents && !keep.contains(&s.id);
+            // What retirements spared ends as its agent would: a direct one's always, a hosted
+            // one's when agents end (else it stays on the record for the next daemon's stop).
+            self.end_spared(s, |p| ends || !p.hosted).await;
             let Ok(mut slot) = tokio::time::timeout(LOCK, s.child.lock()).await else {
                 // The child cannot be reached here. Detach mode leaves it and
                 // its permission prompts alone for the next daemon.

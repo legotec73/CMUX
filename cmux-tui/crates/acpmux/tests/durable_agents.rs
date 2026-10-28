@@ -1274,18 +1274,19 @@ async fn shutdown_with_end_agents_keeps_the_named_sessions_running() {
     );
 }
 
-/// The idle harness exit (one second here) terminates an unused hosted
-/// session's agent and its host, and the session resumes on its next
-/// prompt; a turn or a permission prompt that an adopted host's recovery
-/// rebuilt after a daemon restart is in use, never idle.
+/// The idle harness exit (one second here) never retires an opaque hosted harness, which
+/// cannot report background work (`agent/idle.rs`): it answers its next prompt itself. A turn
+/// or a permission prompt that an adopted host's recovery rebuilt after a daemon restart is in
+/// use, never idle.
 const IDLE_1S: &[(&str, &str)] = &[("ACPMUX_IDLE_CHILD_SECS", "1")];
 
 #[tokio::test]
-async fn an_idle_hosted_agent_is_terminated_and_the_session_resumes() {
+async fn an_idle_opaque_hosted_agent_stays_awake_and_answers() {
     let daemon = Daemon::with_env("idle", "approve-all", IDLE_1S);
     let session = new_session(&daemon).await;
     let harness_pid = daemon.host_record(&session)["harness_pid"].as_i64().unwrap();
-    assert!(gone_within(harness_pid, Duration::from_secs(20)), "the idle agent kept running");
+    std::thread::sleep(Duration::from_secs(3));
+    assert!(alive(harness_pid), "an opaque harness was retired");
     let mut rpc = daemon.rpc().await;
     let reply = rpc
         .call(
@@ -1295,7 +1296,7 @@ async fn an_idle_hosted_agent_is_terminated_and_the_session_resumes() {
         .await;
     assert_eq!(reply["stopReason"], "end_turn", "{reply}");
     let events = daemon.events(&session);
-    assert!(events.iter().any(|e| e["kind"] == "resumed"), "the session did not resume");
+    assert!(!events.iter().any(|e| e["kind"] == "resumed"), "the live agent was replaced");
 }
 
 #[tokio::test]
@@ -1387,11 +1388,10 @@ async fn a_live_host_with_a_lost_link_is_reattached_not_locked() {
 }
 
 /// An idle hosted session whose link this daemon lost (another owner took
-/// the host over and left) still ends at the idle exit: the reaper ends the
-/// unadopted host with its nonce proof instead of sending Terminate over
-/// the dead link and leaving the harness running.
+/// the host over and left) is never retired idle: no ordered query can
+/// prove the harness idle over the dead link, so it keeps running.
 #[tokio::test]
-async fn an_idle_hosted_agent_with_a_lost_link_is_ended() {
+async fn an_idle_hosted_agent_with_a_lost_link_stays_awake() {
     let daemon = Daemon::with_env("idlelost", "approve-all", &[("ACPMUX_IDLE_CHILD_SECS", "2")]);
     let session = new_session(&daemon).await;
     let record: acpmux::agent_host::HostRecord =
@@ -1402,47 +1402,8 @@ async fn an_idle_hosted_agent_with_a_lost_link_is_ended() {
         acpmux::agent_host::link::Connect::Ready(link, _) => drop(link),
         _ => panic!("the host refused a same-build owner"),
     }
-    assert!(gone_within(harness_pid, Duration::from_secs(20)), "the idle agent kept running");
-}
-
-/// A reattach after a lost link is activity: its `host_reattached` record
-/// and the prompt restart the idle period, so the reaper does not end the
-/// reattached agent at the deadline the session had before the link was lost.
-#[tokio::test]
-async fn a_reattached_host_restarts_the_idle_period() {
-    const IDLE_2S: &[(&str, &str)] = &[("ACPMUX_IDLE_CHILD_SECS", "2")];
-    let daemon = Daemon::with_env("reidle", "approve-all", IDLE_2S);
-    let session = new_session(&daemon).await;
-    let prompt = json!({"sessionId": session, "prompt": [{"type": "text", "text": "hello"}]});
-    let mut rpc = daemon.rpc().await;
-    assert_eq!(rpc.call("session/prompt", prompt.clone()).await["stopReason"], "end_turn");
-    drop(rpc);
-    let first_activity = std::time::Instant::now();
-    let record: acpmux::agent_host::HostRecord =
-        serde_json::from_value(daemon.host_record(&session)).unwrap();
-    let harness_pid = record.harness_pid.expect("harness pid") as i64;
-    match acpmux::agent_host::link::connect(record, 0).await.expect("take over") {
-        acpmux::agent_host::link::Connect::Ready(link, _) => drop(link),
-        _ => panic!("the host refused a same-build owner"),
-    }
-    // Test-only fixed waits: well inside the first idle period.
-    tokio::time::sleep(Duration::from_millis(1200)).await;
-    let mut rpc = daemon.rpc().await;
-    assert_eq!(rpc.call("session/prompt", prompt).await["stopReason"], "end_turn");
-    drop(rpc);
-    assert!(
-        daemon.events(&session).iter().any(|e| e["kind"] == "host_reattached"),
-        "the lost link was not reattached"
-    );
-    // Past the deadline the session had before the reattach.
-    let past_first_deadline = Duration::from_millis(2600).saturating_sub(first_activity.elapsed());
-    tokio::time::sleep(past_first_deadline).await;
-    assert!(alive(harness_pid), "the reaper ended the agent at its pre-reattach deadline");
-    // The reaper still ends it once the new idle period passes.
-    assert!(
-        gone_within(harness_pid, Duration::from_secs(20)),
-        "the reattached agent was never reaped"
-    );
+    std::thread::sleep(Duration::from_secs(4));
+    assert!(alive(harness_pid), "a harness behind a lost link was retired");
 }
 
 /// The person's decision proof (`hub/person.rs` decision_proof, cx-0q7o),

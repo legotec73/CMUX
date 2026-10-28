@@ -16,6 +16,7 @@ use tokio::process::Child;
 use tokio::sync::{Mutex, mpsc, oneshot};
 
 mod command;
+mod idle;
 #[cfg(unix)]
 pub(crate) mod session_tmp;
 pub(crate) use command::{
@@ -62,7 +63,8 @@ pub enum Inbound {
     Stderr(String, Option<u64>),
     /// The agent process with this pid exited. The pid tells a late exit of
     /// a replaced process apart from the current one.
-    Exited { pid: Option<u32>, code: Option<i32>, host_seq: Option<u64> },
+    /// `agent` is its generation: a reused pid never names a later agent.
+    Exited { pid: Option<u32>, agent: u64, code: Option<i32>, host_seq: Option<u64> },
     /// Answered once every item queued before it was handled. A prompt's answer
     /// bypasses this queue, so a turn sends one before it settles: the agent's
     /// last notifications (the reply text) are applied first.
@@ -581,6 +583,15 @@ pub struct ChildAgent {
     /// Set once acpmux ends the agent on purpose (MDM's off, `end_managed_full_access`): its
     /// turn's end leaves the chat idle and no failover runs its prompt again (review 3 of #26034).
     ended_on_purpose: std::sync::atomic::AtomicBool,
+    /// Requests hold shared access until their answer; idle retirement takes exclusive access.
+    pub(crate) idle_use: tokio::sync::RwLock<()>,
+    #[cfg(unix)]
+    idle_pid_only: std::sync::atomic::AtomicBool,
+    idle_uncertain: std::sync::atomic::AtomicBool,
+    /// A retired direct child's waiter that did not prove its reap in time (`agent/idle.rs`).
+    #[cfg(unix)]
+    idle_reaper: std::sync::Mutex<Option<tokio::sync::watch::Receiver<bool>>>,
+    idle_activity: AtomicU64,
     /// The question preview format its command was pinned to, for a direct
     /// start (a host's is recorded where the host starts, `hub/hosts.rs`).
     pub preview_format: Option<crate::hub::questions::PreviewFormat>,
@@ -704,6 +715,13 @@ impl ChildAgent {
             all_tools: std::sync::atomic::AtomicBool::new(false),
             retired: std::sync::Mutex::new(false),
             ended_on_purpose: std::sync::atomic::AtomicBool::new(false),
+            idle_use: tokio::sync::RwLock::new(()),
+            #[cfg(unix)]
+            idle_pid_only: std::sync::atomic::AtomicBool::new(false),
+            idle_uncertain: std::sync::atomic::AtomicBool::new(false),
+            #[cfg(unix)]
+            idle_reaper: std::sync::Mutex::new(None),
+            idle_activity: AtomicU64::new(0),
             generation: NEXT_GENERATION.fetch_add(1, Ordering::Relaxed),
             preview_format,
             writer_stop: std::sync::OnceLock::new(),
@@ -788,7 +806,8 @@ impl ChildAgent {
                                 leader_gone = Some(tokio::time::Instant::now());
                                 // Stop what the agent left running so the pipe closes.
                                 #[cfg(unix)]
-                                if let Some(pg) = agent_for_exit.pid {
+                                if let Some(pg) = agent_for_exit.pid
+                                    && !agent_for_exit.idle_pid_only.load(Ordering::SeqCst) {
                                     unsafe {
                                         libc::killpg(pg as i32, libc::SIGKILL);
                                     }
@@ -960,11 +979,18 @@ impl ChildAgent {
                 }
                 drop(p);
                 let code = agent_for_exit.wait_exit().await;
+                // A retired child is reported only once its retirement's waiter reaped it.
+                agent_for_exit.idle_reaped().await;
                 if let Some(stop) = agent_for_exit.writer_stop.get() {
                     stop.agent_ended().await;
                 }
                 let _ = inbound
-                    .send(Inbound::Exited { pid: agent_for_exit.pid, code, host_seq: None })
+                    .send(Inbound::Exited {
+                        pid: agent_for_exit.pid,
+                        agent: agent_for_exit.generation,
+                        code,
+                        host_seq: None,
+                    })
                     .await;
             });
         }
@@ -1036,6 +1062,7 @@ impl ChildAgent {
     /// (`process_state`) from a retired agent (None).
     /// For such an update the retire lock is held across the check and `log`.
     fn tap_live<R>(&self, m: &Message, log: impl FnOnce() -> R) -> Option<R> {
+        self.idle_activity.fetch_add(1, Ordering::SeqCst);
         let context = matches!(m, Message::Notification { method, params }
             if method == crate::rpc::method::SESSION_UPDATE
                 && params.as_ref().is_some_and(process_state));
@@ -1050,6 +1077,14 @@ impl ChildAgent {
         self.retire();
         if self.hosted.is_some() {
             self.terminate(KILL_GRACE).await;
+            return;
+        }
+        // A child an idle retirement took is gone only once its waiter reaped it: no
+        // replacement starts before that, and its pid or group is never signalled again
+        // (`agent/idle.rs`).
+        #[cfg(unix)]
+        if self.idle_pid_only.load(Ordering::SeqCst) {
+            self.idle_reaped().await;
             return;
         }
         let mut guard = self.child.lock().await;
@@ -1108,6 +1143,12 @@ impl ChildAgent {
                 let _ =
                     tokio::time::timeout(grace + std::time::Duration::from_secs(1), exited).await;
             }
+            return;
+        }
+        // An idle retirement owns the child: never a group signal on a pid it may have reaped.
+        #[cfg(unix)]
+        if self.idle_pid_only.load(Ordering::SeqCst) {
+            let _ = tokio::time::timeout(grace, self.idle_reaped()).await;
             return;
         }
         let pgid = self.pid.map(|p| p as i32);
@@ -1365,6 +1406,13 @@ impl ChildAgent {
         fence: Option<&Fence>,
         on_written: F,
     ) -> Result<Value, RpcError> {
+        let _using = self.idle_use.read().await;
+        if *self.retired.lock().unwrap_or_else(|e| e.into_inner()) {
+            if let Some(fence) = fence {
+                fence.cut();
+            }
+            return Err(RpcError::internal("agent process closed"));
+        }
         let id = self.next_id.fetch_add(1, Ordering::SeqCst);
         let (tx, rx) = oneshot::channel();
         self.pending.lock().await.map.insert(key(&Value::from(id)), tx);
@@ -1412,6 +1460,10 @@ impl ChildAgent {
         params: Value,
         limit: std::time::Duration,
     ) -> Option<Result<Value, RpcError>> {
+        let _using = self.idle_use.read().await;
+        if *self.retired.lock().unwrap_or_else(|e| e.into_inner()) {
+            return Some(Err(RpcError::internal("agent process closed")));
+        }
         let id = self.next_id.fetch_add(1, Ordering::SeqCst);
         let (tx, rx) = oneshot::channel();
         self.pending.lock().await.map.insert(key(&Value::from(id)), tx);
@@ -1433,6 +1485,12 @@ impl ChildAgent {
     }
 
     pub async fn notify(&self, method: &str, params: Value) -> Result<()> {
+        // An idle retirement waits for it, and a direct child it took writes nothing more.
+        let _using = self.idle_use.read().await;
+        #[cfg(unix)]
+        if self.idle_pid_only.load(Ordering::SeqCst) {
+            return Err(anyhow!(AGENT_CLOSED));
+        }
         self.write(&Message::notification(method, params)).await
     }
 
@@ -1714,6 +1772,13 @@ impl ChildAgent {
             all_tools: std::sync::atomic::AtomicBool::new(false),
             retired: std::sync::Mutex::new(false),
             ended_on_purpose: std::sync::atomic::AtomicBool::new(false),
+            idle_use: tokio::sync::RwLock::new(()),
+            #[cfg(unix)]
+            idle_pid_only: std::sync::atomic::AtomicBool::new(false),
+            idle_uncertain: std::sync::atomic::AtomicBool::new(false),
+            #[cfg(unix)]
+            idle_reaper: std::sync::Mutex::new(None),
+            idle_activity: AtomicU64::new(0),
             generation: NEXT_GENERATION.fetch_add(1, Ordering::Relaxed),
             preview_format: None,
             writer_stop: std::sync::OnceLock::new(),
@@ -1957,8 +2022,13 @@ impl ChildAgent {
                 // `exited` and the exit notify follow the Exit entry's ack
                 // (`start_reader`), so a terminate that waits on them never
                 // returns before the host knows its Exit is logged.
-                let _ =
-                    inbound.send(Inbound::Exited { pid: self.pid, code, host_seq: Some(h) }).await;
+                let exited = Inbound::Exited {
+                    pid: self.pid,
+                    agent: self.generation,
+                    code,
+                    host_seq: Some(h),
+                };
+                let _ = inbound.send(exited).await;
                 true
             }
         }
@@ -2201,7 +2271,15 @@ mod fence_tests {
         agent.claude_lines(Vec::new(), None).await.unwrap();
         assert_eq!(agent.stdin_tx.capacity(), room, "an empty Claude batch took a place on stdin");
         let _ = release.send(());
+        agent.retire();
+        let fence = Fence::default();
+        let rejected =
+            agent.request_with_hook("not-written", Value::Null, Some(&fence), || {}).await.is_err();
         agent.kill().await;
+        assert!(
+            rejected && fence.is_cut(),
+            "a retired agent left its unsent request's fence unsettled"
+        );
     }
 
     /// Review 87 of #23322: an agent whose leader exited and left a descendant holding its

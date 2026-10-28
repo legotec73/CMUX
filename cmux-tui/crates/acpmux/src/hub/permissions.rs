@@ -219,12 +219,12 @@ impl Hub {
                         self.idle_wake.notify_one();
                     }
                 }
-                Inbound::Exited { pid, code, host_seq } => {
+                Inbound::Exited { pid, agent, code, host_seq } => {
                     {
                         let mut slot = session.child.lock().await;
                         // A late exit from a process that was already replaced
-                        // must not detach the new one.
-                        if slot.as_ref().is_some_and(|c| c.pid != pid) {
+                        // must not detach the new one, even under a reused pid.
+                        if slot.as_ref().is_some_and(|c| c.pid != pid || c.generation != agent) {
                             continue;
                         }
                         *slot = None;

@@ -1082,6 +1082,8 @@ impl Hub {
         // that comes and goes while it waits on the agent still holds for it (reviews 73, 75 and
         // 77 of #23322).
         let off = self.off_latch();
+        self.touch(session);
+        let _using = session.harness_use.read().await;
         // Every switch into a mode that skips approvals, from any client (the app, the CLI, a
         // script), passes here: refused while `sessions.allowFullAccess` is off.
         if super::start_mode::requests_full_access(m, &params) && !off.allows_full_access() {
@@ -1372,6 +1374,8 @@ impl Hub {
 
     /// Stop the child. The log stays. `purge` also deletes the log.
     pub async fn kill(&self, session: &Arc<Session>, purge: bool) -> Result<(), RpcError> {
+        // An idle retirement under way finishes first; none starts while this stop runs.
+        let _using = session.harness_use.read().await;
         // Counted first: a start for a request from before this stop ends (`ensure_child`).
         session.stops.fetch_add(1, Ordering::SeqCst);
         session.closing.store(true, Ordering::SeqCst);
@@ -1407,6 +1411,8 @@ impl Hub {
             // ends the session: end it without its protocol (frozen path).
             self.end_unadopted_host(session).await;
         }
+        // What idle retirements spared ends with the stop, as the agent's group would have.
+        self.end_spared(session, |_| true).await;
         *session.turn.lock().unwrap() = None;
         // Before the close's event, which sends the cards it owes (`tasks.rs`).
         self.orphan_tasks_of(session, purge);

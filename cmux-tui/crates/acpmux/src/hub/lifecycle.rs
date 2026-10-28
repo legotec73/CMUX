@@ -460,6 +460,8 @@ impl Hub {
         super::full_access_bound::operation_entry(self);
         // One spawn at a time per session; a caller that waited here finds
         // the child the previous holder started.
+        self.touch(session);
+        let _using = session.harness_use.read().await;
         let _spawning = session.spawn_lock.lock().await;
         // Stopped since the request: it starts nothing and touches no agent. One a later request
         // started after the stop is that request's (it reopened the session).
@@ -541,16 +543,17 @@ impl Hub {
             return Err(super::start_mode::full_access_off());
         }
         let live = session.child.lock().await.clone();
-        if let Some(child) = live
-            && child.is_alive().await
-        {
-            // A closed session with a live agent: a host the daemon adopted at its start that
-            // outlived the stop. It reopens for this request, ready.
-            if session.status() == SessionStatus::Closed {
-                self.reopen_to_start(session, stops)?;
-                self.set_status(session, SessionStatus::Ready);
+        if let Some(child) = live {
+            let unusable = child.reconcile_idle().await?;
+            if !unusable && child.is_alive().await && !child.is_retired() {
+                // A closed session with a live agent: a host the daemon adopted at its start that
+                // outlived the stop. It reopens for this request, ready.
+                if session.status() == SessionStatus::Closed {
+                    self.reopen_to_start(session, stops)?;
+                    self.set_status(session, SessionStatus::Ready);
+                }
+                return Ok(child);
             }
-            return Ok(child);
         }
         // A running agent host for this session is reached again, never
         // started or initialized a second time.
@@ -558,7 +561,19 @@ impl Hub {
             Self::starting(session, stops);
             // A stopped session whose host outlived the stop reopens, as a cold start does.
             self.reopen_to_start(session, stops)?;
-            match self.readopt(session).await {
+            let readopted = match self.readopt(session).await {
+                // A retirement left uncertain behind a stopped reader settles on the new link:
+                // still unresolved, the request is refused; its exit proven, a fresh agent starts.
+                Some(child) if child.is_alive().await => match child.reconcile_idle().await? {
+                    false => Some(child),
+                    true if child.idle_uncertain() => {
+                        return Err(RpcError::internal("agent is still hibernating"));
+                    }
+                    true => None,
+                },
+                other => other,
+            };
+            match readopted {
                 Some(child) if child.is_alive().await => {
                     // Reached again, not started: no start below decides its Ctrl-B.
                     self.note_host_kind(session, &child, Some(profile.kind)).await;
@@ -1444,6 +1459,7 @@ impl Hub {
             && let Ok(_idle) = session.spawn_lock.try_lock()
             && !self.managed_off_runs_full_access(&off, session)
             && let Some(child) = session.child.lock().await.as_ref()
+            && child.idle_reusable()
             && child.is_alive().await
             && !(off.off() && child.replay_pending())
             // Under MDM's off an agent whose reader stopped is not heard: `ensure_child` ends it

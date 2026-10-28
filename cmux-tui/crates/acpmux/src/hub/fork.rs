@@ -318,6 +318,7 @@ impl Hub {
             // A fork is the person's branch of the chat, never a spawn (`lineage.rs`).
             lineage: None,
             subagent_retry_open: false,
+            idle_spared: Vec::new(),
         };
         let new = self.make_session(meta);
         match made {
