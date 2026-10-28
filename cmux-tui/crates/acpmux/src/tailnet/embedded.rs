@@ -255,8 +255,10 @@ impl Controller {
         let node = self.node();
         if let Some(node) = node {
             let result = tokio::task::spawn_blocking(move || {
-                node.logout().map_err(|e| e.0)?;
-                node.close().map_err(|e| e.0)
+                logout_and_close(
+                    || node.logout().map_err(|e| e.0),
+                    || node.close().map_err(|e| e.0),
+                )
             })
             .await
             .map_err(|error| error.to_string())?;
@@ -367,6 +369,16 @@ impl Controller {
     }
 }
 
+// Logout can fail remotely, but the local node and its watchers must still close.
+fn logout_and_close(
+    logout: impl FnOnce() -> Result<(), String>,
+    close: impl FnOnce() -> Result<(), String>,
+) -> Result<(), String> {
+    let logged_out = logout();
+    let closed = close();
+    logged_out.and(closed)
+}
+
 /// libtailscale owns a background runtime. Never let its final `Arc<Node>`
 /// drop on a Tokio worker or request task.
 fn release_node(node: Arc<Node>) {
@@ -381,6 +393,20 @@ pub fn state_dir(home: &Path) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn failed_logout_still_closes_the_node() {
+        let closed = std::cell::Cell::new(false);
+        let result = logout_and_close(
+            || Err("logout failed".into()),
+            || {
+                closed.set(true);
+                Ok(())
+            },
+        );
+        assert!(closed.get());
+        assert_eq!(result, Err("logout failed".into()));
+    }
 
     #[test]
     fn sign_in_url_is_redacted_for_non_person_consumers() {

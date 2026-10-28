@@ -18,7 +18,7 @@ use anyhow::{Context as _, anyhow, bail};
 use serde_json::Value;
 use wait_timeout::ChildExt;
 
-#[cfg(feature = "tailnet")]
+#[cfg(all(unix, feature = "tailnet"))]
 pub mod embedded;
 
 /// How long one CLI call may take (status on a large tailnet is the
