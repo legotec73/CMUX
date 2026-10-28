@@ -19,7 +19,7 @@ public final class MobileIrxDiscoveryProvider: MobileIrohMacDiscovering,
 {
     /// Exposed so the scene injects the SAME catalog the provider fills as
     /// `personalIrohRouteCatalog` (known-Mac route lookups read it).
-    public let routeCatalog = MobileIrohRouteCatalog()
+    public let routeCatalog: MobileIrohRouteCatalog
 
     private let preferredTag: String
     private let compatibilityPolicy: MobileMacBuildCompatibilityPolicy?
@@ -53,7 +53,7 @@ public final class MobileIrxDiscoveryProvider: MobileIrohMacDiscovering,
                 guard let self, !Task.isCancelled else { return }
                 let owner = await irx.directoryScopeID()
                 let directory = await irx.currentDirectory()
-                guard let owner, owner == (await irx.directoryScopeID()) else { continue }
+                guard owner == (await irx.directoryScopeID()) else { continue }
                 guard await applyDirectory(directory, owner: owner) else { continue }
                 for observer in observers.values { observer.yield(()) }
             }
@@ -63,17 +63,17 @@ public final class MobileIrxDiscoveryProvider: MobileIrohMacDiscovering,
     /// Applies directory snapshots through one monotonic projection path. An
     /// older async observation can never replace a newer revision.
     @discardableResult
-    private func applyDirectory(_ directory: V2Directory?, owner: String) async -> Bool {
+    private func applyDirectory(_ directory: V2Directory?, owner: String?) async -> Bool {
         let ownerChanged = observedScope != owner
         if ownerChanged {
             observedScope = owner
             lastAppliedDirectoryRevision = nil
         }
-        guard let directory else {
+        guard let owner, let directory else {
             guard ownerChanged || lastAppliedDirectoryRevision != nil else { return false }
             scope &+= 1
             lastAppliedDirectoryRevision = nil
-            await routeCatalog.activate(scope: scope)
+            await routeCatalog.activate(scope: scope, owner: owner)
             return true
         }
         guard lastAppliedDirectoryRevision.map({ directory.revision >= $0 }) ?? true else {
@@ -83,7 +83,7 @@ public final class MobileIrxDiscoveryProvider: MobileIrohMacDiscovering,
         lastAppliedDirectoryRevision = directory.revision
         scope &+= 1
         let generation = scope
-        await routeCatalog.activate(scope: generation)
+        await routeCatalog.activate(scope: generation, owner: owner)
         guard observedScope == owner, lastAppliedDirectoryRevision == directory.revision else { return false }
         return await routeCatalog.replace(with: directory, scope: generation)
     }
@@ -104,7 +104,9 @@ public final class MobileIrxDiscoveryProvider: MobileIrohMacDiscovering,
         self.invalidateSnapshot = invalidateSnapshot
         self.revokeBinding = revokeBinding
         self.authenticatedAccountID = authenticatedAccountID
-        self.authenticatedScopeID = authenticatedScopeID ?? authenticatedAccountID
+        let scopeID = authenticatedScopeID ?? authenticatedAccountID
+        self.authenticatedScopeID = scopeID
+        self.routeCatalog = MobileIrohRouteCatalog(authenticatedScopeID: scopeID)
     }
 
     public convenience init(
