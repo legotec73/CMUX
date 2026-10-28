@@ -41,8 +41,11 @@ on:
 
 permissions: {}
 
+# A dispatch for one build has its own group, so the next scheduled tick never
+# replaces it; schedule ticks read the feed when they start, so one waiting
+# tick does the work of any it replaced.
 concurrency:
-  group: nightly-next-canary-${{ github.event.pull_request.number || 'feed' }}
+  group: nightly-next-canary-${{ github.event.pull_request.number || inputs.build != '' && format('build-{0}', inputs.build) || 'feed' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -125,7 +128,7 @@ jobs:
     needs: pick
     if: needs.pick.result == 'success' && needs.pick.outputs.checked != 'true'
     # No secrets: this job runs the published app.
-    runs-on: macos-26
+    runs-on: ${{ github.repository_owner != 'manaflow-ai' && 'macos-26' || 'blacksmith-6vcpu-macos-26' }}
     timeout-minutes: 25
     permissions:
       contents: read
