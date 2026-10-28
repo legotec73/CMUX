@@ -338,7 +338,7 @@ public final class AcpmuxHub {
             Task { [weak self] in
                 guard let self, let connection = self.connection else { return }
                 _ = try? await connection.request("_acpmux/watch", .object(["enabled": .bool(true)]))
-                for entry in self.sources.values { entry.source?.linkUp() }
+                for entry in self.sources.values { entry.source?.refill() }
             }
         default:
             break
@@ -691,6 +691,23 @@ public final class AcpmuxSessionSource: AgentSessionSource {
         fullAccessChanged(false)
     }
 
+    /// The Mac dropped notifications to this connection (`_acpmux/lagged`): attach again
+    /// from the last record applied, holding live records until that page is in, so the
+    /// records in the gap are applied in order instead of skipped as older than `lastSeq`.
+    func refill() {
+        // An attach in flight may have read its page before the Mac dropped records: refill
+        // once it ends.
+        guard !attaching else {
+            refillPending = true
+            return
+        }
+        attached = false
+        linkUp()
+    }
+
+    /// A lag that came while an attach ran (`refill`).
+    private var refillPending = false
+
     func linkUp() {
         guard !attaching, let hub, hub.isReady else { return }
         attaching = true
@@ -698,7 +715,13 @@ public final class AcpmuxSessionSource: AgentSessionSource {
     }
 
     private func attach(_ hub: AcpmuxHub) async {
-        defer { attaching = false }
+        defer {
+            attaching = false
+            if refillPending, attached {
+                refillPending = false
+                refill()
+            }
+        }
         do {
             var params: [String: JSONValue] = [
                 "sessionId": .string(sessionID),
@@ -707,10 +730,30 @@ public final class AcpmuxSessionSource: AgentSessionSource {
                 "eventStream": .bool(true),
             ]
             if lastSeq > 0 { params["afterSeq"] = .number(Double(lastSeq)) }
+            let after = lastSeq
             let result = try await hub.request("_acpmux/attach", .object(params))
             var page = result["events"]?.arrayValue ?? []
+            // A reattach (the link came back, or the Mac said this connection lagged) asks for
+            // what came after the last record applied, oldest first and one page at a time: page
+            // forward until a page reaches the log's end. Otherwise the next live record moves
+            // `lastSeq` past the rest of the gap, and the chat never sees what was in it (a
+            // turn's end, a decision made on the Mac).
+            if lastSeq > 0 {
+                var more = result["hasMore"] == .bool(true)
+                while more, let newest = page.last?["seq"]?.numberValue {
+                    let next = try await hub.request("_acpmux/events", .object([
+                        "sessionId": .string(sessionID), "afterSeq": .number(newest),
+                        "limit": .number(Double(Self.pageSize)), "kinds": Self.chatKinds,
+                    ]))
+                    let events = next["events"]?.arrayValue ?? []
+                    page += events
+                    more = !events.isEmpty && next["hasMore"] == .bool(true)
+                }
+            }
             // First attach: page older records back until the history starts or the cap.
-            if lastSeq == 0, result["hasMore"] == .bool(true) {
+            let firstAttach = lastSeq == 0
+            var earlier = firstAttach && result["hasMore"] == .bool(true)
+            if earlier {
                 while page.count < Self.maxHistory, let oldest = page.first?["seq"]?.numberValue {
                     let older = try await hub.request("_acpmux/events", .object([
                         "sessionId": .string(sessionID), "beforeSeq": .number(oldest),
@@ -718,9 +761,11 @@ public final class AcpmuxSessionSource: AgentSessionSource {
                     ]))
                     let events = older["events"]?.arrayValue ?? []
                     page = events + page
-                    if events.isEmpty || older["hasMore"] != .bool(true) { break }
+                    earlier = !events.isEmpty && older["hasMore"] == .bool(true)
+                    if !earlier { break }
                 }
             }
+            log.info("attach \(self.sessionID, privacy: .public) after \(after, privacy: .public): \(page.count, privacy: .public) records, through \(page.last?["seq"]?.numberValue ?? 0, privacy: .public), held \(self.held.count, privacy: .public)")
             if let detail = result["session"], let session = AcpmuxSession(detail) {
                 summary.status = session.summaryStatus
                 if !session.name.isEmpty { summary.name = session.name }
@@ -731,6 +776,7 @@ public final class AcpmuxSessionSource: AgentSessionSource {
             // transcript instead of animating every past record in (or, on a reattach, the
             // records missed while the link was down). Records after the reply are live.
             beginHistory()
+            if firstAttach { emit(.earlierHistory(earlier)) }
             for record in page { receive(record: record) }
             // This connection's Full-access setting, before the modes it widens.
             emit(.fullAccess(hub.fullAccess))
@@ -767,6 +813,14 @@ public final class AcpmuxSessionSource: AgentSessionSource {
         } catch {
             endHistory()
             emit(.clientError(Self.message(error)))
+            // A reattach that failed (a lag refill, mostly) keeps the chat live: records held
+            // meanwhile are applied, as before it started; the gap waits for the next attach.
+            if lastSeq > 0 {
+                attached = true
+                let pending = held
+                held = []
+                for record in pending { receive(record: record) }
+            }
         }
     }
 
