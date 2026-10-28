@@ -12,6 +12,7 @@ import type { ComposerHandle } from "../src/agent-session/acpmux/Composer";
 import { promptBlocks, type ComposerAttachment } from "../src/agent-session/acpmux/attachments";
 import { liftInlineImages, withoutDataUris } from "../src/agent-session/acpmux/inlineImages";
 import type { AcpmuxRow } from "../src/agent-session/acpmux/model";
+import { COMPOSER_PREVIEW, installComposerImageEngine } from "./support/composerImageEngine";
 
 const scope = globalThis as Record<string, unknown>;
 const keys = [
@@ -33,8 +34,10 @@ const saved = keys.map((key) => [key, key in scope, scope[key]] as const);
 let dom: JSDOM;
 let root: Root | undefined;
 let host: HTMLElement;
+let restoreImageEngine: () => void;
 
 beforeAll(() => {
+  restoreImageEngine = installComposerImageEngine();
   dom = new JSDOM("<!doctype html><div id=root></div>", { pretendToBeVisual: true, url: "https://cmux.test/" });
   const { window } = dom;
   Object.assign(scope, {
@@ -66,6 +69,7 @@ afterEach(() => {
 });
 
 afterAll(() => {
+  restoreImageEngine();
   dom.window.close();
   for (const [key, had, value] of saved) {
     if (had) scope[key] = value;
@@ -188,7 +192,8 @@ test("pasting two copied images makes two chips and puts nothing in the prompt",
   await paste({ files: [screenshot(1), screenshot(2)], html: imageHtml(2) });
   const chips = composer.current!.wakeState().attachments ?? [];
   expect(chips.map((chip) => chip.kind)).toEqual(["image", "image"]);
-  expect(chips.every((chip) => chip.data === pngBase64)).toBe(true);
+  const preview = btoa(String.fromCharCode(...COMPOSER_PREVIEW));
+  expect(chips.every((chip) => chip.data === preview)).toBe(true);
   // Nothing inline: no image drawn in the field and no markup or base64 in its text.
   expect(field().querySelector("img")).toBeNull();
   expect(field().textContent).toBe("");

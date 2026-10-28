@@ -11,6 +11,7 @@ import { noChat } from "../src/gallery/fixtures/acpmux";
 import type { Composer as ComposerView, ComposerHandle } from "../src/agent-session/acpmux/Composer";
 import type { ComposerAttachment } from "../src/agent-session/acpmux/attachments";
 import type { KeptAttachments } from "../src/agent-session/acpmux/composer/keptAttachments";
+import { installComposerImageEngine } from "./support/composerImageEngine";
 
 const scope = globalThis as Record<string, unknown>;
 const keys = [
@@ -32,8 +33,10 @@ const saved = keys.map((key) => [key, key in scope, scope[key]] as const);
 let dom: JSDOM;
 let root: Root | undefined;
 let host: HTMLElement;
+let restoreImageEngine: () => void;
 
 beforeAll(() => {
+  restoreImageEngine = installComposerImageEngine();
   dom = new JSDOM("<!doctype html><div id=root></div>", { pretendToBeVisual: true, url: "https://cmux.test/" });
   const { window } = dom;
   Object.assign(scope, {
@@ -65,6 +68,7 @@ afterEach(() => {
 });
 
 afterAll(() => {
+  restoreImageEngine();
   dom.window.close();
   for (const [key, had, value] of saved) {
     if (had) scope[key] = value;
