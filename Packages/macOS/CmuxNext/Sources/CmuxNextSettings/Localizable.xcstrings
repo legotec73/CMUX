@@ -19223,138 +19223,6 @@
         }
       }
     },
-    "settings.default.neverDiscard": {
-      "comment": "Settings > Browser > Memory > Hibernate Hidden Tabs: the value with nothing in cmux.json: hidden tabs only freeze and are never discarded (reloaded) on their own.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Never Discard"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "破棄しない"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "عدم التجاهل أبدًا"
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Nikad ne odbacuj"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Kassér aldrig"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Nie verwerfen"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "No descartar nunca"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Ne jamais décharger"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Non scartare mai"
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "កុំបោះចោលឡើយ"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "삭제 안 함"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Forkast aldri"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Nigdy nie odrzucaj"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Nunca descartar"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Не выгружать"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "ไม่ทิ้งเลย"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Asla atma"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Не вивантажувати"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Không bao giờ loại bỏ"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "从不丢弃"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "永不捨棄"
-          }
-        }
-      }
-    },
     "settings.default.onePixel": {
       "extractionState": "manual",
       "localizations": {
@@ -84805,268 +84673,6 @@
         }
       }
     },
-    "settings.agentPane.scrollToBottomOnSend": {
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "التمرير إلى الأسفل عند الإرسال"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Beim Senden nach unten scrollen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Scroll to Bottom When I Send"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Desplazarse al final al enviar"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Faire défiler jusqu’en bas lors de l’envoi"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "送信時に最下部へスクロール"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "보낼 때 맨 아래로 스크롤"
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Pomjeri na dno pri slanju"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Rul til bunden ved afsendelse"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Scorri in fondo quando invio"
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "រំកិលទៅបាតពេលខ្ញុំផ្ញើ"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Rull til bunnen når jeg sender"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Przewiń na dół podczas wysyłania"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Rolar para o fim ao enviar"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Прокручивать вниз при отправке"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "เลื่อนไปด้านล่างเมื่อส่ง"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Gönderdiğimde alta kaydır"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Прокручувати донизу під час надсилання"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Cuộn xuống cuối khi tôi gửi"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "发送时滚动到底部"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "傳送時捲動到底部"
-          }
-        }
-      }
-    },
-    "settings.agentPane.scrollToBottomOnSend.help": {
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "عند إيقافه، يحافظ الإرسال على موضعك أثناء القراءة إلى الأعلى ويعرض الرسائل الجديدة أدناه."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Wenn deaktiviert, bleibt beim Senden beim Lesen weiter oben deine Position erhalten und neue Nachrichten erscheinen darunter."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "When off, sending while you are reading up keeps your place and shows new messages below."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Desactivado, al enviar se conserva tu posición mientras lees más arriba y se muestran debajo los mensajes nuevos."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Désactivé, l’envoi conserve votre position quand vous lisez plus haut et affiche les nouveaux messages en dessous."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "オフにすると、上を読んでいる間に送信しても位置を維持し、新しいメッセージを下に表示します。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "끄면 위쪽을 읽는 동안 메시지를 보내도 현재 위치가 유지되고 새 메시지가 아래에 표시됩니다."
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Kada je isključeno, slanje dok čitate iznad zadržava vaš položaj i prikazuje nove poruke ispod."
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Når den er slået fra, bevarer afsendelse din placering, mens du læser oppe, og viser nye beskeder nedenunder."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Se disattivato, l'invio mentre leggi più in alto mantiene la tua posizione e mostra i nuovi messaggi sotto."
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "នៅពេលបិទ ការផ្ញើពេលអ្នកកំពុងអានខាងលើនឹងរក្សាទីតាំងរបស់អ្នក ហើយបង្ហាញសារថ្មីខាងក្រោម។"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Når den er av, beholder sending plasseringen mens du leser oppover, og nye meldinger vises nedenfor."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Po wyłączeniu wysłanie wiadomości podczas czytania wyżej zachowuje pozycję i pokazuje nowe wiadomości poniżej."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Quando desativado, enviar enquanto você lê acima mantém sua posição e mostra novas mensagens abaixo."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Если выключено, отправка во время чтения выше сохраняет позицию и показывает новые сообщения ниже."
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "เมื่อปิด การส่งข้อความขณะอ่านด้านบนจะรักษาตำแหน่งของคุณและแสดงข้อความใหม่ด้านล่าง"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Kapalıyken, yukarıda okurken gönderim konumunuzu korur ve yeni mesajları aşağıda gösterir."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Якщо вимкнено, надсилання під час читання вище зберігає позицію та показує нові повідомлення нижче."
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Khi tắt, gửi tin nhắn khi đang đọc ở trên sẽ giữ nguyên vị trí và hiển thị tin nhắn mới bên dưới."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "关闭时，在向上阅读时发送消息会保留当前位置，并在下方显示新消息。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "關閉時，在向上閱讀期間傳送訊息會保留目前位置，並在下方顯示新訊息。"
-          }
-        }
-      }
-    },
     "settings.agentPane.showContextUsage": {
       "extractionState": "manual",
       "localizations": {
@@ -104237,6 +103843,268 @@
         }
       }
     },
+    "settings.browser.agentSecureStoreFill": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Let Agents Sign In from the Secure Store"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "السماح للوكلاء بتسجيل الدخول من المخزن الآمن"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dozvoli agentima prijavu iz Sigurne pohrane"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lad agenter logge ind fra Secure Store"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Agenten aus dem Secure Store anmelden lassen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Permitir que los agentes inicien sesión desde el Secure Store"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Laisser les agents se connecter depuis le Secure Store"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Consenti agli agenti di accedere dal Secure Store"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "エージェントに Secure Store からサインインさせる"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "អនុញ្ញាតឱ្យភ្នាក់ងារចូលពី Secure Store"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "에이전트가 Secure Store로 로그인하도록 허용"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La agenter logge på fra Secure Store"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pozwól agentom logować się z Secure Store"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Permitir que agentes entrem pelo Secure Store"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Разрешить агентам входить через Secure Store"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ให้เอเจนต์ลงชื่อเข้าใช้จาก Secure Store"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ajanların Secure Store ile oturum açmasına izin ver"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Дозволити агентам входити через Secure Store"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cho phép tác tử đăng nhập từ Secure Store"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "允许代理使用安全存储登录"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "允許代理程式使用安全儲存區登入"
+          }
+        }
+      }
+    },
+    "settings.browser.agentSecureStoreFill.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When an agent's page needs a sign-in you saved in the Secure Store, cmux fills it into the agent's own tab. The agent never sees the password, and its scripts are refused on that site from then on."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "عندما تحتاج صفحة الوكيل إلى تسجيل دخول حفظته في Secure Store، يملؤه cmux في علامة تبويب الوكيل نفسه. لا يرى الوكيل كلمة المرور أبدًا، وتُرفض نصوصه البرمجية على ذلك الموقع من ذلك الحين."
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kada stranici agenta zatreba prijava koju ste sačuvali u Secure Store, cmux je popunjava u agentovoj kartici. Agent nikad ne vidi lozinku, a njegove skripte se od tada odbijaju na toj stranici."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Når en agents side skal bruge et login, du har gemt i Secure Store, udfylder cmux det i agentens egen fane. Agenten ser aldrig adgangskoden, og dens scripts afvises på det websted fra da af."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Braucht die Seite eines Agenten eine Anmeldung, die du im Secure Store gespeichert hast, füllt cmux sie im eigenen Tab des Agenten aus. Der Agent sieht das Passwort nie, und seine Skripte werden auf dieser Website ab dann abgelehnt."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cuando la página de un agente necesita un inicio de sesión que guardaste en el Secure Store, cmux lo rellena en la pestaña del agente. El agente nunca ve la contraseña y sus scripts se rechazan en ese sitio a partir de entonces."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quand la page d’un agent a besoin d’un identifiant enregistré dans le Secure Store, cmux le remplit dans l’onglet de l’agent. L’agent ne voit jamais le mot de passe, et ses scripts sont refusés sur ce site dès lors."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quando la pagina di un agente richiede un accesso salvato nel Secure Store, cmux lo compila nella scheda dell’agente. L’agente non vede mai la password e i suoi script vengono rifiutati su quel sito da quel momento."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "エージェントのページで Secure Store に保存したサインインが必要になると、cmux がエージェント自身のタブに入力します。エージェントがパスワードを見ることはなく、以後そのサイトではエージェントのスクリプトは拒否されます。"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "នៅពេលទំព័ររបស់ភ្នាក់ងារត្រូវការការចូលដែលអ្នកបានរក្សាទុកក្នុង Secure Store, cmux បំពេញវាក្នុងផ្ទាំងរបស់ភ្នាក់ងារ។ ភ្នាក់ងារមិនដែលឃើញពាក្យសម្ងាត់ទេ ហើយស្គ្រីបរបស់វាត្រូវបានបដិសេធលើគេហទំព័រនោះតាំងពីពេលនោះ។"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "에이전트의 페이지에 Secure Store에 저장한 로그인이 필요하면 cmux가 에이전트 자신의 탭에 입력합니다. 에이전트는 비밀번호를 보지 못하며, 이후 해당 사이트에서 에이전트의 스크립트는 거부됩니다."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Når en agents side trenger en pålogging du har lagret i Secure Store, fyller cmux den inn i agentens egen fane. Agenten ser aldri passordet, og skriptene dens avvises på det nettstedet fra da av."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gdy strona agenta wymaga logowania zapisanego w Secure Store, cmux wypełnia je w karcie agenta. Agent nigdy nie widzi hasła, a jego skrypty są od tej pory odrzucane w tej witrynie."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quando a página de um agente precisa de um login que você salvou no Secure Store, o cmux o preenche na aba do próprio agente. O agente nunca vê a senha, e os scripts dele são recusados nesse site a partir de então."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Когда странице агента нужен вход, сохранённый в Secure Store, cmux заполняет его во вкладке агента. Агент никогда не видит пароль, а его скрипты на этом сайте с тех пор отклоняются."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "เมื่อหน้าของเอเจนต์ต้องใช้การลงชื่อเข้าใช้ที่คุณบันทึกไว้ใน Secure Store cmux จะกรอกให้ในแท็บของเอเจนต์เอง เอเจนต์จะไม่เห็นรหัสผ่าน และสคริปต์ของเอเจนต์จะถูกปฏิเสธบนเว็บไซต์นั้นนับจากนั้น"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bir ajanın sayfası Secure Store'a kaydettiğiniz bir girişe ihtiyaç duyduğunda cmux bunu ajanın kendi sekmesine doldurur. Ajan parolayı asla görmez ve o andan itibaren o sitede betikleri reddedilir."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Коли сторінці агента потрібен вхід, збережений у Secure Store, cmux заповнює його у вкладці агента. Агент ніколи не бачить пароль, а його скрипти на цьому сайті відтоді відхиляються."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Khi trang của tác tử cần thông tin đăng nhập bạn đã lưu trong Secure Store, cmux sẽ điền vào tab của chính tác tử. Tác tử không bao giờ thấy mật khẩu, và từ đó các script của nó bị từ chối trên trang đó."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "当代理的页面需要你保存在安全存储中的登录信息时，cmux 会将其填入代理自己的标签页。代理永远看不到密码，并且此后它在该网站上的脚本会被拒绝。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "當代理程式的頁面需要你儲存在安全儲存區中的登入資訊時，cmux 會將其填入代理程式自己的分頁。代理程式永遠看不到密碼，且此後它在該網站上的指令碼會被拒絕。"
+          }
+        }
+      }
+    },
     "settings.browser.builtInAdBlocker": {
       "extractionState": "manual",
       "localizations": {
@@ -119318,268 +119186,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "一個工作階段可同時開啟的子工作階段數量上限。關閉一個子工作階段會空出它的位置。"
-          }
-        }
-      }
-    },
-    "settings.agents.subsessions.maxRunning": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Running Sub-sessions per Session"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "الجلسات الفرعية العاملة لكل جلسة"
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pokrenute podsesije po sesiji"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kørende undersessioner pr. session"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Laufende Untersitzungen pro Sitzung"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Subsesiones en ejecución por sesión"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sous-sessions en cours par session"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sottosessioni in esecuzione per sessione"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "セッションごとの実行中のサブセッション"
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "វគ្គរងដែលកំពុងដំណើរការក្នុងមួយវគ្គ"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "세션당 실행 중인 하위 세션"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kjørende underøkter per økt"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Działające podsesje na sesję"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Subsessões em execução por sessão"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Работающих вложенных сеансов на сеанс"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "เซสชันย่อยที่ทำงานอยู่ต่อเซสชัน"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Oturum başına çalışan alt oturum"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Запущених вкладених сеансів на сеанс"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Số phiên con chạy cùng lúc mỗi phiên"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "每个会话同时运行的子会话"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "每個工作階段同時執行的子工作階段"
-          }
-        }
-      }
-    },
-    "settings.agents.subsessions.maxRunning.help": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The most sub-sessions one session runs at the same time. More wait their turn and start as running ones finish. Running ones are never stopped when you lower it."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "أقصى عدد من الجلسات الفرعية التي تشغّلها جلسة واحدة في الوقت نفسه. تنتظر الجلسات الأخرى دورها وتبدأ عندما تنتهي الجلسات العاملة. لا تتوقف الجلسات العاملة أبدًا عند خفض هذا العدد."
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Najveći broj podsesija koje jedna sesija pokreće u isto vrijeme. Ostale čekaju na red i pokreću se kad pokrenute završe. Pokrenute se nikad ne zaustavljaju kad smanjite broj."
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Det største antal undersessioner, én session kører på samme tid. Flere venter på tur og starter, når kørende afslutter. Kørende stoppes aldrig, når du sænker tallet."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die höchste Zahl an Untersitzungen, die eine Sitzung gleichzeitig ausführt. Weitere warten und starten, sobald laufende fertig sind. Laufende werden nie gestoppt, wenn du den Wert senkst."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El número máximo de subsesiones que una sesión ejecuta a la vez. Las demás esperan su turno y empiezan cuando terminan las que están en ejecución. Al bajarlo, las que están en ejecución nunca se detienen."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Le nombre maximal de sous-sessions qu’une session exécute en même temps. Les autres attendent leur tour et démarrent quand celles en cours se terminent. Baisser ce nombre n’arrête jamais celles en cours."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Il numero massimo di sottosessioni che una sessione esegue contemporaneamente. Le altre aspettano il loro turno e partono quando quelle in esecuzione finiscono. Abbassarlo non ferma mai quelle in esecuzione."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1 つのセッションが同時に実行するサブセッションの最大数です。それ以上は順番を待ち、実行中のものが終わると開始します。値を下げても実行中のものは停止しません。"
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ចំនួនវគ្គរងច្រើនបំផុតដែលវគ្គមួយដំណើរការក្នុងពេលតែមួយ។ វគ្គផ្សេងទៀតរង់ចាំវេន ហើយចាប់ផ្ដើមនៅពេលវគ្គដែលកំពុងដំណើរការបញ្ចប់។ វគ្គដែលកំពុងដំណើរការមិនដែលត្រូវបានបញ្ឈប់ទេ នៅពេលអ្នកបន្ថយវា។"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "한 세션이 동시에 실행하는 하위 세션의 최대 개수입니다. 나머지는 차례를 기다렸다가 실행 중인 세션이 끝나면 시작됩니다. 값을 낮춰도 실행 중인 세션은 멈추지 않습니다."
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Det største antallet underøkter én økt kjører samtidig. Flere venter på tur og starter når kjørende blir ferdige. Kjørende stoppes aldri når du senker tallet."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Największa liczba podsesji, które jedna sesja uruchamia jednocześnie. Kolejne czekają na swoją kolej i startują, gdy działające się skończą. Zmniejszenie wartości nigdy nie zatrzymuje działających."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "O número máximo de subsessões que uma sessão executa ao mesmo tempo. As demais aguardam a vez e começam quando as em execução terminam. Reduzir o valor nunca interrompe as que estão em execução."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Наибольшее число вложенных сеансов, которые один сеанс выполняет одновременно. Остальные ждут своей очереди и запускаются, когда работающие завершатся. При уменьшении значения работающие сеансы не останавливаются."
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "จำนวนเซสชันย่อยสูงสุดที่เซสชันหนึ่งทำงานพร้อมกัน ส่วนที่เกินจะรอคิวและเริ่มเมื่อเซสชันที่ทำงานอยู่เสร็จ การลดค่านี้จะไม่หยุดเซสชันที่ทำงานอยู่"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bir oturumun aynı anda çalıştırdığı en fazla alt oturum sayısı. Fazlası sırasını bekler ve çalışanlar bittikçe başlar. Değeri düşürdüğünüzde çalışanlar asla durdurulmaz."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Найбільша кількість вкладених сеансів, які один сеанс виконує одночасно. Решта чекають своєї черги й запускаються, коли запущені завершаться. Якщо зменшити значення, запущені сеанси не зупиняються."
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Số phiên con tối đa mà một phiên chạy cùng lúc. Các phiên khác chờ đến lượt và bắt đầu khi phiên đang chạy kết thúc. Giảm giá trị này không bao giờ dừng các phiên đang chạy."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "一个会话同时运行的子会话数量上限。超出的子会话排队等待，在运行中的子会话结束后开始。调低此值不会停止正在运行的子会话。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "一個工作階段同時執行的子工作階段數量上限。超出的子工作階段排隊等候，在執行中的子工作階段結束後開始。調低此值不會停止正在執行的子工作階段。"
           }
         }
       }
@@ -175269,6 +174875,662 @@
           "stringUnit": {
             "state": "translated",
             "value": "標籤頁"
+          }
+        }
+      }
+    },
+    "settings.default.neverDiscard": {
+      "comment": "Settings > Browser > Memory > Hibernate Hidden Tabs: the value with nothing in cmux.json: hidden tabs only freeze and are never discarded (reloaded) on their own.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Never Discard"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "破棄しない"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "عدم التجاهل أبدًا"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nikad ne odbacuj"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kassér aldrig"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nie verwerfen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No descartar nunca"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ne jamais décharger"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Non scartare mai"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "កុំបោះចោលឡើយ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "삭제 안 함"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Forkast aldri"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nigdy nie odrzucaj"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nunca descartar"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Не выгружать"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ไม่ทิ้งเลย"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Asla atma"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Не вивантажувати"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Không bao giờ loại bỏ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "从不丢弃"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "永不捨棄"
+          }
+        }
+      }
+    },
+    "settings.agentPane.scrollToBottomOnSend": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "التمرير إلى الأسفل عند الإرسال"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Beim Senden nach unten scrollen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Scroll to Bottom When I Send"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Desplazarse al final al enviar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Faire défiler jusqu’en bas lors de l’envoi"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "送信時に最下部へスクロール"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "보낼 때 맨 아래로 스크롤"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pomjeri na dno pri slanju"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rul til bunden ved afsendelse"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Scorri in fondo quando invio"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "រំកិលទៅបាតពេលខ្ញុំផ្ញើ"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rull til bunnen når jeg sender"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Przewiń na dół podczas wysyłania"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rolar para o fim ao enviar"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Прокручивать вниз при отправке"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "เลื่อนไปด้านล่างเมื่อส่ง"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gönderdiğimde alta kaydır"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Прокручувати донизу під час надсилання"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cuộn xuống cuối khi tôi gửi"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "发送时滚动到底部"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "傳送時捲動到底部"
+          }
+        }
+      }
+    },
+    "settings.agentPane.scrollToBottomOnSend.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "عند إيقافه، يحافظ الإرسال على موضعك أثناء القراءة إلى الأعلى ويعرض الرسائل الجديدة أدناه."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wenn deaktiviert, bleibt beim Senden beim Lesen weiter oben deine Position erhalten und neue Nachrichten erscheinen darunter."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "When off, sending while you are reading up keeps your place and shows new messages below."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Desactivado, al enviar se conserva tu posición mientras lees más arriba y se muestran debajo los mensajes nuevos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Désactivé, l’envoi conserve votre position quand vous lisez plus haut et affiche les nouveaux messages en dessous."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "オフにすると、上を読んでいる間に送信しても位置を維持し、新しいメッセージを下に表示します。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "끄면 위쪽을 읽는 동안 메시지를 보내도 현재 위치가 유지되고 새 메시지가 아래에 표시됩니다."
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kada je isključeno, slanje dok čitate iznad zadržava vaš položaj i prikazuje nove poruke ispod."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Når den er slået fra, bevarer afsendelse din placering, mens du læser oppe, og viser nye beskeder nedenunder."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Se disattivato, l'invio mentre leggi più in alto mantiene la tua posizione e mostra i nuovi messaggi sotto."
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "នៅពេលបិទ ការផ្ញើពេលអ្នកកំពុងអានខាងលើនឹងរក្សាទីតាំងរបស់អ្នក ហើយបង្ហាញសារថ្មីខាងក្រោម។"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Når den er av, beholder sending plasseringen mens du leser oppover, og nye meldinger vises nedenfor."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Po wyłączeniu wysłanie wiadomości podczas czytania wyżej zachowuje pozycję i pokazuje nowe wiadomości poniżej."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quando desativado, enviar enquanto você lê acima mantém sua posição e mostra novas mensagens abaixo."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Если выключено, отправка во время чтения выше сохраняет позицию и показывает новые сообщения ниже."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "เมื่อปิด การส่งข้อความขณะอ่านด้านบนจะรักษาตำแหน่งของคุณและแสดงข้อความใหม่ด้านล่าง"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kapalıyken, yukarıda okurken gönderim konumunuzu korur ve yeni mesajları aşağıda gösterir."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Якщо вимкнено, надсилання під час читання вище зберігає позицію та показує нові повідомлення нижче."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Khi tắt, gửi tin nhắn khi đang đọc ở trên sẽ giữ nguyên vị trí và hiển thị tin nhắn mới bên dưới."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "关闭时，在向上阅读时发送消息会保留当前位置，并在下方显示新消息。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "關閉時，在向上閱讀期間傳送訊息會保留目前位置，並在下方顯示新訊息。"
+          }
+        }
+      }
+    },
+    "settings.agents.subsessions.maxRunning": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running Sub-sessions per Session"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الجلسات الفرعية العاملة لكل جلسة"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokrenute podsesije po sesiji"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kørende undersessioner pr. session"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laufende Untersitzungen pro Sitzung"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subsesiones en ejecución por sesión"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sous-sessions en cours par session"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sottosessioni in esecuzione per sessione"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "セッションごとの実行中のサブセッション"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "វគ្គរងដែលកំពុងដំណើរការក្នុងមួយវគ្គ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "세션당 실행 중인 하위 세션"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kjørende underøkter per økt"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Działające podsesje na sesję"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subsessões em execução por sessão"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Работающих вложенных сеансов на сеанс"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "เซสชันย่อยที่ทำงานอยู่ต่อเซสชัน"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oturum başına çalışan alt oturum"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запущених вкладених сеансів на сеанс"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Số phiên con chạy cùng lúc mỗi phiên"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每个会话同时运行的子会话"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每個工作階段同時執行的子工作階段"
+          }
+        }
+      }
+    },
+    "settings.agents.subsessions.maxRunning.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The most sub-sessions one session runs at the same time. More wait their turn and start as running ones finish. Running ones are never stopped when you lower it."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أقصى عدد من الجلسات الفرعية التي تشغّلها جلسة واحدة في الوقت نفسه. تنتظر الجلسات الأخرى دورها وتبدأ عندما تنتهي الجلسات العاملة. لا تتوقف الجلسات العاملة أبدًا عند خفض هذا العدد."
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Najveći broj podsesija koje jedna sesija pokreće u isto vrijeme. Ostale čekaju na red i pokreću se kad pokrenute završe. Pokrenute se nikad ne zaustavljaju kad smanjite broj."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det største antal undersessioner, én session kører på samme tid. Flere venter på tur og starter, når kørende afslutter. Kørende stoppes aldrig, når du sænker tallet."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die höchste Zahl an Untersitzungen, die eine Sitzung gleichzeitig ausführt. Weitere warten und starten, sobald laufende fertig sind. Laufende werden nie gestoppt, wenn du den Wert senkst."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El número máximo de subsesiones que una sesión ejecuta a la vez. Las demás esperan su turno y empiezan cuando terminan las que están en ejecución. Al bajarlo, las que están en ejecución nunca se detienen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le nombre maximal de sous-sessions qu’une session exécute en même temps. Les autres attendent leur tour et démarrent quand celles en cours se terminent. Baisser ce nombre n’arrête jamais celles en cours."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il numero massimo di sottosessioni che una sessione esegue contemporaneamente. Le altre aspettano il loro turno e partono quando quelle in esecuzione finiscono. Abbassarlo non ferma mai quelle in esecuzione."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 つのセッションが同時に実行するサブセッションの最大数です。それ以上は順番を待ち、実行中のものが終わると開始します。値を下げても実行中のものは停止しません。"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ចំនួនវគ្គរងច្រើនបំផុតដែលវគ្គមួយដំណើរការក្នុងពេលតែមួយ។ វគ្គផ្សេងទៀតរង់ចាំវេន ហើយចាប់ផ្ដើមនៅពេលវគ្គដែលកំពុងដំណើរការបញ្ចប់។ វគ្គដែលកំពុងដំណើរការមិនដែលត្រូវបានបញ្ឈប់ទេ នៅពេលអ្នកបន្ថយវា។"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "한 세션이 동시에 실행하는 하위 세션의 최대 개수입니다. 나머지는 차례를 기다렸다가 실행 중인 세션이 끝나면 시작됩니다. 값을 낮춰도 실행 중인 세션은 멈추지 않습니다."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det største antallet underøkter én økt kjører samtidig. Flere venter på tur og starter når kjørende blir ferdige. Kjørende stoppes aldri når du senker tallet."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Największa liczba podsesji, które jedna sesja uruchamia jednocześnie. Kolejne czekają na swoją kolej i startują, gdy działające się skończą. Zmniejszenie wartości nigdy nie zatrzymuje działających."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O número máximo de subsessões que uma sessão executa ao mesmo tempo. As demais aguardam a vez e começam quando as em execução terminam. Reduzir o valor nunca interrompe as que estão em execução."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Наибольшее число вложенных сеансов, которые один сеанс выполняет одновременно. Остальные ждут своей очереди и запускаются, когда работающие завершатся. При уменьшении значения работающие сеансы не останавливаются."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "จำนวนเซสชันย่อยสูงสุดที่เซสชันหนึ่งทำงานพร้อมกัน ส่วนที่เกินจะรอคิวและเริ่มเมื่อเซสชันที่ทำงานอยู่เสร็จ การลดค่านี้จะไม่หยุดเซสชันที่ทำงานอยู่"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir oturumun aynı anda çalıştırdığı en fazla alt oturum sayısı. Fazlası sırasını bekler ve çalışanlar bittikçe başlar. Değeri düşürdüğünüzde çalışanlar asla durdurulmaz."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Найбільша кількість вкладених сеансів, які один сеанс виконує одночасно. Решта чекають своєї черги й запускаються, коли запущені завершаться. Якщо зменшити значення, запущені сеанси не зупиняються."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Số phiên con tối đa mà một phiên chạy cùng lúc. Các phiên khác chờ đến lượt và bắt đầu khi phiên đang chạy kết thúc. Giảm giá trị này không bao giờ dừng các phiên đang chạy."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一个会话同时运行的子会话数量上限。超出的子会话排队等待，在运行中的子会话结束后开始。调低此值不会停止正在运行的子会话。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一個工作階段同時執行的子工作階段數量上限。超出的子工作階段排隊等候，在執行中的子工作階段結束後開始。調低此值不會停止正在執行的子工作階段。"
           }
         }
       }

@@ -7730,6 +7730,138 @@
         }
       }
     },
+    "control.error.fillLoginFailed": {
+      "comment": "cmux browser fill-login: the page script that fills the person's saved login (username and password from the Secure Store) into the page failed. The error never names the page's message.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The page did not take the saved login"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "لم تقبل الصفحة تسجيل الدخول المحفوظ"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Stranica nije prihvatila sačuvanu prijavu"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Siden tog ikke imod det gemte login"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Seite hat die gespeicherte Anmeldung nicht übernommen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La página no aceptó el inicio de sesión guardado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La page n’a pas accepté l’identifiant enregistré"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La pagina non ha accettato l’accesso salvato"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ページが保存済みのログイン情報を受け付けませんでした"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ទំព័រមិនបានទទួលយកការចូលដែលបានរក្សាទុកទេ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "페이지가 저장된 로그인을 받아들이지 않았습니다"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Siden tok ikke imot den lagrede påloggingen"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Strona nie przyjęła zapisanego logowania"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "A página não aceitou o login salvo"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Страница не приняла сохранённые данные для входа"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "หน้าเว็บไม่รับข้อมูลเข้าสู่ระบบที่บันทึกไว้"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sayfa kayıtlı girişi kabul etmedi"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Сторінка не прийняла збережені дані для входу"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Trang không nhận thông tin đăng nhập đã lưu"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "页面未接受已保存的登录信息"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "頁面未接受已儲存的登入資訊"
+          }
+        }
+      }
+    },
     "control.error.focusShape": {
       "extractionState": "manual",
       "localizations": {
@@ -13898,6 +14030,138 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "此 App 無法在第二個窗格中顯示分頁"
+          }
+        }
+      }
+    },
+    "control.error.loginFilled": {
+      "comment": "cmux browser eval or wait --function: refused because the app filled the person's saved login (Secure Store) on this site (origin), so an agent's script there could read it back. Agent scripts stay refused on that site.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This site holds a filled sign-in; agent scripts cannot run on it"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "يحتوي هذا الموقع على تسجيل دخول مُعبأ؛ لا يمكن تشغيل نصوص الوكيل عليه"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ova stranica sadrži popunjenu prijavu; skripte agenta se na njoj ne mogu pokretati"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dette websted har et udfyldt login; agentscripts kan ikke køre på det"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Diese Website enthält eine ausgefüllte Anmeldung; Agent-Skripte können dort nicht laufen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Este sitio tiene un inicio de sesión rellenado; los scripts del agente no pueden ejecutarse en él"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ce site contient un identifiant rempli ; les scripts de l’agent ne peuvent pas s’y exécuter"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Questo sito contiene un accesso compilato; gli script dell’agente non possono essere eseguiti"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "このサイトには入力済みのログイン情報があります。エージェントのスクリプトは実行できません"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "គេហទំព័រនេះមានការចូលដែលបានបំពេញ; ស្គ្រីបរបស់ភ្នាក់ងារមិនអាចដំណើរការលើវាបានទេ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "이 사이트에는 입력된 로그인 정보가 있어 에이전트 스크립트를 실행할 수 없습니다"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dette nettstedet har en utfylt pålogging; agentskript kan ikke kjøre på det"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ta witryna zawiera wypełnione logowanie; skrypty agenta nie mogą na niej działać"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Este site contém um login preenchido; scripts do agente não podem ser executados nele"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "На этом сайте заполнены данные для входа; скрипты агента на нём не запускаются"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "เว็บไซต์นี้มีข้อมูลเข้าสู่ระบบที่กรอกไว้แล้ว สคริปต์ของเอเจนต์จึงทำงานบนเว็บไซต์นี้ไม่ได้"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bu sitede doldurulmuş bir giriş var; ajan betikleri bu sitede çalışamaz"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "На цьому сайті заповнено дані для входу; скрипти агента на ньому не запускаються"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Trang web này đang chứa thông tin đăng nhập đã điền; không thể chạy script của tác tử trên đó"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "此网站包含已填写的登录信息；无法在其上运行代理脚本"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "此網站包含已填寫的登入資訊；無法在其上執行代理程式指令碼"
           }
         }
       }

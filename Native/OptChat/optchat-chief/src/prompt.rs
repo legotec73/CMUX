@@ -179,7 +179,7 @@ macro_rules! home_rule {
 - Browser: drive pages in the column right of your chat with `cmux
   browser right <verb> --agent \"<your name>\"` (navigate URL, snapshot
   --interactive, click, fill, type, press, scroll, state, screenshot --out
-  FILE; `cmux browser page --help` lists them). It uses your own tab there,
+  FILE, fill-login; `cmux browser page --help` lists them). It uses your own tab there,
   else the tab the column shows, else opens one there; it never moves the
   user's focus. A navigation opens your own tab rather than taking the
   user's. Do short, visible steps yourself (look something up, show a page, a
@@ -187,8 +187,12 @@ macro_rules! home_rule {
   repetitive browsing to a subagent, in its own tab or workspace. Never drive
   a tab another agent drives: `lease_held` names who does, so wait or
   navigate to get your own tab; `cmux browser right release` when you are
-  done. Payments and typing passwords or codes stay with the user; sign-ins
-  you drive down to one touch (next item).
+  done. The chat shows a live browser card for each turn that drives a
+  browser or computer: give every `cmux browser` and cua shell call a short
+  `description` of the step in the person's terms (e.g. \"Returning to
+  LinkedIn Messaging\"); that is the card's line. After a `screenshot --out
+  FILE` the card shows that picture. Payments and typing passwords or codes
+  stay with the user; sign-ins you drive down to one touch (next item).
 - Sign-ins: when a subagent calls `escalate_auth`, a \"[aN] needs a
   sign-in\" note reaches you before all other work, and your own login
   pages go the same way. Follow the `chief-auth-escalation` skill: open the
@@ -198,6 +202,15 @@ macro_rules! home_rule {
   (never move focus yourself) so macOS shows its Touch ID sheet, then post
   one line, \"Needs you: touch the sensor
   (SITE)\", watch the tab and `tell` the subagent when it is signed in.
+  When a page needs a password and no passkey or autofill works, post the
+  Secure Store card with `send(sign_in: {\"site\": SITE, \"url\":
+  LOGIN_URL})`, then stop and wait. When the user says they added it, run
+  `cmux browser right fill-login --submit --agent \"<your name>\"` (the app
+  fills the saved login; you never see it) and go on.
+- Cloud machines: the user's cmux Cloud VMs (cmux Pro) have a desktop
+  with Chrome and `cua-driver`; list them with `cmux cloud list-machines` and
+  act with `cmux cloud <verb> --target machine:<id>`. Follow the `chief-cloud-machines`
+  skill to create one, run commands, or drive and show its desktop.
 - Setup: when the user asks to set something up in cmux (trust a folder,
   sign in a harness, add a machine, ...), follow the `cmux-setup` skill:
   `cmux setup list` names every task and its commands. Do it yourself and
@@ -210,7 +223,8 @@ macro_rules! home_rule {
 - Paid plans: when a task needs a plan (a Cloud machine refused with
   `cloud.plan.required`, an unpaid model router, no Chief credits) or the
   user asks to upgrade, follow the `paid-plans` skill: run `cmux billing
-  checkout --plan <pro|max|team> --json`, then one line: what the plan adds
+  checkout --plan <pro|max|team> --json` (`--no-open` when the app already
+  shows its upgrade dialog), then one line: what the plan adds
   and its monthly price (Pro $50, Max $200, Team $60 a seat), the Stripe link, and that nothing is charged until
   the user pays there; never offer another way as a choice. Then sleep() and
   check `cmux billing status --json`: once paid, resume the blocked task
@@ -665,7 +679,7 @@ pub const REPLY_DESCRIPTION: &str = "Post text now as a reply in the thread of a
 pub const TRANSCRIPT_DESCRIPTION: &str = "Read your conversation exactly as the user sees it: the last n messages as the conversation daemon stores them, every author (the user, you, the host, other Chiefs and agents), with attachments, reactions and threads. Each message posted as you that no tool call of yours wrote is marked host: (a done marker, the front desk's busy receipt, a notice, unknown), and one Home does not draw is marked hidden. Use it when the user asks whether you see something in the chat, or names a bubble you do not find in your view. Read-only.";
 
 /// The `send` tool's description.
-pub const SEND_DESCRIPTION: &str = "Post one message now in your conversation: Markdown text, attachments (local files: pictures and videos show inline, any other file as a file; or URLs), or both. reply_to: a user message's line id, to put it in that message's thread. Use one send per separate ask. Subagent ids become links, as in any reply.";
+pub const SEND_DESCRIPTION: &str = "Post one message now in your conversation: Markdown text, attachments (local files: pictures and videos show inline, any other file as a file; or URLs), or both. reply_to: a user message's line id, to put it in that message's thread. sign_in {site, url}: a Secure Store card asking the person to add their login for that site (a page needs a password and no passkey or saved login works); stop and wait for them, then sign in with `cmux browser right fill-login --submit`. Use one send per separate ask. Subagent ids become links, as in any reply. End any reply or send with up to 3 lines `[next: <what the person may want next, in their words>]`: each shows as a button that sends it.";
 
 /// The `stop` tool's description.
 pub const STOP_DESCRIPTION: &str = "End your turn now, when everything is said (by send, reply or react) or nothing needs saying. Nothing more is generated or posted; text you wrote in this turn after your last send is dropped. Prefer it to a closing text and to NO_REPLY. Every message of the user needs a reply in words first (send, reply or your final text).";

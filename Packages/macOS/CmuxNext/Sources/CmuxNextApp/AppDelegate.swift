@@ -355,6 +355,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         services.themes.start()
         services.themes.followChromeTheme(settings)
         services.remoteLocalhost.follow(settings)
+        // A Cloud machine's localhost (Open Desktop, or a machine whose cmux-tui has no loopback
+        // forward) goes over the app's own WireGuard tunnel, as in cmux Classic.
+        services.remoteLocalhost.cloudTunnelSocket = services.cloud.tunnelSocket
         services.bookmarks.follow(settings)
         services.apps.start()
         Task {
@@ -414,7 +417,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     BrowserPageService(engine: AppBrowserPageEngine(services: services), passkeys: passkeys,
                                        agentMouse: { [weak settings] in
                                            await MainActor.run { settings?.snapshot.browserAgentMouse } ?? AgentMouseSetting().fallback
-                                       }, mirrors: services).install(on: router)
+                                       }, mirrors: services,
+                                       // `browser.page.fill_login`: the person's Secure Store logins.
+                                       logins: BrowserPageService.secureStoreLogins,
+                                       // The app's one login guard, shared with the browser host.
+                                       loginGuards: services.loginGuards,
+                                       // `browser.agentSecureStoreFill`, off by default.
+                                       secureStoreFillEnabled: { [weak settings] in
+                                           await MainActor.run { settings?.snapshot.browserAgentSecureStoreFill } ?? false
+                                       })
+                        .install(on: router)
                     services.apps.attach(router: router)
                 }
                 logger.info("control socket \(self.control.socketPath ?? "", privacy: .public)")
