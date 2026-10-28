@@ -118674,360 +118674,6 @@
         }
       }
     },
-    "cli.surface.newDisplay.usage": {
-        "extractionState": "manual",
-        "localizations": {
-          "en": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
-            }
-          },
-          "de": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
-            }
-          },
-          "fr": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
-            }
-          },
-          "ar": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
-            }
-          },
-          "es": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
-            }
-          },
-          "zh-Hant": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
-            }
-          },
-          "zh-Hans": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
-            }
-          },
-          "ko": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
-            }
-          },
-          "ja": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
-            }
-          }
-        }
-      },
-    "cli.surface.newDisplay.help": {
-        "extractionState": "manual",
-        "localizations": {
-          "en": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "creates a new VNC display on a cloud machine and opens it unless --no-open."
-            }
-          },
-          "de": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "erstellt eine neue VNC-Anzeige auf einer Cloud-Maschine und öffnet sie, sofern nicht --no-open."
-            }
-          },
-          "fr": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "crée un nouvel écran VNC sur une machine cloud et l’ouvre sauf si --no-open est utilisé."
-            }
-          },
-          "ar": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "ينشئ شاشة VNC جديدة على جهاز سحابي ويفتحها ما لم يتم تمرير --no-open."
-            }
-          },
-          "es": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "crea una nueva pantalla VNC en una máquina en la nube y la abre salvo que se use --no-open."
-            }
-          },
-          "zh-Hant": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "在雲端機器上建立新的 VNC 顯示器，除非指定 --no-open，否則會開啟。"
-            }
-          },
-          "zh-Hans": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "在云端机器上创建新的 VNC 屏幕，除非传入 --no-open，否则会打开。"
-            }
-          },
-          "ko": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "클라우드 머신에 새 VNC 디스플레이를 만들고 --no-open을 지정하지 않으면 엽니다."
-            }
-          },
-          "ja": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "クラウドマシンに新しい VNC ディスプレイを作成し、--no-open を指定しない限り開きます。"
-            }
-          }
-        }
-      },
-    "cli.surface.newDisplay.error.unknownOption": {
-        "extractionState": "manual",
-        "localizations": {
-          "en": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: unknown option"
-            }
-          },
-          "de": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: unbekannte Option"
-            }
-          },
-          "fr": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display : option inconnue"
-            }
-          },
-          "ar": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: خيار غير معروف"
-            }
-          },
-          "es": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: opción desconocida"
-            }
-          },
-          "zh-Hant": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display：未知選項"
-            }
-          },
-          "zh-Hans": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display：未知选项"
-            }
-          },
-          "ko": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: 알 수 없는 옵션"
-            }
-          },
-          "ja": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: 不明なオプション"
-            }
-          }
-        }
-      },
-    "cli.surface.newDisplay.error.unexpectedArgument": {
-        "extractionState": "manual",
-        "localizations": {
-          "en": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: unexpected argument"
-            }
-          },
-          "de": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: unerwartetes Argument"
-            }
-          },
-          "fr": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display : argument inattendu"
-            }
-          },
-          "ar": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: وسيطة غير متوقعة"
-            }
-          },
-          "es": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: argumento inesperado"
-            }
-          },
-          "zh-Hant": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display：未預期的引數"
-            }
-          },
-          "zh-Hans": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display：意外参数"
-            }
-          },
-          "ko": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: 예기치 않은 인수"
-            }
-          },
-          "ja": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: 予期しない引数"
-            }
-          }
-        }
-      },
-    "cli.surface.newDisplay.error.machineRequired": {
-        "extractionState": "manual",
-        "localizations": {
-          "en": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: --machine <cloud-id> is required"
-            }
-          },
-          "de": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: --machine <cloud-id> ist erforderlich"
-            }
-          },
-          "fr": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display : --machine <cloud-id> est requis"
-            }
-          },
-          "ar": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: ‎--machine <cloud-id> مطلوب"
-            }
-          },
-          "es": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: se requiere --machine <cloud-id>"
-            }
-          },
-          "zh-Hant": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display：需要 --machine <cloud-id>"
-            }
-          },
-          "zh-Hans": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display：需要 --machine <cloud-id>"
-            }
-          },
-          "ko": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: --machine <cloud-id>이(가) 필요합니다"
-            }
-          },
-          "ja": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface new-display: --machine <cloud-id> が必要です"
-            }
-          }
-        }
-      },
-    "cli.surface.newDisplay.result.projectionFailed": {
-        "extractionState": "manual",
-        "localizations": {
-          "en": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "(created; open it with `cmux surface open <resource>`)"
-            }
-          },
-          "de": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "(erstellt; mit `cmux surface open <resource>` öffnen)"
-            }
-          },
-          "fr": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "(créé ; ouvrez-le avec `cmux surface open <resource>`)"
-            }
-          },
-          "ar": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "(تم الإنشاء؛ افتحه باستخدام `cmux surface open <resource>`)"
-            }
-          },
-          "es": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "(creado; ábralo con `cmux surface open <resource>`)"
-            }
-          },
-          "zh-Hant": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "（已建立；請使用 `cmux surface open <resource>` 開啟）"
-            }
-          },
-          "zh-Hans": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "（已创建；请使用 `cmux surface open <resource>` 打开）"
-            }
-          },
-          "ko": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "(생성됨; `cmux surface open <resource>`으로 여십시오)"
-            }
-          },
-          "ja": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "（作成済み。`cmux surface open <resource>` で開いてください）"
-            }
-          }
-        }
-      },
     "cli.surface.open.unknownResource": {
       "extractionState": "manual",
       "localizations": {
@@ -433599,478 +433245,6 @@
         }
       }
     },
-    "socket.surface.newDisplay.machineRequired": {
-        "extractionState": "manual",
-        "localizations": {
-          "en": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display requires `machine` (a cloud machine id)."
-            }
-          },
-          "de": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display benötigt `machine` (eine Cloud-Maschinen-ID)."
-            }
-          },
-          "fr": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display nécessite `machine` (un identifiant de machine cloud)."
-            }
-          },
-          "ar": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "يتطلب surface.new_display قيمة `machine` (معرّف جهاز سحابي)."
-            }
-          },
-          "es": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display requiere `machine` (un identificador de máquina en la nube)."
-            }
-          },
-          "zh-Hant": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display 需要 `machine`（雲端機器 ID）。"
-            }
-          },
-          "zh-Hans": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display 需要 `machine`（云端机器 ID）。"
-            }
-          },
-          "ko": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display에는 `machine`(클라우드 머신 ID)이 필요합니다."
-            }
-          },
-          "ja": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display には `machine`（クラウドマシン ID）が必要です。"
-            }
-          }
-        }
-      },
-    "socket.surface.newDisplay.cloudOnly": {
-        "extractionState": "manual",
-        "localizations": {
-          "en": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display requires a cloud machine id; local display creation is not supported."
-            }
-          },
-          "de": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display benötigt eine Cloud-Maschinen-ID; das Erstellen lokaler Anzeigen wird nicht unterstützt."
-            }
-          },
-          "fr": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display nécessite un identifiant de machine cloud ; la création d’un écran local n’est pas prise en charge."
-            }
-          },
-          "ar": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "يتطلب surface.new_display معرّف جهاز سحابي؛ إنشاء شاشات محلية غير مدعوم."
-            }
-          },
-          "es": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display requiere un identificador de máquina en la nube; no se admite crear pantallas locales."
-            }
-          },
-          "zh-Hant": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display 需要雲端機器 ID；不支援建立本機顯示器。"
-            }
-          },
-          "zh-Hans": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display 需要云端机器 ID；不支持创建本地屏幕。"
-            }
-          },
-          "ko": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display에는 클라우드 머신 ID가 필요하며 로컬 디스플레이 생성은 지원되지 않습니다."
-            }
-          },
-          "ja": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display にはクラウドマシン ID が必要です。ローカルディスプレイの作成はサポートされていません。"
-            }
-          }
-        }
-      },
-    "socket.surface.newDisplay.workspaceRequired": {
-        "extractionState": "manual",
-        "localizations": {
-          "en": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display: no target workspace to open into (pass `workspace_id`, select one, or send `open: false`)."
-            }
-          },
-          "de": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display: Kein Zielarbeitsbereich zum Öffnen (übergib `workspace_id`, wähle einen aus oder sende `open: false`)."
-            }
-          },
-          "fr": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display : aucun espace de travail cible à ouvrir (indiquez `workspace_id`, sélectionnez-en un ou envoyez `open: false`)."
-            }
-          },
-          "ar": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display: لا توجد مساحة عمل مستهدفة للفتح فيها (مرّر `workspace_id` أو حدّد واحدة أو أرسل `open: false`)."
-            }
-          },
-          "es": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display: no hay un espacio de trabajo de destino donde abrirlo (pase `workspace_id`, seleccione uno o envíe `open: false`)."
-            }
-          },
-          "zh-Hant": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display：沒有可開啟的目標工作區（請傳入 `workspace_id`、選取工作區，或傳送 `open: false`）。"
-            }
-          },
-          "zh-Hans": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display：没有可打开的目标工作区（请传入 `workspace_id`、选择一个，或发送 `open: false`）。"
-            }
-          },
-          "ko": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display: 열 대상 작업 공간이 없습니다(`workspace_id`를 전달하거나 하나를 선택하거나 `open: false`를 보내십시오)."
-            }
-          },
-          "ja": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "surface.new_display: 開く対象のワークスペースがありません（`workspace_id` を渡すか選択するか、`open: false` を送信してください）。"
-            }
-          }
-        }
-      },
-    "socket.surface.newDisplay.projectionFailed": {
-        "extractionState": "manual",
-        "localizations": {
-          "en": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "The display was created, but it could not be opened in the selected workspace. Retry with `cmux surface open <resource>`."
-            }
-          },
-          "de": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "Die Anzeige wurde erstellt, konnte aber im ausgewählten Arbeitsbereich nicht geöffnet werden. Versuche es erneut mit `cmux surface open <resource>`."
-            }
-          },
-          "fr": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "L’écran a été créé, mais n’a pas pu être ouvert dans l’espace de travail sélectionné. Réessayez avec `cmux surface open <resource>`."
-            }
-          },
-          "ar": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "تم إنشاء الشاشة، ولكن تعذر فتحها في مساحة العمل المحددة. أعد المحاولة باستخدام `cmux surface open <resource>`."
-            }
-          },
-          "es": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "La pantalla se creó, pero no se pudo abrir en el espacio de trabajo seleccionado. Vuelva a intentarlo con `cmux surface open <resource>`."
-            }
-          },
-          "zh-Hant": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "顯示器已建立，但無法在選取的工作區中開啟。請使用 `cmux surface open <resource>` 重試。"
-            }
-          },
-          "zh-Hans": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "屏幕已创建，但无法在选定的工作区中打开。请使用 `cmux surface open <resource>` 重试。"
-            }
-          },
-          "ko": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "디스플레이가 생성되었지만 선택한 작업 공간에서 열 수 없습니다. `cmux surface open <resource>`으로 다시 시도하십시오."
-            }
-          },
-          "ja": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "ディスプレイは作成されましたが、選択したワークスペースで開けませんでした。`cmux surface open <resource>` で再試行してください。"
-            }
-          }
-        }
-      },
-    "socket.surface.newDisplay.busy": {
-        "extractionState": "manual",
-        "localizations": {
-          "en": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "A display is already being created on this machine, or the machine changed. Wait for it to finish and retry."
-            }
-          },
-          "de": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "Auf dieser Maschine wird bereits eine Anzeige erstellt, oder die Maschine hat sich geändert. Warte, bis der Vorgang abgeschlossen ist, und versuche es erneut."
-            }
-          },
-          "fr": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "Un écran est déjà en cours de création sur cette machine, ou la machine a changé. Attendez la fin de l’opération et réessayez."
-            }
-          },
-          "ar": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "يجري بالفعل إنشاء شاشة على هذا الجهاز، أو أن الجهاز تغيّر. انتظر حتى تنتهي العملية ثم أعد المحاولة."
-            }
-          },
-          "es": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "Ya se está creando una pantalla en esta máquina, o la máquina cambió. Espere a que termine y vuelva a intentarlo."
-            }
-          },
-          "zh-Hant": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "此機器上已有顯示器正在建立，或機器已變更。請等待完成後再重試。"
-            }
-          },
-          "zh-Hans": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "此机器上已有屏幕正在创建，或机器已更改。请等待完成后重试。"
-            }
-          },
-          "ko": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "이 머신에서 이미 디스플레이를 생성하는 중이거나 머신이 변경되었습니다. 완료될 때까지 기다린 후 다시 시도하십시오."
-            }
-          },
-          "ja": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "このマシンではすでにディスプレイを作成中か、マシンが変更されました。完了するまで待ってから再試行してください。"
-            }
-          }
-        }
-      },
-    "socket.surface.newDisplay.timedOut": {
-        "extractionState": "manual",
-        "localizations": {
-          "en": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "Creating the cloud display timed out. Check the catalog before retrying."
-            }
-          },
-          "de": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "Das Erstellen der Cloud-Anzeige ist wegen einer Zeitüberschreitung fehlgeschlagen. Prüfe den Katalog, bevor du es erneut versuchst."
-            }
-          },
-          "fr": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "La création de l’écran cloud a expiré. Vérifiez le catalogue avant de réessayer."
-            }
-          },
-          "ar": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "انتهت مهلة إنشاء الشاشة السحابية. تحقّق من الكتالوج قبل إعادة المحاولة."
-            }
-          },
-          "es": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "Se agotó el tiempo para crear la pantalla en la nube. Compruebe el catálogo antes de volver a intentarlo."
-            }
-          },
-          "zh-Hant": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "建立雲端顯示器逾時。請先檢查目錄再重試。"
-            }
-          },
-          "zh-Hans": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "创建云端屏幕超时。请在重试前检查目录。"
-            }
-          },
-          "ko": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "클라우드 디스플레이 생성 시간이 초과되었습니다. 다시 시도하기 전에 카탈로그를 확인하십시오."
-            }
-          },
-          "ja": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "クラウドディスプレイの作成がタイムアウトしました。再試行する前にカタログを確認してください。"
-            }
-          }
-        }
-      },
-    "socket.surface.newDisplay.failed": {
-        "extractionState": "manual",
-        "localizations": {
-          "en": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "Could not create the cloud display. Check the machine status and retry."
-            }
-          },
-          "de": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "Die Cloud-Anzeige konnte nicht erstellt werden. Prüfe den Maschinenstatus und versuche es erneut."
-            }
-          },
-          "fr": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "Impossible de créer l’écran cloud. Vérifiez l’état de la machine et réessayez."
-            }
-          },
-          "ar": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "تعذر إنشاء الشاشة السحابية. تحقّق من حالة الجهاز وأعد المحاولة."
-            }
-          },
-          "es": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "No se pudo crear la pantalla en la nube. Compruebe el estado de la máquina y vuelva a intentarlo."
-            }
-          },
-          "zh-Hant": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "無法建立雲端顯示器。請檢查機器狀態並重試。"
-            }
-          },
-          "zh-Hans": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "无法创建云端屏幕。请检查机器状态并重试。"
-            }
-          },
-          "ko": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "클라우드 디스플레이를 생성할 수 없습니다. 머신 상태를 확인하고 다시 시도하십시오."
-            }
-          },
-          "ja": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "クラウドディスプレイを作成できませんでした。マシンの状態を確認して再試行してください。"
-            }
-          }
-        }
-      },
-    "socket.surface.newDisplay.requestFailed": {
-        "extractionState": "manual",
-        "localizations": {
-          "en": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "The cloud display request ended before returning a result."
-            }
-          },
-          "de": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "Die Cloud-Anfrage für die Anzeige wurde beendet, bevor ein Ergebnis zurückgegeben wurde."
-            }
-          },
-          "fr": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "La demande d’écran cloud s’est terminée avant de renvoyer un résultat."
-            }
-          },
-          "ar": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "انتهى طلب الشاشة السحابية قبل إرجاع نتيجة."
-            }
-          },
-          "es": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "La solicitud de la pantalla en la nube terminó antes de devolver un resultado."
-            }
-          },
-          "zh-Hant": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "雲端顯示器要求在傳回結果前結束。"
-            }
-          },
-          "zh-Hans": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "云端屏幕请求在返回结果前结束。"
-            }
-          },
-          "ko": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "클라우드 디스플레이 요청이 결과를 반환하기 전에 종료되었습니다."
-            }
-          },
-          "ja": {
-            "stringUnit": {
-              "state": "translated",
-              "value": "クラウドディスプレイのリクエストが結果を返す前に終了しました。"
-            }
-          }
-        }
-      },
     "socket.vm.renameFailed": {
       "extractionState": "manual",
       "localizations": {
@@ -562735,6 +561909,256 @@
         }
       }
     },
+    "settings.app.equalizeSplitsOnDividerDoubleClick": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equalize Splits on Divider Double-Click"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مساواة أحجام الأجزاء بالنقر المزدوج على الفاصل"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teilungen bei Doppelklick auf die Trennlinie ausgleichen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Igualar paneles al hacer doble clic en el divisor"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Égaliser les volets par double-clic sur le séparateur"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "区切り線のダブルクリックでペインを均等化"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "구분선을 두 번 클릭하면 창 크기 균등화"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "双击分隔线时均分窗格"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按兩下分隔線時均分窗格"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Izjednači panele dvostrukim klikom na razdjelnik"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gør paneler lige store ved dobbeltklik på skillelinjen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uniforma le dimensioni dei pannelli con un doppio clic sul divisore"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ធ្វើឱ្យផ្ទាំងមានទំហំស្មើគ្នា ដោយចុចពីរដងលើបន្ទាត់ខណ្ឌចែក"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjør paneler like store ved dobbeltklikk på skillelinjen"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wyrównaj rozmiary paneli po dwukrotnym kliknięciu separatora"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Igualar painéis ao clicar duas vezes no divisor"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выравнивать размеры панелей по двойному щелчку на разделителе"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ปรับขนาดบานหน้าต่างให้เท่ากันเมื่อดับเบิลคลิกเส้นแบ่ง"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayırıcıya çift tıklandığında bölme boyutlarını eşitle"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вирівнювати розміри панелей подвійним клацанням роздільника"
+          }
+        }
+      }
+    },
+    "settings.app.equalizeSplitsOnDividerDoubleClick.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-clicking a divider makes the panes in its row or column equal in size."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يؤدي النقر المزدوج على فاصل إلى جعل الأجزاء في صفه أو عموده متساوية الحجم."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Doppelklick auf eine Trennlinie macht die Bereiche in ihrer Zeile oder Spalte gleich groß."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Al hacer doble clic en un divisor, los paneles de su fila o columna pasan a tener el mismo tamaño."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un double-clic sur un séparateur donne la même taille aux volets de sa ligne ou de sa colonne."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "区切り線をダブルクリックすると、その行または列のペインが同じサイズになります。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "구분선을 두 번 클릭하면 해당 행이나 열의 창이 같은 크기로 조정됩니다."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "双击分隔线，将其所在行或列的窗格调整为相同大小。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按兩下分隔線，將其所在列或欄的窗格調整為相同大小。"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dvostrukim klikom na razdjelnik paneli u njegovom redu ili koloni postaju jednake veličine."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dobbeltklik på en skillelinje gør panelerne i dens række eller kolonne lige store."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Facendo doppio clic su un divisore, i pannelli della sua riga o colonna assumono le stesse dimensioni."
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ការចុចពីរដងលើបន្ទាត់ខណ្ឌចែក ធ្វើឱ្យផ្ទាំងក្នុងជួរដេក ឬជួរឈររបស់វាមានទំហំស្មើគ្នា។"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dobbeltklikk på en skillelinje gjør panelene i raden eller kolonnen like store."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dwukrotne kliknięcie separatora wyrównuje rozmiary paneli w jego wierszu lub kolumnie."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clicar duas vezes em um divisor deixa os painéis da sua linha ou coluna com o mesmo tamanho."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Двойной щелчок по разделителю делает панели в его строке или столбце одинакового размера."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "การดับเบิลคลิกเส้นแบ่งจะทำให้บานหน้าต่างในแถวหรือคอลัมน์นั้นมีขนาดเท่ากัน"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir ayırıcıya çift tıklamak, o satır veya sütundaki bölmelerin boyutlarını eşitler."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подвійне клацання роздільника робить панелі в його рядку або стовпці однаковими за розміром."
+          }
+        }
+      }
+    },
     "settings.terminal.showPasswordInputIndicator.subtitle": {
       "extractionState": "manual",
       "localizations": {
@@ -671403,256 +670827,957 @@
         }
       }
     },
-    "settings.app.equalizeSplitsOnDividerDoubleClick": {
+    "cloudTree.resources.lowDisk": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Equalize Splits on Divider Double-Click"
+            "value": "Disk almost full. Run cmux vm clean %@ --apply or resize the disk to keep this machine reachable."
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "مساواة أحجام الأجزاء بالنقر المزدوج على الفاصل"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Teilungen bei Doppelklick auf die Trennlinie ausgleichen"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Igualar paneles al hacer doble clic en el divisor"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Égaliser les volets par double-clic sur le séparateur"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "区切り線のダブルクリックでペインを均等化"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "구분선을 두 번 클릭하면 창 크기 균등화"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "双击分隔线时均分窗格"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "按兩下分隔線時均分窗格"
+            "value": "القرص ممتلئ تقريبًا. شغّل cmux vm clean %@ --apply أو كبّر القرص لتبقى هذه الآلة قابلة للوصول."
           }
         },
         "bs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Izjednači panele dvostrukim klikom na razdjelnik"
+            "value": "Disk je skoro pun. Pokreni cmux vm clean %@ --apply ili povećaj disk da ova mašina ostane dostupna."
           }
         },
         "da": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gør paneler lige store ved dobbeltklik på skillelinjen"
+            "value": "Disken er næsten fuld. Kør cmux vm clean %@ --apply, eller gør disken større, så maskinen forbliver tilgængelig."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datenträger fast voll. Führe cmux vm clean %@ --apply aus oder vergrößere den Datenträger, damit diese Maschine erreichbar bleibt."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disco casi lleno. Ejecuta cmux vm clean %@ --apply o amplía el disco para que esta máquina siga accesible."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disque presque plein. Exécutez cmux vm clean %@ --apply ou agrandissez le disque pour que cette machine reste accessible."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uniforma le dimensioni dei pannelli con un doppio clic sul divisore"
+            "value": "Disco quasi pieno. Esegui cmux vm clean %@ --apply o ingrandisci il disco perché questa macchina resti raggiungibile."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ディスクがほぼいっぱいです。このマシンに接続できる状態を保つには、cmux vm clean %@ --apply を実行するか、ディスクを拡張してください。"
           }
         },
         "km": {
           "stringUnit": {
             "state": "translated",
-            "value": "ធ្វើឱ្យផ្ទាំងមានទំហំស្មើគ្នា ដោយចុចពីរដងលើបន្ទាត់ខណ្ឌចែក"
+            "value": "ថាសជិតពេញហើយ។ ដំណើរការ cmux vm clean %@ --apply ឬពង្រីកថាស ដើម្បីឱ្យម៉ាស៊ីននេះនៅតែអាចភ្ជាប់បាន។"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "디스크가 거의 가득 찼습니다. 이 머신에 계속 연결할 수 있도록 cmux vm clean %@ --apply을(를) 실행하거나 디스크 크기를 늘리세요."
           }
         },
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gjør paneler like store ved dobbeltklikk på skillelinjen"
+            "value": "Disken er nesten full. Kjør cmux vm clean %@ --apply eller gjør disken større, så maskinen fortsatt kan nås."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wyrównaj rozmiary paneli po dwukrotnym kliknięciu separatora"
+            "value": "Dysk jest prawie pełny. Uruchom cmux vm clean %@ --apply lub powiększ dysk, aby ta maszyna pozostała osiągalna."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Igualar painéis ao clicar duas vezes no divisor"
+            "value": "Disco quase cheio. Execute cmux vm clean %@ --apply ou aumente o disco para manter esta máquina acessível."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Выравнивать размеры панелей по двойному щелчку на разделителе"
+            "value": "Диск почти заполнен. Выполните cmux vm clean %@ --apply или увеличьте диск, чтобы эта машина оставалась доступной."
           }
         },
         "th": {
           "stringUnit": {
             "state": "translated",
-            "value": "ปรับขนาดบานหน้าต่างให้เท่ากันเมื่อดับเบิลคลิกเส้นแบ่ง"
+            "value": "ดิสก์ใกล้เต็มแล้ว เรียกใช้ cmux vm clean %@ --apply หรือขยายดิสก์เพื่อให้เครื่องนี้ยังเชื่อมต่อได้"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ayırıcıya çift tıklandığında bölme boyutlarını eşitle"
+            "value": "Disk neredeyse dolu. Bu makineye erişilebilir kalması için cmux vm clean %@ --apply komutunu çalıştırın veya diski büyütün."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вирівнювати розміри панелей подвійним клацанням роздільника"
+            "value": "Диск майже заповнений. Виконайте cmux vm clean %@ --apply або збільште диск, щоб ця машина залишалася доступною."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "磁盘即将写满。请运行 cmux vm clean %@ --apply 或扩容磁盘，以确保这台机器仍可连接。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "磁碟即將滿載。請執行 cmux vm clean %@ --apply 或擴充磁碟，以確保這台機器仍可連線。"
           }
         }
       }
     },
-    "settings.app.equalizeSplitsOnDividerDoubleClick.subtitle": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Double-clicking a divider makes the panes in its row or column equal in size."
+    "cli.surface.newDisplay.usage": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
+            }
+          },
+          "de": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
+            }
+          },
+          "fr": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
+            }
+          },
+          "ar": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
+            }
+          },
+          "es": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
+            }
+          },
+          "ko": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
+            }
+          },
+          "ja": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "cmux surface new-display --machine <cloud-id> [--workspace <id|ref|index>] [--no-open] [--focus|--no-focus] [--json]"
+            }
           }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "يؤدي النقر المزدوج على فاصل إلى جعل الأجزاء في صفه أو عموده متساوية الحجم."
+        }
+      },
+    "cli.surface.newDisplay.help": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "creates a new VNC display on a cloud machine and opens it unless --no-open."
+            }
+          },
+          "de": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "erstellt eine neue VNC-Anzeige auf einer Cloud-Maschine und öffnet sie, sofern nicht --no-open."
+            }
+          },
+          "fr": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "crée un nouvel écran VNC sur une machine cloud et l’ouvre sauf si --no-open est utilisé."
+            }
+          },
+          "ar": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "ينشئ شاشة VNC جديدة على جهاز سحابي ويفتحها ما لم يتم تمرير --no-open."
+            }
+          },
+          "es": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "crea una nueva pantalla VNC en una máquina en la nube y la abre salvo que se use --no-open."
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "在雲端機器上建立新的 VNC 顯示器，除非指定 --no-open，否則會開啟。"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "在云端机器上创建新的 VNC 屏幕，除非传入 --no-open，否则会打开。"
+            }
+          },
+          "ko": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "클라우드 머신에 새 VNC 디스플레이를 만들고 --no-open을 지정하지 않으면 엽니다."
+            }
+          },
+          "ja": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "クラウドマシンに新しい VNC ディスプレイを作成し、--no-open を指定しない限り開きます。"
+            }
           }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ein Doppelklick auf eine Trennlinie macht die Bereiche in ihrer Zeile oder Spalte gleich groß."
+        }
+      },
+    "cli.surface.newDisplay.error.unknownOption": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: unknown option"
+            }
+          },
+          "de": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: unbekannte Option"
+            }
+          },
+          "fr": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display : option inconnue"
+            }
+          },
+          "ar": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: خيار غير معروف"
+            }
+          },
+          "es": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: opción desconocida"
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display：未知選項"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display：未知选项"
+            }
+          },
+          "ko": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: 알 수 없는 옵션"
+            }
+          },
+          "ja": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: 不明なオプション"
+            }
           }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Al hacer doble clic en un divisor, los paneles de su fila o columna pasan a tener el mismo tamaño."
+        }
+      },
+    "cli.surface.newDisplay.error.unexpectedArgument": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: unexpected argument"
+            }
+          },
+          "de": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: unerwartetes Argument"
+            }
+          },
+          "fr": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display : argument inattendu"
+            }
+          },
+          "ar": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: وسيطة غير متوقعة"
+            }
+          },
+          "es": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: argumento inesperado"
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display：未預期的引數"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display：意外参数"
+            }
+          },
+          "ko": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: 예기치 않은 인수"
+            }
+          },
+          "ja": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: 予期しない引数"
+            }
           }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Un double-clic sur un séparateur donne la même taille aux volets de sa ligne ou de sa colonne."
+        }
+      },
+    "cli.surface.newDisplay.error.machineRequired": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: --machine <cloud-id> is required"
+            }
+          },
+          "de": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: --machine <cloud-id> ist erforderlich"
+            }
+          },
+          "fr": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display : --machine <cloud-id> est requis"
+            }
+          },
+          "ar": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: ‎--machine <cloud-id> مطلوب"
+            }
+          },
+          "es": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: se requiere --machine <cloud-id>"
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display：需要 --machine <cloud-id>"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display：需要 --machine <cloud-id>"
+            }
+          },
+          "ko": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: --machine <cloud-id>이(가) 필요합니다"
+            }
+          },
+          "ja": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface new-display: --machine <cloud-id> が必要です"
+            }
           }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "区切り線をダブルクリックすると、その行または列のペインが同じサイズになります。"
+        }
+      },
+    "cli.surface.newDisplay.result.projectionFailed": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "(created; open it with `cmux surface open <resource>`)"
+            }
+          },
+          "de": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "(erstellt; mit `cmux surface open <resource>` öffnen)"
+            }
+          },
+          "fr": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "(créé ; ouvrez-le avec `cmux surface open <resource>`)"
+            }
+          },
+          "ar": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "(تم الإنشاء؛ افتحه باستخدام `cmux surface open <resource>`)"
+            }
+          },
+          "es": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "(creado; ábralo con `cmux surface open <resource>`)"
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "（已建立；請使用 `cmux surface open <resource>` 開啟）"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "（已创建；请使用 `cmux surface open <resource>` 打开）"
+            }
+          },
+          "ko": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "(생성됨; `cmux surface open <resource>`으로 여십시오)"
+            }
+          },
+          "ja": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "（作成済み。`cmux surface open <resource>` で開いてください）"
+            }
           }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "구분선을 두 번 클릭하면 해당 행이나 열의 창이 같은 크기로 조정됩니다."
+        }
+      },
+    "socket.surface.newDisplay.machineRequired": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display requires `machine` (a cloud machine id)."
+            }
+          },
+          "de": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display benötigt `machine` (eine Cloud-Maschinen-ID)."
+            }
+          },
+          "fr": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display nécessite `machine` (un identifiant de machine cloud)."
+            }
+          },
+          "ar": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "يتطلب surface.new_display قيمة `machine` (معرّف جهاز سحابي)."
+            }
+          },
+          "es": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display requiere `machine` (un identificador de máquina en la nube)."
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display 需要 `machine`（雲端機器 ID）。"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display 需要 `machine`（云端机器 ID）。"
+            }
+          },
+          "ko": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display에는 `machine`(클라우드 머신 ID)이 필요합니다."
+            }
+          },
+          "ja": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display には `machine`（クラウドマシン ID）が必要です。"
+            }
           }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "双击分隔线，将其所在行或列的窗格调整为相同大小。"
+        }
+      },
+    "socket.surface.newDisplay.cloudOnly": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display requires a cloud machine id; local display creation is not supported."
+            }
+          },
+          "de": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display benötigt eine Cloud-Maschinen-ID; das Erstellen lokaler Anzeigen wird nicht unterstützt."
+            }
+          },
+          "fr": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display nécessite un identifiant de machine cloud ; la création d’un écran local n’est pas prise en charge."
+            }
+          },
+          "ar": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "يتطلب surface.new_display معرّف جهاز سحابي؛ إنشاء شاشات محلية غير مدعوم."
+            }
+          },
+          "es": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display requiere un identificador de máquina en la nube; no se admite crear pantallas locales."
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display 需要雲端機器 ID；不支援建立本機顯示器。"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display 需要云端机器 ID；不支持创建本地屏幕。"
+            }
+          },
+          "ko": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display에는 클라우드 머신 ID가 필요하며 로컬 디스플레이 생성은 지원되지 않습니다."
+            }
+          },
+          "ja": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display にはクラウドマシン ID が必要です。ローカルディスプレイの作成はサポートされていません。"
+            }
           }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "按兩下分隔線，將其所在列或欄的窗格調整為相同大小。"
+        }
+      },
+    "socket.surface.newDisplay.workspaceRequired": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display: no target workspace to open into (pass `workspace_id`, select one, or send `open: false`)."
+            }
+          },
+          "de": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display: Kein Zielarbeitsbereich zum Öffnen (übergib `workspace_id`, wähle einen aus oder sende `open: false`)."
+            }
+          },
+          "fr": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display : aucun espace de travail cible à ouvrir (indiquez `workspace_id`, sélectionnez-en un ou envoyez `open: false`)."
+            }
+          },
+          "ar": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display: لا توجد مساحة عمل مستهدفة للفتح فيها (مرّر `workspace_id` أو حدّد واحدة أو أرسل `open: false`)."
+            }
+          },
+          "es": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display: no hay un espacio de trabajo de destino donde abrirlo (pase `workspace_id`, seleccione uno o envíe `open: false`)."
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display：沒有可開啟的目標工作區（請傳入 `workspace_id`、選取工作區，或傳送 `open: false`）。"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display：没有可打开的目标工作区（请传入 `workspace_id`、选择一个，或发送 `open: false`）。"
+            }
+          },
+          "ko": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display: 열 대상 작업 공간이 없습니다(`workspace_id`를 전달하거나 하나를 선택하거나 `open: false`를 보내십시오)."
+            }
+          },
+          "ja": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "surface.new_display: 開く対象のワークスペースがありません（`workspace_id` を渡すか選択するか、`open: false` を送信してください）。"
+            }
           }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dvostrukim klikom na razdjelnik paneli u njegovom redu ili koloni postaju jednake veličine."
+        }
+      },
+    "socket.surface.newDisplay.projectionFailed": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "The display was created, but it could not be opened in the selected workspace. Retry with `cmux surface open <resource>`."
+            }
+          },
+          "de": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "Die Anzeige wurde erstellt, konnte aber im ausgewählten Arbeitsbereich nicht geöffnet werden. Versuche es erneut mit `cmux surface open <resource>`."
+            }
+          },
+          "fr": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "L’écran a été créé, mais n’a pas pu être ouvert dans l’espace de travail sélectionné. Réessayez avec `cmux surface open <resource>`."
+            }
+          },
+          "ar": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "تم إنشاء الشاشة، ولكن تعذر فتحها في مساحة العمل المحددة. أعد المحاولة باستخدام `cmux surface open <resource>`."
+            }
+          },
+          "es": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "La pantalla se creó, pero no se pudo abrir en el espacio de trabajo seleccionado. Vuelva a intentarlo con `cmux surface open <resource>`."
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "顯示器已建立，但無法在選取的工作區中開啟。請使用 `cmux surface open <resource>` 重試。"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "屏幕已创建，但无法在选定的工作区中打开。请使用 `cmux surface open <resource>` 重试。"
+            }
+          },
+          "ko": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "디스플레이가 생성되었지만 선택한 작업 공간에서 열 수 없습니다. `cmux surface open <resource>`으로 다시 시도하십시오."
+            }
+          },
+          "ja": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "ディスプレイは作成されましたが、選択したワークスペースで開けませんでした。`cmux surface open <resource>` で再試行してください。"
+            }
           }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dobbeltklik på en skillelinje gør panelerne i dens række eller kolonne lige store."
+        }
+      },
+    "socket.surface.newDisplay.busy": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "A display is already being created on this machine, or the machine changed. Wait for it to finish and retry."
+            }
+          },
+          "de": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "Auf dieser Maschine wird bereits eine Anzeige erstellt, oder die Maschine hat sich geändert. Warte, bis der Vorgang abgeschlossen ist, und versuche es erneut."
+            }
+          },
+          "fr": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "Un écran est déjà en cours de création sur cette machine, ou la machine a changé. Attendez la fin de l’opération et réessayez."
+            }
+          },
+          "ar": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "يجري بالفعل إنشاء شاشة على هذا الجهاز، أو أن الجهاز تغيّر. انتظر حتى تنتهي العملية ثم أعد المحاولة."
+            }
+          },
+          "es": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "Ya se está creando una pantalla en esta máquina, o la máquina cambió. Espere a que termine y vuelva a intentarlo."
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "此機器上已有顯示器正在建立，或機器已變更。請等待完成後再重試。"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "此机器上已有屏幕正在创建，或机器已更改。请等待完成后重试。"
+            }
+          },
+          "ko": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "이 머신에서 이미 디스플레이를 생성하는 중이거나 머신이 변경되었습니다. 완료될 때까지 기다린 후 다시 시도하십시오."
+            }
+          },
+          "ja": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "このマシンではすでにディスプレイを作成中か、マシンが変更されました。完了するまで待ってから再試行してください。"
+            }
           }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Facendo doppio clic su un divisore, i pannelli della sua riga o colonna assumono le stesse dimensioni."
+        }
+      },
+    "socket.surface.newDisplay.timedOut": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "Creating the cloud display timed out. Check the catalog before retrying."
+            }
+          },
+          "de": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "Das Erstellen der Cloud-Anzeige ist wegen einer Zeitüberschreitung fehlgeschlagen. Prüfe den Katalog, bevor du es erneut versuchst."
+            }
+          },
+          "fr": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "La création de l’écran cloud a expiré. Vérifiez le catalogue avant de réessayer."
+            }
+          },
+          "ar": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "انتهت مهلة إنشاء الشاشة السحابية. تحقّق من الكتالوج قبل إعادة المحاولة."
+            }
+          },
+          "es": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "Se agotó el tiempo para crear la pantalla en la nube. Compruebe el catálogo antes de volver a intentarlo."
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "建立雲端顯示器逾時。請先檢查目錄再重試。"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "创建云端屏幕超时。请在重试前检查目录。"
+            }
+          },
+          "ko": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "클라우드 디스플레이 생성 시간이 초과되었습니다. 다시 시도하기 전에 카탈로그를 확인하십시오."
+            }
+          },
+          "ja": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "クラウドディスプレイの作成がタイムアウトしました。再試行する前にカタログを確認してください。"
+            }
           }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ការចុចពីរដងលើបន្ទាត់ខណ្ឌចែក ធ្វើឱ្យផ្ទាំងក្នុងជួរដេក ឬជួរឈររបស់វាមានទំហំស្មើគ្នា។"
+        }
+      },
+    "socket.surface.newDisplay.failed": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "Could not create the cloud display. Check the machine status and retry."
+            }
+          },
+          "de": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "Die Cloud-Anzeige konnte nicht erstellt werden. Prüfe den Maschinenstatus und versuche es erneut."
+            }
+          },
+          "fr": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "Impossible de créer l’écran cloud. Vérifiez l’état de la machine et réessayez."
+            }
+          },
+          "ar": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "تعذر إنشاء الشاشة السحابية. تحقّق من حالة الجهاز وأعد المحاولة."
+            }
+          },
+          "es": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "No se pudo crear la pantalla en la nube. Compruebe el estado de la máquina y vuelva a intentarlo."
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "無法建立雲端顯示器。請檢查機器狀態並重試。"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "无法创建云端屏幕。请检查机器状态并重试。"
+            }
+          },
+          "ko": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "클라우드 디스플레이를 생성할 수 없습니다. 머신 상태를 확인하고 다시 시도하십시오."
+            }
+          },
+          "ja": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "クラウドディスプレイを作成できませんでした。マシンの状態を確認して再試行してください。"
+            }
           }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dobbeltklikk på en skillelinje gjør panelene i raden eller kolonnen like store."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dwukrotne kliknięcie separatora wyrównuje rozmiary paneli w jego wierszu lub kolumnie."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Clicar duas vezes em um divisor deixa os painéis da sua linha ou coluna com o mesmo tamanho."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Двойной щелчок по разделителю делает панели в его строке или столбце одинакового размера."
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "การดับเบิลคลิกเส้นแบ่งจะทำให้บานหน้าต่างในแถวหรือคอลัมน์นั้นมีขนาดเท่ากัน"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bir ayırıcıya çift tıklamak, o satır veya sütundaki bölmelerin boyutlarını eşitler."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подвійне клацання роздільника робить панелі в його рядку або стовпці однаковими за розміром."
+        }
+      },
+    "socket.surface.newDisplay.requestFailed": {
+        "extractionState": "manual",
+        "localizations": {
+          "en": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "The cloud display request ended before returning a result."
+            }
+          },
+          "de": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "Die Cloud-Anfrage für die Anzeige wurde beendet, bevor ein Ergebnis zurückgegeben wurde."
+            }
+          },
+          "fr": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "La demande d’écran cloud s’est terminée avant de renvoyer un résultat."
+            }
+          },
+          "ar": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "انتهى طلب الشاشة السحابية قبل إرجاع نتيجة."
+            }
+          },
+          "es": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "La solicitud de la pantalla en la nube terminó antes de devolver un resultado."
+            }
+          },
+          "zh-Hant": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "雲端顯示器要求在傳回結果前結束。"
+            }
+          },
+          "zh-Hans": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "云端屏幕请求在返回结果前结束。"
+            }
+          },
+          "ko": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "클라우드 디스플레이 요청이 결과를 반환하기 전에 종료되었습니다."
+            }
+          },
+          "ja": {
+            "stringUnit": {
+              "state": "translated",
+              "value": "クラウドディスプレイのリクエストが結果を返す前に終了しました。"
+            }
           }
         }
       }
-    }
   },
   "version": "1.0"
 }
