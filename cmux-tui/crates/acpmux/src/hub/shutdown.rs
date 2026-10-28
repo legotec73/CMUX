@@ -80,9 +80,10 @@ impl Hub {
         let mut spared = Vec::new();
         for s in &sessions {
             let ends = end_agents && !keep.contains(&s.id);
-            let mut own = s.idle_spared.lock().unwrap_or_else(|e| e.into_inner());
-            spared.extend(own.extract_if(.., |(hosted, _)| ends || !*hosted).map(|(_, p)| p));
-            drop(own);
+            {
+                let mut own = s.idle_spared.lock().unwrap_or_else(|e| e.into_inner());
+                spared.extend(own.extract_if(.., |(hosted, _)| ends || !*hosted).map(|(_, p)| p));
+            }
             let Ok(mut slot) = tokio::time::timeout(LOCK, s.child.lock()).await else {
                 // The child cannot be reached here. Detach mode leaves it and
                 // its permission prompts alone for the next daemon.

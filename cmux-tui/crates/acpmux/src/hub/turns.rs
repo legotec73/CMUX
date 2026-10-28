@@ -1412,7 +1412,8 @@ impl Hub {
             self.end_unadopted_host(session).await;
         }
         // What idle retirements spared ends with the stop, as the agent's group would have.
-        let spared = std::mem::take(&mut *session.idle_spared.lock().unwrap_or_else(|e| e.into_inner()));
+        let spared =
+            std::mem::take(&mut *session.idle_spared.lock().unwrap_or_else(|e| e.into_inner()));
         crate::agent_host::end_spared(spared.into_iter().map(|(_, p)| p).collect()).await;
         *session.turn.lock().unwrap() = None;
         // Before the close's event, which sends the cards it owes (`tasks.rs`).
