@@ -28,6 +28,10 @@ struct DeviceLinkRuntime: MobileSyncRuntime {
     let now: @Sendable () -> Date
     let supportsServerPushEvents: Bool = true
 
+    static func defaultRouteSelector(hasAutomaticClient: Bool) -> DeviceRouteSelector {
+        DeviceRouteSelector(allowsIroh: hasAutomaticClient)
+    }
+
     init(
         tokens: HiveAccountTokenSource,
         automaticClient: DeviceIrxClient? = nil,
@@ -37,7 +41,7 @@ struct DeviceLinkRuntime: MobileSyncRuntime {
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.automaticClient = automaticClient
-        let routeSelector = routeSelector ?? DeviceRouteSelector(allowsIroh: automaticClient != nil, allowsLegacyTailscale: automaticClient == nil)
+        let routeSelector = routeSelector ?? Self.defaultRouteSelector(hasAutomaticClient: automaticClient != nil)
         self.routeSelector = routeSelector
         transportFactory = CmxNetworkByteTransportFactory(supportedKinds: routeSelector.supportedKinds.filter { $0 != .iroh })
         independentEventByteStreamProvider = nil
@@ -50,15 +54,31 @@ struct DeviceLinkRuntime: MobileSyncRuntime {
         self.now = now
     }
 
+    static func makeTransportFactory(
+        routeSelector: DeviceRouteSelector,
+        automaticFactory: any CmxByteTransportFactory,
+        fallbackFactory: any CmxByteTransportFactory
+    ) throws -> CmxRouteTransportFactory {
+        let registrations = routeSelector.supportedKinds.map { kind in
+            CmxRouteTransportFactoryRegistration(
+                kind: kind,
+                factory: kind == .iroh ? automaticFactory : fallbackFactory
+            )
+        }
+        return try CmxRouteTransportFactory(registrations)
+    }
+
     func forPeer(_ instance: SurfaceDeviceInstanceID) throws -> DeviceLinkRuntime {
         guard let automaticClient else { return self }
         let automatic = CmxConnectivityDeferredTransportFactory(
             provider: DeviceIrxPeerTransportProvider(client: automaticClient, instance: instance)
         )
         var result = self
-        result.transportFactory = try CmxRouteTransportFactory([
-            CmxRouteTransportFactoryRegistration(kind: .iroh, factory: automatic)
-        ])
+        result.transportFactory = try Self.makeTransportFactory(
+            routeSelector: routeSelector,
+            automaticFactory: automatic,
+            fallbackFactory: transportFactory
+        )
         result.independentEventByteStreamProvider = { request in
             try await automaticClient.events(for: request, instance: instance)
         }
