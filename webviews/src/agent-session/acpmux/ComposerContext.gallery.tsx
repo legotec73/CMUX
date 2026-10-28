@@ -296,8 +296,20 @@ export default componentEntry<ComponentProps<typeof ComposerContext>>({
       props: baseProps,
     },
     "folder-menu": {
-      note: "The folder popover: a search field over the recent projects (paths on hover), then Add project and Choose folder….",
+      note: "Project actions stay directly below search, above the recent projects (paths on hover).",
       props: baseProps,
+      play: openFolder,
+    },
+    "folder-long-list": {
+      note: "Project actions stay below search while a long folder list scrolls; the thumb stays inside the right edge.",
+      props: {
+        ...baseProps,
+        projectChoices: Array.from({ length: 40 }, (_, index) => ({
+          cwd: `/demo/review-${index + 1}`,
+          label: `review-${index + 1}`,
+        })),
+        onNoProject: () => undefined,
+      },
       play: openFolder,
     },
     "folder-favicons": {
