@@ -134,6 +134,8 @@ extension AppActions {
            let focused = services.windows.active?.focusedPane, focused.daemon === services.daemon {
             spawn.inheritedCwd = NewTerminalStart.inherited(besides: focused.selectedTab, in: focused.pane, services: services)
         }
+        // The Cloud toggle (#26062): a person's new workspace gets its own new Cloud machine.
+        if CloudHandlers.startNewWorkspaceInCloud(invocation, cwd: spawn.cwd ?? spawn.inheritedCwd, window: focus.shows ? services.windows.active?.state : nil, services) { return }
 
         let windows = services.windows
         // Shown: the active window, or a new one when none is open. Not
