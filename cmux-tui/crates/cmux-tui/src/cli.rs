@@ -25,6 +25,7 @@ mod apps_run;
 mod beside;
 #[cfg(unix)]
 mod billing;
+mod caller_scope;
 mod capability_cache;
 #[cfg(unix)]
 mod chief;
